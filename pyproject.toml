@@ -1,0 +1,21 @@
+[project]
+name = "structuraludis"
+version = "0.1.0"
+description = ""
+authors = [
+    {name = "Jérôme Vieilledent",email = "lolautruche@gmail.com"}
+]
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi (>=0.128.0,<0.129.0)",
+    "uvicorn[standard] (>=0.40.0,<0.41.0)",
+    "sqlalchemy (>=2.0.46,<3.0.0)",
+    "alembic (>=1.18.1,<2.0.0)",
+    "psycopg2-binary (>=2.9.11,<3.0.0)",
+    "pydantic-settings (>=2.12.0,<3.0.0)"
+]
+
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"

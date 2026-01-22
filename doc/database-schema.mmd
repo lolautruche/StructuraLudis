@@ -1,0 +1,175 @@
+erDiagram
+    ORGANIZATION ||--o{ USER_GROUP : "owns"
+    ORGANIZATION ||--o{ EXHIBITION : "organizes"
+    
+    USER ||--o{ USER_GROUP_MEMBERSHIP : "belongs to"
+    USER_GROUP ||--o{ USER_GROUP_MEMBERSHIP : "has members"
+    USER_GROUP ||--o{ GROUP_PERMISSION : "defines"
+    
+    EXHIBITION ||--o{ TIME_SLOT : "segments"
+    EXHIBITION ||--o{ GAME_TABLE : "hosts"
+    
+    USER_GROUP ||--o{ GAME_TABLE : "manages/provides"
+    
+    GAME_TABLE }o--|| GAME : "plays"
+    GAME_TABLE ||--o{ TABLE_PARTICIPANT : "roster"
+    GAME_TABLE ||--o{ TIME_SLOT : "scheduled at"
+    
+    GAME }o--|| GAME_CATEGORY : "type"
+    
+    USER ||--o{ MEDIA : "owner"
+    EXHIBITION ||--o{ MEDIA : "banner/logo"
+    GAME ||--o{ MEDIA : "illustration"
+
+    ORGANIZATION {
+        uuid id PK
+        string name
+        string slug UK
+        string legal_registration_number
+        string contact_email
+        datetime created_at
+        datetime updated_at
+    }
+
+    USER {
+        uuid id PK
+        string email UK
+        string hashed_password
+        string full_name
+        string timezone
+        string locale "default: 'en'"
+        boolean is_active
+        datetime last_login
+        datetime created_at
+        datetime updated_at
+    }
+
+    USER_GROUP {
+        uuid id PK
+        uuid organization_id FK
+        string name "e.g. 'Staff', 'Exhibitor: Black Book Editions'"
+        string type "STAFF, ASSOCIATION, EXHIBITOR, PLAYER_CLUB"
+        boolean is_public "Can others see this group?"
+        datetime created_at
+        datetime updated_at
+    }
+
+    USER_GROUP_MEMBERSHIP {
+        uuid id PK
+        uuid user_id FK
+        uuid user_group_id FK
+        string group_role "OWNER, ADMIN, MEMBER"
+        datetime joined_at
+    }
+
+    GROUP_PERMISSION {
+        uuid id PK
+        uuid user_group_id FK
+        string resource "e.g. 'table', 'exhibition', 'media'"
+        string action "e.g. 'create', 'approve', 'delete_any'"
+    }
+
+    EXHIBITION {
+        uuid id PK
+        uuid organization_id FK
+        string title
+        string slug UK
+        string description
+        datetime start_date
+        datetime end_date
+        string location_name
+        string address
+        string city
+        string country_code "ISO 3166-1"
+        jsonb settings "Theme, social links, age policy"
+        string status "DRAFT, PUBLISHED, ARCHIVED"
+        datetime created_at
+        datetime updated_at
+    }
+
+    TIME_SLOT {
+        uuid id PK
+        uuid exhibition_id FK
+        string name
+        datetime start_time
+        datetime end_time
+        int capacity_bonus "Global modifier for available space"
+        datetime created_at
+        datetime updated_at
+    }
+
+    GAME_CATEGORY {
+        uuid id PK
+        string name "RPG, Board Game, Card Game, LARP"
+        string slug UK
+    }
+
+    GAME {
+        uuid id PK
+        uuid category_id FK
+        string title
+        string external_provider_id "e.g. GROG-123"
+        string publisher
+        string description
+        string complexity "BEGINNER, INTERMEDIATE, EXPERT"
+        int min_players
+        int max_players
+        datetime created_at
+        datetime updated_at
+    }
+
+    GAME_TABLE {
+        uuid id PK
+        uuid exhibition_id FK
+        uuid time_slot_id FK
+        uuid game_id FK
+        uuid provided_by_group_id FK
+        uuid created_by_user_id FK
+        string title
+        string description
+        string language "e.g. 'en', 'fr'"
+        int min_age
+        int max_players_count
+        string status "PENDING, APPROVED, REJECTED, CANCELLED"
+        string rejection_reason
+        jsonb safety_tools "['X-Card', 'Lines & Veils', 'Open Table']"
+        boolean is_accessible_disability
+        datetime created_at
+        datetime updated_at
+    }
+
+    TABLE_PARTICIPANT {
+        uuid id PK
+        uuid game_table_id FK
+        uuid user_id FK
+        string role "GM, PLAYER, ASSISTANT, SPECTATOR"
+        string status "REGISTERED, WAITING_LIST, CANCELLED"
+        datetime registered_at
+        datetime updated_at
+    }
+
+    MEDIA {
+        uuid id PK
+        uuid uploaded_by_user_id FK
+        string entity_type "USER, EXHIBITION, GAME, ORGANIZATION"
+        uuid entity_id
+        string storage_key "S3 path"
+        string file_name
+        string mime_type
+        int file_size
+        string purpose "AVATAR, BANNER, COVER"
+        datetime created_at
+    }
+
+    AUDIT_LOG {
+        uuid id PK
+        uuid user_id FK
+        string action "CREATE, UPDATE, DELETE, LOGIN"
+        string entity_type
+        uuid entity_id
+        jsonb old_data
+        jsonb new_data
+        string ip_address
+        string user_agent
+        datetime created_at
+    }

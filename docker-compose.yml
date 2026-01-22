@@ -1,0 +1,53 @@
+services:
+  sl-db:
+    image: postgres:16-alpine
+    container_name: sl_postgres
+    restart: always
+    environment:
+      POSTGRES_USER: sl_admin
+      POSTGRES_PASSWORD: sl_password
+      POSTGRES_DB: structura_ludis
+    ports:
+      - "5432:5432"
+    volumes:
+      - sl_postgres_data:/var/lib/postgresql/data
+    networks:
+      - sl-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sl_admin -d structura_ludis"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  sl-mq:
+    image: rabbitmq:3-management-alpine
+    container_name: sl_rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    networks:
+      - sl-network
+
+  sl-api:
+    build: .
+    container_name: sl_api
+    depends_on:
+      sl-db:
+        condition: service_healthy
+    volumes:
+      - .:/app
+    env_file:
+      - .env
+    ports:
+      - "8000:8000"
+    networks:
+      - sl-network
+    # On force le rechargement pour le dev
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+
+networks:
+  sl-network:
+    driver: bridge
+
+volumes:
+  sl_postgres_data:
