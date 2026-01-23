@@ -1,10 +1,9 @@
 import uuid
 from datetime import datetime
-from typing import Optional, List
+from typing import Optional
 from pydantic import BaseModel, EmailStr, ConfigDict
 
 # We can reuse the Enums from models.py or redefine them if we want strict decoupling
-from app.models import UserGroupType, GroupRole, ExhibitionStatus
 
 
 # --- Shared Properties ---
