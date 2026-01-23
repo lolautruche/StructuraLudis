@@ -1,0 +1,41 @@
+# Project Context: Structura Ludis
+
+## Tech Stack
+- **Backend**: Python 3.12, FastAPI, SQLAlchemy 2.0 (Async), Pydantic v2.
+- **Frontend**: Next.js, Tailwind CSS, TypeScript.
+- **Database**: PostgreSQL 16.
+- **Architecture**: Clean Architecture / Domain-Driven Design (DDD).
+
+## Project Structure
+- `/backend`: FastAPI application.
+- `/frontend`: Next.js application.
+- Monorepo orchestrated by Docker Compose at root.
+
+## Coding Standards
+- **Language**: All code, documentation, and comments MUST be in English.
+- **Naming**: Use snake_case for Python, camelCase for TypeScript.
+- **Database**:
+    - Always use UUIDs for Primary Keys.
+    - Every table must have `created_at` and `updated_at` (UTC).
+    - Use `jsonb` for flexible settings.
+- **Patterns**:
+    - Use Repository pattern for DB access.
+    - Separate Domain Models (Pydantic) from DB Models (SQLAlchemy).
+    - Logic must reside in Domain Services, not in API routes.
+
+## Validation Protocol
+- Before suggesting code, analyze potential side effects on the database schema.
+- If a domain logic involves dates (TimeSlots), always remind me to handle Timezone-aware objects (UTC).
+- For every new feature, propose a brief test plan (Unit or Integration).
+
+## Business Logic Invariants
+- **Consistency**: A User's schedule must be conflict-free within a single Exhibition.
+- **Ownership**: Every GameTable must be linked to a UserGroup (Organization or Club).
+- **Validation**: Only users with 'MODERATOR' or 'ADMIN' permissions in their UserGroup can approve a GameTable.
+- **Age Policy**: Registration must verify that User.age >= GameTable.min_age.
+- **External Data**: Always prioritize the 'external_id' mapping for Game entities to sync with catalogs (like GROG).
+
+## AI Instructions
+- Be concise.
+- If a change affects multiple files, explain the impact before coding.
+- Always check for time-slot overlaps in table registrations.
