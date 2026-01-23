@@ -29,13 +29,13 @@ services:
       - sl-network
 
   sl-api:
-    build: .
+    build: ./backend
     container_name: sl_api
     depends_on:
       sl-db:
         condition: service_healthy
     volumes:
-      - .:/app
+      - ./backend:/app
     env_file:
       - .env
     ports:

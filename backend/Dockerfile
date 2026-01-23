@@ -15,6 +15,8 @@ RUN apt-get update && apt-get install -y \
 # Install Poetry
 RUN curl -sSL https://install.python-poetry.org | python3 -
 ENV PATH="/root/.local/bin:$PATH"
+# Install poetry-plugin-export
+RUN poetry self add poetry-plugin-export
 
 COPY pyproject.toml poetry.lock* ./
 
@@ -30,7 +32,7 @@ RUN apt-get update && apt-get install -y \
     libpq5 \
     && rm -rf /var/lib/apt/lists/*
 
-COPY --from=builder /backend/app/requirements.txt .
+COPY --from=builder /app/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY .. .
