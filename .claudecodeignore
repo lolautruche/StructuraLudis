@@ -1,0 +1,30 @@
+# --- Global ---
+.DS_Store
+.git/
+.vscode/
+.idea/
+*.log
+
+# --- Backend (FastAPI) ---
+backend/**/__pycache__/
+backend/**/*.py[cod]
+backend/.venv/
+backend/venv/
+backend/.pytest_cache/
+backend/.ruff_cache/
+backend/.mypy_cache/
+# Ignore les bases de données locales si tu en as
+backend/**/*.sqlite3
+backend/**/*.db
+
+# --- Frontend (Next.js) ---
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+frontend/build/
+frontend/.npm/
+
+# --- Environnement ---
+.env
+.env.*
+!**/.env.example
