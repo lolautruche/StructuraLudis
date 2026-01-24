@@ -5,7 +5,7 @@ Similar to Symfony's public/index.php + Kernel.
 """
 from fastapi import FastAPI
 
-from app.api.v1.endpoint import exhibition
+from app.api.v1.endpoint import exhibition, organization
 
 app = FastAPI(
     title="Structura Ludis API",
@@ -13,7 +13,12 @@ app = FastAPI(
     description="Backend for RPG Convention Management",
 )
 
-# Include routers (similar to Symfony's routes.yaml)
+# Include routers
+app.include_router(
+    organization.router,
+    prefix="/api/v1/organizations",
+    tags=["Organizations"],
+)
 app.include_router(
     exhibition.router,
     prefix="/api/v1/exhibitions",
