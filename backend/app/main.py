@@ -1,7 +1,5 @@
 """
 FastAPI application entry point.
-
-Similar to Symfony's public/index.php + Kernel.
 """
 from fastapi import FastAPI
 

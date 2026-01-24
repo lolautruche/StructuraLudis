@@ -1,7 +1,6 @@
 """
 Application configuration.
 
-Similar to Symfony's parameters.yaml + .env handling.
 Uses pydantic-settings for type-safe environment variable parsing.
 """
 from pydantic_settings import BaseSettings, SettingsConfigDict

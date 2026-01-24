@@ -40,11 +40,7 @@ class Organization(Base, TimestampMixin):
 
 
 class UserGroup(Base, TimestampMixin):
-    """
-    A group within an organization (staff, exhibitor, association, etc.).
-
-    Similar to a Symfony security Role but with more granularity.
-    """
+    """A group within an organization (staff, exhibitor, association, etc.)."""
     __tablename__ = "user_groups"
 
     id: Mapped[uuid.UUID] = mapped_column(
@@ -68,11 +64,7 @@ class UserGroup(Base, TimestampMixin):
 
 
 class GroupPermission(Base):
-    """
-    Permission granted to a UserGroup on a specific resource.
-
-    Similar to Symfony voters or access control rules.
-    """
+    """Permission granted to a UserGroup on a specific resource."""
     __tablename__ = "group_permissions"
 
     id: Mapped[uuid.UUID] = mapped_column(

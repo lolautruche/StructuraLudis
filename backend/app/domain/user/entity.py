@@ -19,11 +19,7 @@ if TYPE_CHECKING:
 
 
 class User(Base, TimestampMixin):
-    """
-    Application user.
-
-    Similar to Symfony's User entity implementing UserInterface.
-    """
+    """Application user."""
     __tablename__ = "users"
 
     id: Mapped[uuid.UUID] = mapped_column(

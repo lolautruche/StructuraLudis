@@ -1,8 +1,7 @@
 """
 Exhibition domain schemas (DTOs).
 
-Similar to Symfony's DTO classes or API Platform's ApiResource schemas.
-These are Pydantic models used for API input/output validation.
+Pydantic models used for API input/output validation.
 """
 from datetime import datetime
 from typing import Optional
@@ -51,6 +50,4 @@ class ExhibitionRead(ExhibitionBase):
     created_at: datetime
     updated_at: Optional[datetime] = None
 
-    # Enable ORM mode: allows creating from SQLAlchemy models
-    # Similar to Symfony's serializer groups
     model_config = ConfigDict(from_attributes=True)
