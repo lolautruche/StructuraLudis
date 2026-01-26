@@ -3,7 +3,7 @@ FastAPI application entry point.
 """
 from fastapi import FastAPI
 
-from app.api.v1.endpoint import exhibition, organization
+from app.api.v1.endpoint import exhibition, organization, zone
 
 app = FastAPI(
     title="Structura Ludis API",
@@ -21,6 +21,11 @@ app.include_router(
     exhibition.router,
     prefix="/api/v1/exhibitions",
     tags=["Exhibitions"],
+)
+app.include_router(
+    zone.router,
+    prefix="/api/v1/zones",
+    tags=["Zones"],
 )
 
 
