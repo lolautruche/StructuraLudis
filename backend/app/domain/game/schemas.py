@@ -1,0 +1,200 @@
+"""
+Game domain schemas (DTOs).
+
+Pydantic models for GameCategory, Game, GameSession, and Booking.
+"""
+from datetime import datetime
+from typing import List, Optional
+from uuid import UUID
+
+from pydantic import BaseModel, ConfigDict, Field, model_validator
+
+from app.domain.shared.entity import (
+    GameComplexity,
+    SessionStatus,
+    ParticipantRole,
+    BookingStatus,
+)
+
+
+# =============================================================================
+# GameCategory Schemas
+# =============================================================================
+
+class GameCategoryBase(BaseModel):
+    """Base schema for game categories."""
+    name: str = Field(..., min_length=1, max_length=100)
+    slug: str = Field(..., min_length=1, max_length=50, pattern=r"^[a-z0-9-]+$")
+
+
+class GameCategoryCreate(GameCategoryBase):
+    """Schema for creating a game category."""
+    pass
+
+
+class GameCategoryRead(GameCategoryBase):
+    """Schema for reading a game category."""
+    id: UUID
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+# =============================================================================
+# Game Schemas
+# =============================================================================
+
+class GameBase(BaseModel):
+    """Base schema for games."""
+    title: str = Field(..., min_length=1, max_length=255)
+    publisher: Optional[str] = Field(None, max_length=255)
+    description: Optional[str] = None
+    complexity: GameComplexity = Field(default=GameComplexity.INTERMEDIATE)
+    min_players: int = Field(..., ge=1, le=100)
+    max_players: int = Field(..., ge=1, le=100)
+
+    @model_validator(mode="after")
+    def validate_players(self):
+        if self.min_players > self.max_players:
+            raise ValueError("min_players cannot exceed max_players")
+        return self
+
+
+class GameCreate(GameBase):
+    """Schema for creating a game."""
+    category_id: UUID
+    external_provider_id: Optional[str] = Field(None, max_length=100)
+
+
+class GameRead(GameBase):
+    """Schema for reading a game."""
+    id: UUID
+    category_id: UUID
+    external_provider_id: Optional[str] = None
+    created_at: datetime
+    updated_at: Optional[datetime] = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+# =============================================================================
+# GameSession Schemas
+# =============================================================================
+
+class GameSessionBase(BaseModel):
+    """Base schema for game sessions."""
+    title: str = Field(..., min_length=1, max_length=255)
+    description: Optional[str] = None
+    language: str = Field(default="en", max_length=10)
+    min_age: Optional[int] = Field(None, ge=0, le=99)
+    max_players_count: int = Field(..., ge=1, le=100)
+    safety_tools: Optional[List[str]] = None
+    is_accessible_disability: bool = False
+    scheduled_start: datetime
+    scheduled_end: datetime
+
+    @model_validator(mode="after")
+    def validate_schedule(self):
+        if self.scheduled_start >= self.scheduled_end:
+            raise ValueError("scheduled_start must be before scheduled_end")
+        return self
+
+
+class GameSessionCreate(GameSessionBase):
+    """Schema for creating a game session."""
+    exhibition_id: UUID
+    time_slot_id: UUID
+    game_id: UUID
+    provided_by_group_id: Optional[UUID] = None
+
+
+class GameSessionUpdate(BaseModel):
+    """Schema for updating a game session (all fields optional)."""
+    title: Optional[str] = Field(None, min_length=1, max_length=255)
+    description: Optional[str] = None
+    language: Optional[str] = Field(None, max_length=10)
+    min_age: Optional[int] = Field(None, ge=0, le=99)
+    max_players_count: Optional[int] = Field(None, ge=1, le=100)
+    safety_tools: Optional[List[str]] = None
+    is_accessible_disability: Optional[bool] = None
+    scheduled_start: Optional[datetime] = None
+    scheduled_end: Optional[datetime] = None
+    physical_table_id: Optional[UUID] = None
+
+
+class GameSessionRead(GameSessionBase):
+    """Schema for reading a game session."""
+    id: UUID
+    exhibition_id: UUID
+    time_slot_id: UUID
+    game_id: UUID
+    physical_table_id: Optional[UUID] = None
+    provided_by_group_id: Optional[UUID] = None
+    created_by_user_id: UUID
+    status: SessionStatus
+    rejection_reason: Optional[str] = None
+    gm_checked_in_at: Optional[datetime] = None
+    actual_start: Optional[datetime] = None
+    actual_end: Optional[datetime] = None
+    created_at: datetime
+    updated_at: Optional[datetime] = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class GameSessionSubmit(BaseModel):
+    """Schema for submitting a session for moderation."""
+    pass  # No additional fields needed
+
+
+class GameSessionModerate(BaseModel):
+    """Schema for moderating a session (approve/reject)."""
+    action: str = Field(..., pattern=r"^(approve|reject)$")
+    rejection_reason: Optional[str] = Field(None, max_length=1000)
+
+    @model_validator(mode="after")
+    def validate_rejection(self):
+        if self.action == "reject" and not self.rejection_reason:
+            raise ValueError("rejection_reason is required when rejecting")
+        return self
+
+
+# =============================================================================
+# Booking Schemas
+# =============================================================================
+
+class BookingBase(BaseModel):
+    """Base schema for bookings."""
+    role: ParticipantRole = Field(default=ParticipantRole.PLAYER)
+
+
+class BookingCreate(BookingBase):
+    """Schema for creating a booking (registering to a session)."""
+    game_session_id: UUID
+
+
+class BookingCreateBody(BookingBase):
+    """Schema for booking creation request body (session_id from path)."""
+    pass
+
+
+class BookingRead(BookingBase):
+    """Schema for reading a booking."""
+    id: UUID
+    game_session_id: UUID
+    user_id: UUID
+    status: BookingStatus
+    registered_at: datetime
+    checked_in_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class BookingCheckIn(BaseModel):
+    """Schema for checking in a booking."""
+    pass  # No additional fields needed
+
+
+class BookingMarkNoShow(BaseModel):
+    """Schema for marking a booking as no-show."""
+    pass  # No additional fields needed
