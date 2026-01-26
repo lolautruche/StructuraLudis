@@ -1,15 +1,9 @@
 """
 Exhibition API endpoints.
 
-Similar to a Symfony Controller, but using FastAPI's router pattern.
-
-CRUD operations:
-- GET    /                  → list_exhibitions (index)
-- POST   /                  → create_exhibition (store)
-- GET    /{exhibition_id}   → get_exhibition (show)
-- PUT    /{exhibition_id}   → update_exhibition (update)
-- DELETE /{exhibition_id}   → delete_exhibition (destroy)
+CRUD operations + TimeSlots + Dashboard.
 """
+from typing import List
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -17,27 +11,33 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
-from app.domain.exhibition import Exhibition
+from app.domain.exhibition import Exhibition, TimeSlot
 from app.domain.exhibition.schemas import (
     ExhibitionCreate,
     ExhibitionRead,
     ExhibitionUpdate,
+    ExhibitionDashboard,
+    TimeSlotCreate,
+    TimeSlotRead,
 )
+from app.domain.user.entity import User
+from app.api.deps import get_current_active_user, require_exhibition_organizer
+from app.services.exhibition import ExhibitionService
 
 router = APIRouter()
 
 
-@router.get("/", response_model=list[ExhibitionRead])
+# =============================================================================
+# Exhibition CRUD
+# =============================================================================
+
+@router.get("/", response_model=List[ExhibitionRead])
 async def list_exhibitions(
     db: AsyncSession = Depends(get_db),
     skip: int = 0,
     limit: int = 100,
 ):
-    """
-    Retrieve all exhibitions with pagination.
-
-    Similar to: ExhibitionController::index() in Symfony.
-    """
+    """Retrieve all exhibitions with pagination."""
     query = select(Exhibition).offset(skip).limit(limit)
     result = await db.execute(query)
     return result.scalars().all()
@@ -46,32 +46,17 @@ async def list_exhibitions(
 @router.post("/", response_model=ExhibitionRead, status_code=status.HTTP_201_CREATED)
 async def create_exhibition(
     exhibition_in: ExhibitionCreate,
+    current_user: User = Depends(get_current_active_user),
     db: AsyncSession = Depends(get_db),
 ):
     """
     Create a new exhibition.
 
-    Similar to: ExhibitionController::store() in Symfony.
-    The request body is validated by Pydantic (like Symfony Forms).
+    Requires: ORGANIZER or SUPER_ADMIN role.
+    User must be member of the target organization (unless SUPER_ADMIN).
     """
-    # Check if slug already exists (unique constraint)
-    existing = await db.execute(
-        select(Exhibition).where(Exhibition.slug == exhibition_in.slug)
-    )
-    if existing.scalar_one_or_none():
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail=f"Exhibition with slug '{exhibition_in.slug}' already exists",
-        )
-
-    # Create entity from validated data
-    # model_dump() is like $form->getData() in Symfony
-    exhibition = Exhibition(**exhibition_in.model_dump())
-    db.add(exhibition)
-    await db.flush()  # Get the ID without committing (commit is done by get_db)
-    await db.refresh(exhibition)  # Reload to get server defaults (created_at, etc.)
-
-    return exhibition
+    service = ExhibitionService(db)
+    return await service.create_exhibition(exhibition_in, current_user)
 
 
 @router.get("/{exhibition_id}", response_model=ExhibitionRead)
@@ -79,11 +64,7 @@ async def get_exhibition(
     exhibition_id: UUID,
     db: AsyncSession = Depends(get_db),
 ):
-    """
-    Retrieve a single exhibition by ID.
-
-    Similar to: ExhibitionController::show() with ParamConverter in Symfony.
-    """
+    """Retrieve a single exhibition by ID."""
     result = await db.execute(
         select(Exhibition).where(Exhibition.id == exhibition_id)
     )
@@ -102,13 +83,13 @@ async def get_exhibition(
 async def update_exhibition(
     exhibition_id: UUID,
     exhibition_in: ExhibitionUpdate,
+    current_user: User = Depends(require_exhibition_organizer),
     db: AsyncSession = Depends(get_db),
 ):
     """
     Update an existing exhibition.
 
-    Similar to: ExhibitionController::update() in Symfony.
-    Only provided fields are updated (PATCH-like behavior).
+    Requires: Exhibition organizer or SUPER_ADMIN.
     """
     result = await db.execute(
         select(Exhibition).where(Exhibition.id == exhibition_id)
@@ -121,8 +102,6 @@ async def update_exhibition(
             detail="Exhibition not found",
         )
 
-    # Update only provided fields (exclude_unset=True)
-    # Similar to $form->submit($data, false) in Symfony
     update_data = exhibition_in.model_dump(exclude_unset=True)
     for field, value in update_data.items():
         setattr(exhibition, field, value)
@@ -136,13 +115,13 @@ async def update_exhibition(
 @router.delete("/{exhibition_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_exhibition(
     exhibition_id: UUID,
+    current_user: User = Depends(require_exhibition_organizer),
     db: AsyncSession = Depends(get_db),
 ):
     """
     Delete an exhibition.
 
-    Similar to: ExhibitionController::destroy() in Symfony.
-    Returns 204 No Content on success.
+    Requires: Exhibition organizer or SUPER_ADMIN.
     """
     result = await db.execute(
         select(Exhibition).where(Exhibition.id == exhibition_id)
@@ -156,4 +135,81 @@ async def delete_exhibition(
         )
 
     await db.delete(exhibition)
-    # No return for 204
+
+
+# =============================================================================
+# TimeSlot Endpoints
+# =============================================================================
+
+@router.get("/{exhibition_id}/slots", response_model=List[TimeSlotRead])
+async def list_time_slots(
+    exhibition_id: UUID,
+    db: AsyncSession = Depends(get_db),
+):
+    """List all time slots for an exhibition."""
+    # Check exhibition exists
+    result = await db.execute(
+        select(Exhibition).where(Exhibition.id == exhibition_id)
+    )
+    if not result.scalar_one_or_none():
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Exhibition not found",
+        )
+
+    slots = await db.execute(
+        select(TimeSlot)
+        .where(TimeSlot.exhibition_id == exhibition_id)
+        .order_by(TimeSlot.start_time)
+    )
+    return slots.scalars().all()
+
+
+@router.post(
+    "/{exhibition_id}/slots",
+    response_model=TimeSlotRead,
+    status_code=status.HTTP_201_CREATED,
+)
+async def create_time_slot(
+    exhibition_id: UUID,
+    slot_in: TimeSlotCreate,
+    current_user: User = Depends(require_exhibition_organizer),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Create a time slot for an exhibition.
+
+    Validates:
+    - Slot is within exhibition dates
+    - max_duration_minutes <= slot duration
+    - buffer_time_minutes >= 0
+
+    Requires: Exhibition organizer or SUPER_ADMIN.
+    """
+    service = ExhibitionService(db)
+    return await service.create_time_slot(exhibition_id, slot_in)
+
+
+# =============================================================================
+# Dashboard Endpoint
+# =============================================================================
+
+@router.get("/{exhibition_id}/status", response_model=ExhibitionDashboard)
+async def get_exhibition_status(
+    exhibition_id: UUID,
+    current_user: User = Depends(require_exhibition_organizer),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Get dashboard statistics for an exhibition.
+
+    Returns:
+    - Zone and table counts
+    - Table occupation rates
+    - Session counts by status
+    - Total bookings
+
+    Requires: Exhibition organizer or SUPER_ADMIN.
+    """
+    service = ExhibitionService(db)
+    return await service.get_exhibition_dashboard(exhibition_id)
