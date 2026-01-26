@@ -15,6 +15,29 @@ To provide a universal event management ecosystem for all forms of tabletop gami
 
 ## 2. Functional Scope (The WHAT): JOB STORIES
 
+### EPIC 0: Global Administration (Super Admin)
+*Objective: Manage the platform's multi-event lifecycle and global user permissions.*
+
+* **JS.01 - Multi-Event Orchestration**
+    * **When** I am a Global Administrator (Super Admin),
+    * **I want** to create a new Event entity with its specific start and end dates,
+    * **so that** I can prepare several conventions or editions on the same platform instance without data overlap.
+
+* **JS.02 - User Promotion & Role Management**
+    * **When** I am a Super Admin,
+    * **I want** to promote a standard user to the rank of "Organizer" or "Partner",
+    * **so that** I can delegate the management of a specific event or a specific zone to the right person.
+
+* **JS.03 - Global Event Configuration**
+    * **When** creating or editing an event,
+    * **I want** to define its global settings (Timezone, Language, Registration visibility),
+    * **so that** I can control the public state and the regional context of the convention.
+
+* **JS.04 - Instance Oversight**
+    * **When** I am logged into the Super Admin portal,
+    * **I want** to see an overview of all active and past events,
+    * **so that** I can monitor the platform's global usage and performance.
+
 ### EPIC A: The Organizer's Setup
 
 * **JS.A1 - Physical Topology**
