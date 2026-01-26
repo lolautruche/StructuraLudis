@@ -21,12 +21,14 @@ class ExhibitionBase(BaseModel):
     location_name: Optional[str] = Field(None, max_length=255)
     city: Optional[str] = Field(None, max_length=100)
     country_code: Optional[str] = Field(None, min_length=2, max_length=2)
+    timezone: str = Field(default="UTC", max_length=50)
+    grace_period_minutes: int = Field(default=15, ge=0, le=120)
 
 
 class ExhibitionCreate(ExhibitionBase):
     """Schema for creating a new exhibition."""
     organization_id: UUID
-    slug: str = Field(..., min_length=1, max_length=100)
+    slug: str = Field(..., min_length=1, max_length=100, pattern=r"^[a-z0-9-]+$")
 
 
 class ExhibitionUpdate(BaseModel):
@@ -38,6 +40,8 @@ class ExhibitionUpdate(BaseModel):
     location_name: Optional[str] = Field(None, max_length=255)
     city: Optional[str] = Field(None, max_length=100)
     country_code: Optional[str] = Field(None, min_length=2, max_length=2)
+    timezone: Optional[str] = Field(None, max_length=50)
+    grace_period_minutes: Optional[int] = Field(None, ge=0, le=120)
     status: Optional[ExhibitionStatus] = None
 
 

@@ -52,10 +52,10 @@ async def db_session(test_engine) -> AsyncGenerator[AsyncSession, None]:
     # Clean up tables after each test
     async with test_engine.begin() as conn:
         # Truncate in correct order (respecting FKs)
-        for table in ["table_participants", "game_tables", "time_slots",
-                      "games", "game_categories", "user_group_memberships",
-                      "group_permissions", "user_groups", "exhibitions",
-                      "media", "audit_logs", "users", "organizations"]:
+        for table in ["bookings", "game_sessions", "physical_tables", "zones",
+                      "time_slots", "games", "game_categories",
+                      "user_group_memberships", "group_permissions", "user_groups",
+                      "exhibitions", "media", "audit_logs", "users", "organizations"]:
             try:
                 await conn.execute(text(f"TRUNCATE TABLE {table} CASCADE"))
             except Exception:

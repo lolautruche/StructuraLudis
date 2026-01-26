@@ -11,7 +11,7 @@ from sqlalchemy import Boolean, DateTime, ForeignKey, String, func
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.domain.shared.entity import Base, TimestampMixin, GroupRole
+from app.domain.shared.entity import Base, TimestampMixin, GroupRole, GlobalRole
 
 if TYPE_CHECKING:
     from app.domain.organization.entity import UserGroup
@@ -28,6 +28,12 @@ class User(Base, TimestampMixin):
     email: Mapped[str] = mapped_column(String(255), unique=True, index=True)
     hashed_password: Mapped[str] = mapped_column(String(255))
     full_name: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+
+    # Platform-wide role (Issue #12)
+    global_role: Mapped[GlobalRole] = mapped_column(
+        String(20), default=GlobalRole.USER
+    )
+
     timezone: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
     locale: Mapped[str] = mapped_column(String(10), default="en")
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)

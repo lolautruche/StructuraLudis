@@ -1,7 +1,7 @@
 """
 Game domain entities.
 
-Contains: GameCategory, Game, GameTable, TableParticipant
+Contains: GameCategory, Game, GameSession, Booking
 """
 from datetime import datetime
 from typing import List, Optional, TYPE_CHECKING
@@ -15,21 +15,19 @@ from app.domain.shared.entity import (
     Base,
     TimestampMixin,
     GameComplexity,
-    GameTableStatus,
+    SessionStatus,
     ParticipantRole,
-    ParticipantStatus,
+    BookingStatus,
 )
 
 if TYPE_CHECKING:
-    from app.domain.exhibition.entity import Exhibition, TimeSlot
+    from app.domain.exhibition.entity import Exhibition, TimeSlot, PhysicalTable
     from app.domain.organization.entity import UserGroup
     from app.domain.user.entity import User
 
 
 class GameCategory(Base):
-    """
-    Category of game (RPG, Board Game, Card Game, LARP, etc.).
-    """
+    """Category of game (RPG, Board Game, Card Game, LARP, etc.)."""
     __tablename__ = "game_categories"
 
     id: Mapped[uuid.UUID] = mapped_column(
@@ -44,7 +42,7 @@ class GameCategory(Base):
 
 class Game(Base, TimestampMixin):
     """
-    A game that can be played at tables.
+    A game that can be played at sessions.
 
     The external_provider_id allows syncing with external catalogs like GROG.
     """
@@ -68,19 +66,22 @@ class Game(Base, TimestampMixin):
 
     # Relationships
     category: Mapped["GameCategory"] = relationship(back_populates="games")
-    game_tables: Mapped[List["GameTable"]] = relationship(back_populates="game")
+    game_sessions: Mapped[List["GameSession"]] = relationship(back_populates="game")
 
 
-class GameTable(Base, TimestampMixin):
+class GameSession(Base, TimestampMixin):
     """
     A scheduled game session at an exhibition.
+
+    Distinct from PhysicalTable: this is the logical session (game + time + participants),
+    while PhysicalTable is the physical resource where it takes place.
 
     Business rules:
     - Must be approved by a MODERATOR or ADMIN of the providing group
     - Participants must meet min_age requirement
     - No schedule conflicts for participants within the same exhibition
     """
-    __tablename__ = "game_tables"
+    __tablename__ = "game_sessions"
 
     id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
@@ -94,6 +95,13 @@ class GameTable(Base, TimestampMixin):
     game_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("games.id", ondelete="RESTRICT")
     )
+
+    # Physical resource (Issue #2 - can be assigned later)
+    physical_table_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+        ForeignKey("physical_tables.id", ondelete="SET NULL"), nullable=True
+    )
+
+    # Ownership
     provided_by_group_id: Mapped[Optional[uuid.UUID]] = mapped_column(
         ForeignKey("user_groups.id", ondelete="SET NULL"), nullable=True
     )
@@ -101,53 +109,86 @@ class GameTable(Base, TimestampMixin):
         ForeignKey("users.id", ondelete="RESTRICT")
     )
 
+    # Session details
     title: Mapped[str] = mapped_column(String(255))
     description: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     language: Mapped[str] = mapped_column(String(10), default="en")
     min_age: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     max_players_count: Mapped[int] = mapped_column(Integer)
-    status: Mapped[GameTableStatus] = mapped_column(
-        String(20), default=GameTableStatus.PENDING
-    )
-    rejection_reason: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+
+    # Safety tools (Issue #4)
     safety_tools: Mapped[Optional[List[str]]] = mapped_column(JSONB, nullable=True)
     is_accessible_disability: Mapped[bool] = mapped_column(Boolean, default=False)
 
+    # Workflow status (Issue #4)
+    status: Mapped[SessionStatus] = mapped_column(
+        String(20), default=SessionStatus.DRAFT
+    )
+    rejection_reason: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+
+    # Scheduling (Issue #1)
+    scheduled_start: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    scheduled_end: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+
+    # Check-in tracking (Issue #6)
+    gm_checked_in_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    actual_start: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    actual_end: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+
     # Relationships
-    exhibition: Mapped["Exhibition"] = relationship(back_populates="game_tables")
-    time_slot: Mapped["TimeSlot"] = relationship(back_populates="game_tables")
-    game: Mapped["Game"] = relationship(back_populates="game_tables")
+    exhibition: Mapped["Exhibition"] = relationship(back_populates="game_sessions")
+    time_slot: Mapped["TimeSlot"] = relationship(back_populates="game_sessions")
+    game: Mapped["Game"] = relationship(back_populates="game_sessions")
+    physical_table: Mapped[Optional["PhysicalTable"]] = relationship(
+        back_populates="game_sessions"
+    )
     provided_by_group: Mapped[Optional["UserGroup"]] = relationship()
     created_by_user: Mapped["User"] = relationship()
-    participants: Mapped[List["TableParticipant"]] = relationship(
-        back_populates="game_table", cascade="all, delete-orphan"
+    bookings: Mapped[List["Booking"]] = relationship(
+        back_populates="game_session", cascade="all, delete-orphan"
     )
 
 
-class TableParticipant(Base):
+class Booking(Base):
     """
-    A user registered to participate in a game table.
+    A user's registration/booking for a game session.
+
+    Tracks the full lifecycle: registration -> check-in -> attendance/no-show.
     """
-    __tablename__ = "table_participants"
+    __tablename__ = "bookings"
 
     id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
     )
-    game_table_id: Mapped[uuid.UUID] = mapped_column(
-        ForeignKey("game_tables.id", ondelete="CASCADE")
+    game_session_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("game_sessions.id", ondelete="CASCADE")
     )
     user_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("users.id", ondelete="CASCADE")
     )
+
     role: Mapped[ParticipantRole] = mapped_column(String(20))
-    status: Mapped[ParticipantStatus] = mapped_column(String(20))
+    status: Mapped[BookingStatus] = mapped_column(
+        String(20), default=BookingStatus.PENDING
+    )
+
+    # Timestamps
     registered_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
+    )
+    checked_in_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True), nullable=True
     )
     updated_at: Mapped[Optional[datetime]] = mapped_column(
         DateTime(timezone=True), onupdate=func.now(), nullable=True
     )
 
     # Relationships
-    game_table: Mapped["GameTable"] = relationship(back_populates="participants")
+    game_session: Mapped["GameSession"] = relationship(back_populates="bookings")
     user: Mapped["User"] = relationship()

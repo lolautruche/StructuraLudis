@@ -1,27 +1,6 @@
 erDiagram
-    ORGANIZATION ||--o{ USER_GROUP : "owns"
-    ORGANIZATION ||--o{ EXHIBITION : "organizes"
-    
-    USER ||--o{ USER_GROUP_MEMBERSHIP : "belongs to"
-    USER_GROUP ||--o{ USER_GROUP_MEMBERSHIP : "has members"
-    USER_GROUP ||--o{ GROUP_PERMISSION : "defines"
-    
-    EXHIBITION ||--o{ TIME_SLOT : "segments"
-    EXHIBITION ||--o{ GAME_TABLE : "hosts"
-    
-    USER_GROUP ||--o{ GAME_TABLE : "manages/provides"
-    
-    GAME_TABLE }o--|| GAME : "plays"
-    GAME_TABLE ||--o{ TABLE_PARTICIPANT : "roster"
-    GAME_TABLE ||--o{ TIME_SLOT : "scheduled at"
-    
-    GAME }o--|| GAME_CATEGORY : "type"
-    
-    USER ||--o{ MEDIA : "owner"
-    EXHIBITION ||--o{ MEDIA : "banner/logo"
-    GAME ||--o{ MEDIA : "illustration"
-
-    ORGANIZATION {
+    %% ===== ORGANIZATION DOMAIN =====
+    Organization {
         uuid id PK
         string name
         string slug UK
@@ -31,145 +10,204 @@ erDiagram
         datetime updated_at
     }
 
-    USER {
+    UserGroup {
+        uuid id PK
+        uuid organization_id FK
+        string name
+        enum type "STAFF|ASSOCIATION|EXHIBITOR|PLAYER_CLUB"
+        boolean is_public
+        datetime created_at
+        datetime updated_at
+    }
+
+    GroupPermission {
+        uuid id PK
+        uuid user_group_id FK
+        string resource
+        string action
+    }
+
+    %% ===== USER DOMAIN =====
+    User {
         uuid id PK
         string email UK
         string hashed_password
         string full_name
+        enum global_role "SUPER_ADMIN|ORGANIZER|PARTNER|USER"
         string timezone
-        string locale "default: 'en'"
+        string locale
         boolean is_active
         datetime last_login
         datetime created_at
         datetime updated_at
     }
 
-    USER_GROUP {
-        uuid id PK
-        uuid organization_id FK
-        string name "e.g. 'Staff', 'Exhibitor: Black Book Editions'"
-        string type "STAFF, ASSOCIATION, EXHIBITOR, PLAYER_CLUB"
-        boolean is_public "Can others see this group?"
-        datetime created_at
-        datetime updated_at
-    }
-
-    USER_GROUP_MEMBERSHIP {
+    UserGroupMembership {
         uuid id PK
         uuid user_id FK
         uuid user_group_id FK
-        string group_role "OWNER, ADMIN, MEMBER"
+        enum group_role "OWNER|ADMIN|MEMBER"
         datetime joined_at
     }
 
-    GROUP_PERMISSION {
-        uuid id PK
-        uuid user_group_id FK
-        string resource "e.g. 'table', 'exhibition', 'media'"
-        string action "e.g. 'create', 'approve', 'delete_any'"
-    }
-
-    EXHIBITION {
+    %% ===== EXHIBITION DOMAIN =====
+    Exhibition {
         uuid id PK
         uuid organization_id FK
         string title
         string slug UK
-        string description
+        text description
         datetime start_date
         datetime end_date
+        string timezone
+        int grace_period_minutes
         string location_name
         string address
         string city
-        string country_code "ISO 3166-1"
-        jsonb settings "Theme, social links, age policy"
-        string status "DRAFT, PUBLISHED, ARCHIVED"
+        string country_code
+        jsonb settings
+        enum status "DRAFT|PUBLISHED|ARCHIVED"
         datetime created_at
         datetime updated_at
     }
 
-    TIME_SLOT {
+    TimeSlot {
         uuid id PK
         uuid exhibition_id FK
         string name
         datetime start_time
         datetime end_time
-        int capacity_bonus "Global modifier for available space"
+        int max_duration_minutes
+        int buffer_time_minutes
         datetime created_at
         datetime updated_at
     }
 
-    GAME_CATEGORY {
+    Zone {
         uuid id PK
-        string name "RPG, Board Game, Card Game, LARP"
+        uuid exhibition_id FK
+        uuid delegated_to_group_id FK "nullable - Partner delegation"
+        string name
+        text description
+        enum type "RPG|BOARD_GAME|WARGAME|TCG|DEMO|MIXED"
+        datetime created_at
+        datetime updated_at
+    }
+
+    PhysicalTable {
+        uuid id PK
+        uuid zone_id FK
+        string label
+        int capacity
+        enum status "AVAILABLE|OCCUPIED|RESERVED|MAINTENANCE"
+        datetime created_at
+        datetime updated_at
+    }
+
+    %% ===== GAME DOMAIN =====
+    GameCategory {
+        uuid id PK
+        string name
         string slug UK
     }
 
-    GAME {
+    Game {
         uuid id PK
         uuid category_id FK
         string title
-        string external_provider_id "e.g. GROG-123"
+        string external_provider_id "GROG sync"
         string publisher
-        string description
-        string complexity "BEGINNER, INTERMEDIATE, EXPERT"
+        text description
+        enum complexity "BEGINNER|INTERMEDIATE|EXPERT"
         int min_players
         int max_players
         datetime created_at
         datetime updated_at
     }
 
-    GAME_TABLE {
+    GameSession {
         uuid id PK
         uuid exhibition_id FK
         uuid time_slot_id FK
+        uuid physical_table_id FK "nullable"
         uuid game_id FK
-        uuid provided_by_group_id FK
+        uuid provided_by_group_id FK "nullable - Partner"
         uuid created_by_user_id FK
         string title
-        string description
-        string language "e.g. 'en', 'fr'"
+        text description
+        string language
         int min_age
         int max_players_count
-        string status "PENDING, APPROVED, REJECTED, CANCELLED"
-        string rejection_reason
-        jsonb safety_tools "['X-Card', 'Lines & Veils', 'Open Table']"
+        jsonb safety_tools "X_CARD|LINES_AND_VEILS|..."
         boolean is_accessible_disability
+        enum status "DRAFT|PENDING_MODERATION|VALIDATED|..."
+        string rejection_reason
+        datetime scheduled_start
+        datetime scheduled_end
+        datetime gm_checked_in_at
+        datetime actual_start
+        datetime actual_end
         datetime created_at
         datetime updated_at
     }
 
-    TABLE_PARTICIPANT {
+    Booking {
         uuid id PK
-        uuid game_table_id FK
+        uuid game_session_id FK
         uuid user_id FK
-        string role "GM, PLAYER, ASSISTANT, SPECTATOR"
-        string status "REGISTERED, WAITING_LIST, CANCELLED"
+        enum role "GM|PLAYER|ASSISTANT|SPECTATOR"
+        enum status "PENDING|CONFIRMED|CHECKED_IN|ATTENDED|NO_SHOW|..."
+        datetime checked_in_at
         datetime registered_at
         datetime updated_at
     }
 
-    MEDIA {
+    %% ===== MEDIA DOMAIN =====
+    Media {
         uuid id PK
         uuid uploaded_by_user_id FK
-        string entity_type "USER, EXHIBITION, GAME, ORGANIZATION"
-        uuid entity_id
-        string storage_key "S3 path"
-        string file_name
-        string mime_type
+        string filename
+        string content_type
+        string storage_path
         int file_size
-        string purpose "AVATAR, BANNER, COVER"
         datetime created_at
     }
 
-    AUDIT_LOG {
+    AuditLog {
         uuid id PK
-        uuid user_id FK
-        string action "CREATE, UPDATE, DELETE, LOGIN"
         string entity_type
         uuid entity_id
-        jsonb old_data
-        jsonb new_data
-        string ip_address
-        string user_agent
+        string action
+        uuid user_id FK
+        jsonb changes
         datetime created_at
     }
+
+    %% ===== RELATIONSHIPS =====
+    Organization ||--o{ UserGroup : "has"
+    Organization ||--o{ Exhibition : "organizes"
+
+    UserGroup ||--o{ GroupPermission : "has"
+    UserGroup ||--o{ UserGroupMembership : "has members"
+    UserGroup ||--o{ Zone : "manages (delegation)"
+    UserGroup ||--o{ GameSession : "provides"
+
+    User ||--o{ UserGroupMembership : "belongs to"
+    User ||--o{ GameSession : "creates"
+    User ||--o{ Booking : "books"
+    User ||--o{ Media : "uploads"
+
+    Exhibition ||--o{ TimeSlot : "has"
+    Exhibition ||--o{ Zone : "contains"
+    Exhibition ||--o{ GameSession : "hosts"
+
+    Zone ||--o{ PhysicalTable : "contains"
+
+    PhysicalTable ||--o{ GameSession : "hosts"
+
+    TimeSlot ||--o{ GameSession : "schedules"
+
+    GameCategory ||--o{ Game : "categorizes"
+    Game ||--o{ GameSession : "played at"
+
+    GameSession ||--o{ Booking : "has"

@@ -1,7 +1,5 @@
 """
 Shared domain entities: Base class, mixins, and enums.
-
-Analogous to a Doctrine MappedSuperclass or Trait in Symfony.
 """
 import uuid
 from datetime import datetime
@@ -19,11 +17,7 @@ class Base(DeclarativeBase):
 
 
 class TimestampMixin:
-    """
-    Mixin providing created_at and updated_at timestamps.
-
-    Similar to Gedmo Timestampable in Symfony/Doctrine.
-    """
+    """Mixin providing created_at and updated_at timestamps."""
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )
@@ -43,7 +37,20 @@ class UUIDMixin:
 # Enums
 # ============================================================================
 
+# --- Platform-wide ---
+
+class GlobalRole(str, Enum):
+    """Platform-wide roles for users (Issue #12)."""
+    SUPER_ADMIN = "SUPER_ADMIN"
+    ORGANIZER = "ORGANIZER"
+    PARTNER = "PARTNER"
+    USER = "USER"
+
+
+# --- Organization & Groups ---
+
 class UserGroupType(str, Enum):
+    """Type of user group within an organization."""
     STAFF = "STAFF"
     ASSOCIATION = "ASSOCIATION"
     EXHIBITOR = "EXHIBITOR"
@@ -51,38 +58,86 @@ class UserGroupType(str, Enum):
 
 
 class GroupRole(str, Enum):
+    """Role of a user within a group."""
     OWNER = "OWNER"
     ADMIN = "ADMIN"
     MEMBER = "MEMBER"
 
 
+# --- Exhibition ---
+
 class ExhibitionStatus(str, Enum):
+    """Publication status of an exhibition."""
     DRAFT = "DRAFT"
     PUBLISHED = "PUBLISHED"
     ARCHIVED = "ARCHIVED"
 
 
+# --- Physical Topology ---
+
+class ZoneType(str, Enum):
+    """Type of physical zone (Issue #2)."""
+    RPG = "RPG"
+    BOARD_GAME = "BOARD_GAME"
+    WARGAME = "WARGAME"
+    TCG = "TCG"
+    DEMO = "DEMO"
+    MIXED = "MIXED"
+
+
+class PhysicalTableStatus(str, Enum):
+    """Availability status of a physical table."""
+    AVAILABLE = "AVAILABLE"
+    OCCUPIED = "OCCUPIED"
+    RESERVED = "RESERVED"
+    MAINTENANCE = "MAINTENANCE"
+
+
+# --- Game & Sessions ---
+
 class GameComplexity(str, Enum):
+    """Complexity level of a game."""
     BEGINNER = "BEGINNER"
     INTERMEDIATE = "INTERMEDIATE"
     EXPERT = "EXPERT"
 
 
-class GameTableStatus(str, Enum):
-    PENDING = "PENDING"
-    APPROVED = "APPROVED"
+class SafetyTool(str, Enum):
+    """Safety tools for game sessions (Issue #4)."""
+    X_CARD = "X_CARD"
+    LINES_AND_VEILS = "LINES_AND_VEILS"
+    OPEN_DOOR = "OPEN_DOOR"
+    CONSENT_CHECKLIST = "CONSENT_CHECKLIST"
+    SCRIPT_CHANGE = "SCRIPT_CHANGE"
+
+
+class SessionStatus(str, Enum):
+    """Workflow status for game sessions (Issue #4)."""
+    DRAFT = "DRAFT"
+    PENDING_MODERATION = "PENDING_MODERATION"
+    VALIDATED = "VALIDATED"
     REJECTED = "REJECTED"
+    IN_PROGRESS = "IN_PROGRESS"
+    FINISHED = "FINISHED"
     CANCELLED = "CANCELLED"
 
 
+# --- Bookings ---
+
 class ParticipantRole(str, Enum):
+    """Role of a participant in a game session."""
     GM = "GM"
     PLAYER = "PLAYER"
     ASSISTANT = "ASSISTANT"
     SPECTATOR = "SPECTATOR"
 
 
-class ParticipantStatus(str, Enum):
-    REGISTERED = "REGISTERED"
+class BookingStatus(str, Enum):
+    """Status of a booking/registration (Issue #5)."""
+    PENDING = "PENDING"
+    CONFIRMED = "CONFIRMED"
     WAITING_LIST = "WAITING_LIST"
+    CHECKED_IN = "CHECKED_IN"
+    ATTENDED = "ATTENDED"
+    NO_SHOW = "NO_SHOW"
     CANCELLED = "CANCELLED"
