@@ -3,11 +3,12 @@ GameSession service layer.
 
 Contains business logic for game sessions, bookings, and workflow.
 """
+from datetime import timedelta
 from typing import List, Optional
 from uuid import UUID
 
 from fastapi import HTTPException, status
-from sqlalchemy import select, func
+from sqlalchemy import select, func, and_, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domain.game.entity import GameSession, Game, Booking
@@ -488,3 +489,107 @@ class GameSessionService:
         if next_in_line:
             next_in_line.status = BookingStatus.CONFIRMED
             await self.db.flush()
+
+    async def _check_table_collision(
+        self,
+        table_id: UUID,
+        scheduled_start,
+        scheduled_end,
+        buffer_minutes: int,
+        exclude_session_id: Optional[UUID] = None,
+    ) -> Optional[GameSession]:
+        """
+        Check if assigning a table would cause a collision.
+
+        A collision occurs when another session on the same table
+        overlaps with the given time range (including buffer time).
+
+        Returns the conflicting session if found, None otherwise.
+        """
+        # Add buffer to the time range
+        buffered_start = scheduled_start - timedelta(minutes=buffer_minutes)
+        buffered_end = scheduled_end + timedelta(minutes=buffer_minutes)
+
+        # Find overlapping sessions on the same table
+        query = select(GameSession).where(
+            GameSession.physical_table_id == table_id,
+            GameSession.status.in_([
+                SessionStatus.VALIDATED,
+                SessionStatus.IN_PROGRESS,
+            ]),
+            # Overlap check: sessions overlap if one starts before the other ends
+            # (A.start < B.end) AND (A.end > B.start)
+            GameSession.scheduled_start < buffered_end,
+            GameSession.scheduled_end > buffered_start,
+        )
+
+        if exclude_session_id:
+            query = query.where(GameSession.id != exclude_session_id)
+
+        result = await self.db.execute(query)
+        return result.scalar_one_or_none()
+
+    async def assign_table(
+        self,
+        session_id: UUID,
+        table_id: UUID,
+        current_user: User,
+    ) -> GameSession:
+        """
+        Assign a physical table to a session.
+
+        Validates:
+        - Session exists and is validated
+        - Table exists
+        - No collision with other sessions (respecting buffer time)
+        """
+        session = await self._get_session(session_id)
+        if not session:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Game session not found",
+            )
+
+        # Check permission
+        if current_user.global_role not in [GlobalRole.SUPER_ADMIN, GlobalRole.ORGANIZER]:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Only organizers can assign tables",
+            )
+
+        # Check table exists
+        result = await self.db.execute(
+            select(PhysicalTable).where(PhysicalTable.id == table_id)
+        )
+        table = result.scalar_one_or_none()
+        if not table:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Physical table not found",
+            )
+
+        # Get buffer time from time slot
+        time_slot = await self._get_time_slot(session.time_slot_id)
+        buffer_minutes = time_slot.buffer_time_minutes if time_slot else 0
+
+        # Check for collisions
+        conflicting = await self._check_table_collision(
+            table_id=table_id,
+            scheduled_start=session.scheduled_start,
+            scheduled_end=session.scheduled_end,
+            buffer_minutes=buffer_minutes,
+            exclude_session_id=session_id,
+        )
+
+        if conflicting:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=f"Table collision: another session '{conflicting.title}' "
+                       f"is scheduled from {conflicting.scheduled_start} to {conflicting.scheduled_end}",
+            )
+
+        session.physical_table_id = table_id
+        await self.db.flush()
+        await self.db.refresh(session)
+
+        return session

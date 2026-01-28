@@ -594,3 +594,300 @@ class TestDeleteSession:
         response = await auth_client.delete(f"/api/v1/sessions/{session_id}")
 
         assert response.status_code == 400
+
+
+class TestTableAssignment:
+    """Tests for table assignment and collision detection."""
+
+    async def _create_validated_session(
+        self,
+        auth_client: AsyncClient,
+        exhibition_id: str,
+        time_slot_id: str,
+        game_id: str,
+        start: str,
+        end: str,
+        title: str = "Test Session",
+    ) -> str:
+        """Helper to create a validated session."""
+        payload = {
+            "title": title,
+            "exhibition_id": exhibition_id,
+            "time_slot_id": time_slot_id,
+            "game_id": game_id,
+            "max_players_count": 4,
+            "scheduled_start": start,
+            "scheduled_end": end,
+        }
+        create_resp = await auth_client.post("/api/v1/sessions/", json=payload)
+        session_id = create_resp.json()["id"]
+
+        await auth_client.post(f"/api/v1/sessions/{session_id}/submit")
+        await auth_client.post(
+            f"/api/v1/sessions/{session_id}/moderate",
+            json={"action": "approve"},
+        )
+
+        return session_id
+
+    async def test_assign_table_success(
+        self,
+        auth_client: AsyncClient,
+        test_exhibition_with_slot: dict,
+        test_game: dict,
+    ):
+        """Assign table to session without collision succeeds."""
+        # Create zone and table
+        zone_payload = {
+            "name": "Test Zone",
+            "exhibition_id": test_exhibition_with_slot["exhibition_id"],
+        }
+        zone_resp = await auth_client.post("/api/v1/zones/", json=zone_payload)
+        zone_id = zone_resp.json()["id"]
+
+        tables_resp = await auth_client.post(
+            f"/api/v1/zones/{zone_id}/batch-tables",
+            json={"prefix": "T", "count": 1},
+        )
+        table_id = tables_resp.json()["tables"][0]["id"]
+
+        # Create validated session
+        session_id = await self._create_validated_session(
+            auth_client,
+            test_exhibition_with_slot["exhibition_id"],
+            test_exhibition_with_slot["time_slot_id"],
+            test_game["id"],
+            "2026-07-01T14:00:00Z",
+            "2026-07-01T16:00:00Z",
+        )
+
+        # Assign table
+        response = await auth_client.post(
+            f"/api/v1/sessions/{session_id}/assign-table",
+            params={"table_id": table_id},
+        )
+
+        assert response.status_code == 200
+        assert response.json()["physical_table_id"] == table_id
+
+    async def test_assign_table_collision(
+        self,
+        auth_client: AsyncClient,
+        test_exhibition_with_slot: dict,
+        test_game: dict,
+    ):
+        """Assign table with collision returns 409."""
+        # Create zone and table
+        zone_payload = {
+            "name": "Collision Zone",
+            "exhibition_id": test_exhibition_with_slot["exhibition_id"],
+        }
+        zone_resp = await auth_client.post("/api/v1/zones/", json=zone_payload)
+        zone_id = zone_resp.json()["id"]
+
+        tables_resp = await auth_client.post(
+            f"/api/v1/zones/{zone_id}/batch-tables",
+            json={"prefix": "T", "count": 1},
+        )
+        table_id = tables_resp.json()["tables"][0]["id"]
+
+        # Create first session and assign table
+        session1_id = await self._create_validated_session(
+            auth_client,
+            test_exhibition_with_slot["exhibition_id"],
+            test_exhibition_with_slot["time_slot_id"],
+            test_game["id"],
+            "2026-07-01T14:00:00Z",
+            "2026-07-01T16:00:00Z",
+            "Session 1",
+        )
+        await auth_client.post(
+            f"/api/v1/sessions/{session1_id}/assign-table",
+            params={"table_id": table_id},
+        )
+
+        # Create second overlapping session
+        session2_id = await self._create_validated_session(
+            auth_client,
+            test_exhibition_with_slot["exhibition_id"],
+            test_exhibition_with_slot["time_slot_id"],
+            test_game["id"],
+            "2026-07-01T15:00:00Z",  # Overlaps with session 1
+            "2026-07-01T17:00:00Z",
+            "Session 2",
+        )
+
+        # Try to assign same table - should fail
+        response = await auth_client.post(
+            f"/api/v1/sessions/{session2_id}/assign-table",
+            params={"table_id": table_id},
+        )
+
+        assert response.status_code == 409
+        assert "collision" in response.json()["detail"].lower()
+
+    async def test_assign_table_with_buffer(
+        self,
+        auth_client: AsyncClient,
+        test_exhibition_with_slot: dict,
+        test_game: dict,
+    ):
+        """Sessions too close (within buffer time) cause collision."""
+        # Create zone and table
+        zone_payload = {
+            "name": "Buffer Zone",
+            "exhibition_id": test_exhibition_with_slot["exhibition_id"],
+        }
+        zone_resp = await auth_client.post("/api/v1/zones/", json=zone_payload)
+        zone_id = zone_resp.json()["id"]
+
+        tables_resp = await auth_client.post(
+            f"/api/v1/zones/{zone_id}/batch-tables",
+            json={"prefix": "T", "count": 1},
+        )
+        table_id = tables_resp.json()["tables"][0]["id"]
+
+        # Create first session 14:00-15:00 and assign table
+        session1_id = await self._create_validated_session(
+            auth_client,
+            test_exhibition_with_slot["exhibition_id"],
+            test_exhibition_with_slot["time_slot_id"],
+            test_game["id"],
+            "2026-07-01T14:00:00Z",
+            "2026-07-01T15:00:00Z",
+            "Early Session",
+        )
+        await auth_client.post(
+            f"/api/v1/sessions/{session1_id}/assign-table",
+            params={"table_id": table_id},
+        )
+
+        # Create second session 15:05-16:00 (only 5 min gap, buffer is 15 min)
+        session2_id = await self._create_validated_session(
+            auth_client,
+            test_exhibition_with_slot["exhibition_id"],
+            test_exhibition_with_slot["time_slot_id"],
+            test_game["id"],
+            "2026-07-01T15:05:00Z",
+            "2026-07-01T16:00:00Z",
+            "Too Close Session",
+        )
+
+        # Try to assign same table - should fail due to buffer
+        response = await auth_client.post(
+            f"/api/v1/sessions/{session2_id}/assign-table",
+            params={"table_id": table_id},
+        )
+
+        assert response.status_code == 409
+
+    async def test_assign_table_respects_buffer(
+        self,
+        auth_client: AsyncClient,
+        test_exhibition_with_slot: dict,
+        test_game: dict,
+    ):
+        """Sessions with enough gap (> buffer time) don't collide."""
+        # Create zone and table
+        zone_payload = {
+            "name": "OK Buffer Zone",
+            "exhibition_id": test_exhibition_with_slot["exhibition_id"],
+        }
+        zone_resp = await auth_client.post("/api/v1/zones/", json=zone_payload)
+        zone_id = zone_resp.json()["id"]
+
+        tables_resp = await auth_client.post(
+            f"/api/v1/zones/{zone_id}/batch-tables",
+            json={"prefix": "T", "count": 1},
+        )
+        table_id = tables_resp.json()["tables"][0]["id"]
+
+        # Create first session 14:00-15:00 and assign table
+        session1_id = await self._create_validated_session(
+            auth_client,
+            test_exhibition_with_slot["exhibition_id"],
+            test_exhibition_with_slot["time_slot_id"],
+            test_game["id"],
+            "2026-07-01T14:00:00Z",
+            "2026-07-01T15:00:00Z",
+            "First Session",
+        )
+        await auth_client.post(
+            f"/api/v1/sessions/{session1_id}/assign-table",
+            params={"table_id": table_id},
+        )
+
+        # Create second session 15:30-16:30 (30 min gap, buffer is 15 min)
+        session2_id = await self._create_validated_session(
+            auth_client,
+            test_exhibition_with_slot["exhibition_id"],
+            test_exhibition_with_slot["time_slot_id"],
+            test_game["id"],
+            "2026-07-01T15:30:00Z",
+            "2026-07-01T16:30:00Z",
+            "Second Session",
+        )
+
+        # Assign same table - should succeed
+        response = await auth_client.post(
+            f"/api/v1/sessions/{session2_id}/assign-table",
+            params={"table_id": table_id},
+        )
+
+        assert response.status_code == 200
+
+    async def test_assign_different_tables_no_collision(
+        self,
+        auth_client: AsyncClient,
+        test_exhibition_with_slot: dict,
+        test_game: dict,
+    ):
+        """Overlapping sessions on different tables don't collide."""
+        # Create zone and two tables
+        zone_payload = {
+            "name": "Multi Table Zone",
+            "exhibition_id": test_exhibition_with_slot["exhibition_id"],
+        }
+        zone_resp = await auth_client.post("/api/v1/zones/", json=zone_payload)
+        zone_id = zone_resp.json()["id"]
+
+        tables_resp = await auth_client.post(
+            f"/api/v1/zones/{zone_id}/batch-tables",
+            json={"prefix": "T", "count": 2},
+        )
+        table1_id = tables_resp.json()["tables"][0]["id"]
+        table2_id = tables_resp.json()["tables"][1]["id"]
+
+        # Create first session and assign to table 1
+        session1_id = await self._create_validated_session(
+            auth_client,
+            test_exhibition_with_slot["exhibition_id"],
+            test_exhibition_with_slot["time_slot_id"],
+            test_game["id"],
+            "2026-07-01T14:00:00Z",
+            "2026-07-01T16:00:00Z",
+            "Session on T1",
+        )
+        await auth_client.post(
+            f"/api/v1/sessions/{session1_id}/assign-table",
+            params={"table_id": table1_id},
+        )
+
+        # Create overlapping session and assign to table 2
+        session2_id = await self._create_validated_session(
+            auth_client,
+            test_exhibition_with_slot["exhibition_id"],
+            test_exhibition_with_slot["time_slot_id"],
+            test_game["id"],
+            "2026-07-01T14:00:00Z",  # Same time as session 1
+            "2026-07-01T16:00:00Z",
+            "Session on T2",
+        )
+
+        # Assign to different table - should succeed
+        response = await auth_client.post(
+            f"/api/v1/sessions/{session2_id}/assign-table",
+            params={"table_id": table2_id},
+        )
+
+        assert response.status_code == 200
