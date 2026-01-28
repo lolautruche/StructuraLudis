@@ -132,6 +132,21 @@ class ZoneCreate(ZoneBase):
     delegated_to_group_id: Optional[UUID] = None
 
 
+class ZoneUpdate(BaseModel):
+    """Schema for updating a zone."""
+    name: Optional[str] = Field(None, min_length=1, max_length=100)
+    description: Optional[str] = None
+    type: Optional[ZoneType] = None
+
+
+class ZoneDelegate(BaseModel):
+    """Schema for delegating a zone to a partner group."""
+    delegated_to_group_id: Optional[UUID] = Field(
+        None,
+        description="UserGroup ID to delegate zone to. Set to null to remove delegation."
+    )
+
+
 class ZoneRead(ZoneBase):
     """Schema for reading a zone."""
     id: UUID

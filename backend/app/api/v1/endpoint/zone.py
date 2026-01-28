@@ -12,8 +12,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.domain.exhibition.entity import Zone, PhysicalTable, Exhibition
+from app.domain.organization.entity import UserGroup
 from app.domain.exhibition.schemas import (
     ZoneCreate,
+    ZoneUpdate,
+    ZoneDelegate,
     ZoneRead,
     PhysicalTableRead,
     BatchTablesCreate,
@@ -21,7 +24,7 @@ from app.domain.exhibition.schemas import (
 )
 from app.domain.user.entity import User
 from app.domain.shared.entity import GlobalRole
-from app.api.deps import get_current_active_user
+from app.api.deps import get_current_active_user, require_zone_manager
 from app.services.exhibition import ExhibitionService
 
 router = APIRouter()
@@ -101,6 +104,89 @@ async def get_zone(
     return zone
 
 
+@router.put("/{zone_id}", response_model=ZoneRead)
+async def update_zone(
+    zone_id: UUID,
+    zone_in: ZoneUpdate,
+    current_user: User = Depends(require_zone_manager),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Update a zone.
+
+    Requires: Zone manager (organizer, SUPER_ADMIN, or delegated partner).
+    """
+    result = await db.execute(
+        select(Zone).where(Zone.id == zone_id)
+    )
+    zone = result.scalar_one_or_none()
+
+    if not zone:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Zone not found",
+        )
+
+    update_data = zone_in.model_dump(exclude_unset=True)
+    for field, value in update_data.items():
+        setattr(zone, field, value)
+
+    await db.flush()
+    await db.refresh(zone)
+
+    return zone
+
+
+@router.post("/{zone_id}/delegate", response_model=ZoneRead)
+async def delegate_zone(
+    zone_id: UUID,
+    delegate_in: ZoneDelegate,
+    current_user: User = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Delegate a zone to a partner group.
+
+    Only exhibition organizers or SUPER_ADMIN can delegate zones.
+    Set delegated_to_group_id to null to remove delegation.
+    """
+    # Get zone
+    result = await db.execute(
+        select(Zone).where(Zone.id == zone_id)
+    )
+    zone = result.scalar_one_or_none()
+
+    if not zone:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Zone not found",
+        )
+
+    # Only organizers can delegate zones
+    if current_user.global_role not in [GlobalRole.SUPER_ADMIN, GlobalRole.ORGANIZER]:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only organizers can delegate zones",
+        )
+
+    # Validate the group exists if specified
+    if delegate_in.delegated_to_group_id:
+        group_result = await db.execute(
+            select(UserGroup).where(UserGroup.id == delegate_in.delegated_to_group_id)
+        )
+        if not group_result.scalar_one_or_none():
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="User group not found",
+            )
+
+    zone.delegated_to_group_id = delegate_in.delegated_to_group_id
+    await db.flush()
+    await db.refresh(zone)
+
+    return zone
+
+
 # =============================================================================
 # Physical Tables
 # =============================================================================
@@ -137,7 +223,7 @@ async def list_tables(
 async def batch_create_tables(
     zone_id: UUID,
     batch_in: BatchTablesCreate,
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_zone_manager),
     db: AsyncSession = Depends(get_db),
 ):
     """
@@ -152,25 +238,6 @@ async def batch_create_tables(
 
     Requires: Zone manager (organizer, SUPER_ADMIN, or delegated partner).
     """
-    # Get zone with exhibition to check permissions
-    result = await db.execute(
-        select(Zone).where(Zone.id == zone_id)
-    )
-    zone = result.scalar_one_or_none()
-
-    if not zone:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Zone not found",
-        )
-
-    # Check permission (simplified - should use require_zone_manager in production)
-    if current_user.global_role not in [GlobalRole.SUPER_ADMIN, GlobalRole.ORGANIZER, GlobalRole.PARTNER]:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="You don't have permission to manage this zone",
-        )
-
     service = ExhibitionService(db)
     tables = await service.batch_create_tables(zone_id, batch_in)
 

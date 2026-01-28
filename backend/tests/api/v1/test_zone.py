@@ -2,7 +2,13 @@
 Tests for Zone API endpoints.
 """
 import pytest
+from uuid import uuid4
 from httpx import AsyncClient
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.domain.user.entity import User, UserGroupMembership
+from app.domain.organization.entity import UserGroup
+from app.domain.shared.entity import GlobalRole, UserGroupType, GroupRole
 
 
 class TestListZones:
@@ -465,4 +471,222 @@ class TestBatchCreateTables:
         )
 
         # Will return 403 (forbidden) because USER role cannot manage zones
+        assert response.status_code == 403
+
+
+class TestZoneDelegation:
+    """Tests for zone delegation to partners."""
+
+    async def test_delegate_zone_success(
+        self, auth_client: AsyncClient, test_organizer: dict
+    ):
+        """Organizer can delegate zone to a group."""
+        # Create exhibition and zone
+        exhibition_payload = {
+            "title": "Delegate Test",
+            "slug": "delegate-test",
+            "start_date": "2026-07-01T08:00:00Z",
+            "end_date": "2026-07-03T22:00:00Z",
+            "organization_id": test_organizer["organization_id"],
+        }
+        create_resp = await auth_client.post("/api/v1/exhibitions/", json=exhibition_payload)
+        exhibition_id = create_resp.json()["id"]
+
+        zone_payload = {"name": "Delegate Zone", "exhibition_id": exhibition_id}
+        zone_resp = await auth_client.post("/api/v1/zones/", json=zone_payload)
+        zone_id = zone_resp.json()["id"]
+        assert zone_resp.json()["delegated_to_group_id"] is None
+
+        # Delegate to a group
+        response = await auth_client.post(
+            f"/api/v1/zones/{zone_id}/delegate",
+            json={"delegated_to_group_id": test_organizer["group_id"]},
+        )
+
+        assert response.status_code == 200
+        assert response.json()["delegated_to_group_id"] == test_organizer["group_id"]
+
+    async def test_remove_delegation(
+        self, auth_client: AsyncClient, test_organizer: dict
+    ):
+        """Organizer can remove zone delegation."""
+        # Create exhibition and delegated zone
+        exhibition_payload = {
+            "title": "Remove Delegate Test",
+            "slug": "remove-delegate-test",
+            "start_date": "2026-07-01T08:00:00Z",
+            "end_date": "2026-07-03T22:00:00Z",
+            "organization_id": test_organizer["organization_id"],
+        }
+        create_resp = await auth_client.post("/api/v1/exhibitions/", json=exhibition_payload)
+        exhibition_id = create_resp.json()["id"]
+
+        zone_payload = {
+            "name": "Remove Delegate Zone",
+            "exhibition_id": exhibition_id,
+            "delegated_to_group_id": test_organizer["group_id"],
+        }
+        zone_resp = await auth_client.post("/api/v1/zones/", json=zone_payload)
+        zone_id = zone_resp.json()["id"]
+
+        # Remove delegation
+        response = await auth_client.post(
+            f"/api/v1/zones/{zone_id}/delegate",
+            json={"delegated_to_group_id": None},
+        )
+
+        assert response.status_code == 200
+        assert response.json()["delegated_to_group_id"] is None
+
+    async def test_delegate_forbidden_for_user(
+        self, auth_client: AsyncClient, client: AsyncClient, test_user: dict, test_organizer: dict
+    ):
+        """Regular user cannot delegate zones."""
+        # Create exhibition and zone
+        exhibition_payload = {
+            "title": "User Delegate Test",
+            "slug": "user-delegate-test",
+            "start_date": "2026-07-01T08:00:00Z",
+            "end_date": "2026-07-03T22:00:00Z",
+            "organization_id": test_organizer["organization_id"],
+        }
+        create_resp = await auth_client.post("/api/v1/exhibitions/", json=exhibition_payload)
+        exhibition_id = create_resp.json()["id"]
+
+        zone_payload = {"name": "User Delegate Zone", "exhibition_id": exhibition_id}
+        zone_resp = await auth_client.post("/api/v1/zones/", json=zone_payload)
+        zone_id = zone_resp.json()["id"]
+
+        # Try to delegate as regular user
+        response = await client.post(
+            f"/api/v1/zones/{zone_id}/delegate",
+            json={"delegated_to_group_id": test_organizer["group_id"]},
+            headers={"X-User-ID": test_user["id"]},
+        )
+
+        assert response.status_code == 403
+
+
+class TestPartnerPermissions:
+    """Tests for partner permissions on delegated zones."""
+
+    @pytest.fixture
+    async def partner_setup(
+        self, auth_client: AsyncClient, db_session: AsyncSession, test_organizer: dict
+    ):
+        """Create a partner user with a delegated zone."""
+        # Create partner user
+        partner_user = User(
+            id=uuid4(),
+            email="partner@example.com",
+            hashed_password="hashed_password",
+            full_name="Partner User",
+            global_role=GlobalRole.PARTNER,
+            is_active=True,
+        )
+        db_session.add(partner_user)
+
+        # Create a user group for the partner
+        partner_group = UserGroup(
+            id=uuid4(),
+            organization_id=test_organizer["organization_id"],
+            name="Partner Club",
+            type=UserGroupType.ASSOCIATION,
+        )
+        db_session.add(partner_group)
+
+        # Add partner to the group as admin
+        membership = UserGroupMembership(
+            id=uuid4(),
+            user_id=partner_user.id,
+            user_group_id=partner_group.id,
+            group_role=GroupRole.ADMIN,
+        )
+        db_session.add(membership)
+        await db_session.commit()
+
+        # Create exhibition and zone delegated to partner
+        exhibition_payload = {
+            "title": "Partner Test",
+            "slug": "partner-test-" + str(uuid4())[:8],
+            "start_date": "2026-07-01T08:00:00Z",
+            "end_date": "2026-07-03T22:00:00Z",
+            "organization_id": test_organizer["organization_id"],
+        }
+        create_resp = await auth_client.post("/api/v1/exhibitions/", json=exhibition_payload)
+        exhibition_id = create_resp.json()["id"]
+
+        # Create delegated zone
+        zone_payload = {
+            "name": "Partner Zone",
+            "exhibition_id": exhibition_id,
+            "delegated_to_group_id": str(partner_group.id),
+        }
+        zone_resp = await auth_client.post("/api/v1/zones/", json=zone_payload)
+        delegated_zone_id = zone_resp.json()["id"]
+
+        # Create non-delegated zone
+        zone_payload2 = {
+            "name": "Other Zone",
+            "exhibition_id": exhibition_id,
+        }
+        zone_resp2 = await auth_client.post("/api/v1/zones/", json=zone_payload2)
+        other_zone_id = zone_resp2.json()["id"]
+
+        return {
+            "partner_user_id": str(partner_user.id),
+            "partner_group_id": str(partner_group.id),
+            "delegated_zone_id": delegated_zone_id,
+            "other_zone_id": other_zone_id,
+            "exhibition_id": exhibition_id,
+        }
+
+    async def test_partner_can_manage_delegated_zone(
+        self, client: AsyncClient, partner_setup: dict
+    ):
+        """Partner can create tables in their delegated zone."""
+        response = await client.post(
+            f"/api/v1/zones/{partner_setup['delegated_zone_id']}/batch-tables",
+            json={"prefix": "P", "count": 3},
+            headers={"X-User-ID": partner_setup["partner_user_id"]},
+        )
+
+        assert response.status_code == 201
+        assert response.json()["created_count"] == 3
+
+    async def test_partner_cannot_manage_other_zone(
+        self, client: AsyncClient, partner_setup: dict
+    ):
+        """Partner cannot create tables in non-delegated zone."""
+        response = await client.post(
+            f"/api/v1/zones/{partner_setup['other_zone_id']}/batch-tables",
+            json={"prefix": "X", "count": 3},
+            headers={"X-User-ID": partner_setup["partner_user_id"]},
+        )
+
+        assert response.status_code == 403
+
+    async def test_partner_can_update_delegated_zone(
+        self, client: AsyncClient, partner_setup: dict
+    ):
+        """Partner can update their delegated zone."""
+        response = await client.put(
+            f"/api/v1/zones/{partner_setup['delegated_zone_id']}",
+            json={"name": "Updated Partner Zone"},
+            headers={"X-User-ID": partner_setup["partner_user_id"]},
+        )
+
+        assert response.status_code == 200
+        assert response.json()["name"] == "Updated Partner Zone"
+
+    async def test_partner_cannot_update_other_zone(
+        self, client: AsyncClient, partner_setup: dict
+    ):
+        """Partner cannot update non-delegated zone."""
+        response = await client.put(
+            f"/api/v1/zones/{partner_setup['other_zone_id']}",
+            json={"name": "Hacked Zone"},
+            headers={"X-User-ID": partner_setup["partner_user_id"]},
+        )
+
         assert response.status_code == 403
