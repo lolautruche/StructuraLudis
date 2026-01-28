@@ -11,6 +11,10 @@ To provide a universal event management ecosystem for all forms of tabletop gami
 * **Rigid Permission Silos:** Organizers cannot easily delegate autonomy to specialized actors (publishers, clubs) while maintaining oversight.
 * **Lack of Accountability:** A disconnect between digital registration and physical presence leads to "ghost" participants and unmonitored venue maintenance.
 
+### 1.1 Global Design Principles
+* **Internationalization (i18n) First**: The platform is natively bilingual (English/French). All UI strings must use translation keys, and system entities (Categories, Safety Tools) must support localized labels.
+* **Simplified Topology**: Physical space management is handled through "Zones" rather than complex architectural mapping to ensure agility and mobile responsiveness.
+
 ---
 
 ## 2. Functional Scope (The WHAT): JOB STORIES
@@ -40,7 +44,12 @@ To provide a universal event management ecosystem for all forms of tabletop gami
 
 ### EPIC A: The Organizer's Setup
 
-* **JS.A1 - Physical Topology**
+* **JS.A0 - Simplified Topology (Zones)**
+    * **When** I prepare a venue plan for a convention,
+    * **I want** to create logical "Zones" (e.g., "RPG Area", "Indie Games", "Main Stage") and assign table blocks to them,
+    * **so that** I can manage space distribution without the overhead of a full architectural building map.
+
+* **JS.A1 - Complete Physical Topology**
     * **When** I prepare a venue plan for a convention (physical or virtual),
     * **I want** to create a digital inventory (Building > Floor > Room > Numbered Tables),
     * **so that** I can prevent physical resource collisions.
@@ -74,6 +83,11 @@ To provide a universal event management ecosystem for all forms of tabletop gami
     * **When** a session is submitted for review,
     * **I want** to communicate directly with the proposer on their session sheet,
     * **so that** I can support them in adjusting their table logistics before final validation.
+
+* **JS.A8 - Multi-language Event Presence**
+    * **When** configuring an event,
+    * **I want** to define a primary language and support secondary languages for the event description and automated communications,
+    * **so that** I can attract an international audience while maintaining local relevance.
 
 ---
 
@@ -147,6 +161,11 @@ To provide a universal event management ecosystem for all forms of tabletop gami
     * **When** I don't have a planned session but am available,
     * **I want** to see seats or tables that have just been released due to a no-show,
     * **so that** I can join a game spontaneously.
+
+* **JS.C6 - Language-Based Discovery**
+    * **When** searching for a game,
+    * **I want** to filter tables by the language spoken at the table (e.g., FR, EN, or Bilingual),
+    * **so that** I am sure I can participate fully in the session.
 
 ---
 
