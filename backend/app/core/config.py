@@ -26,8 +26,10 @@ class Settings(BaseSettings):
     # Database
     DATABASE_URL: str = "postgresql+asyncpg://sl_admin:sl_password@localhost:5432/structura_ludis"
 
-    # Security (to be expanded later)
+    # Security / JWT
     SECRET_KEY: str = "change-me-in-production"
+    JWT_ALGORITHM: str = "HS256"
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24  # 24 hours
 
 
 # Singleton instance
