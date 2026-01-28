@@ -123,6 +123,30 @@ async def delete_session(
 
 
 # =============================================================================
+# Table Assignment
+# =============================================================================
+
+@router.post("/{session_id}/assign-table", response_model=GameSessionRead)
+async def assign_table(
+    session_id: UUID,
+    table_id: UUID,
+    current_user: User = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Assign a physical table to a session.
+
+    Validates:
+    - No collision with other sessions on the same table
+    - Respects buffer time between sessions
+
+    Requires: Organizer or SUPER_ADMIN.
+    """
+    service = GameSessionService(db)
+    return await service.assign_table(session_id, table_id, current_user)
+
+
+# =============================================================================
 # Workflow Endpoints
 # =============================================================================
 
