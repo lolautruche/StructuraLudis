@@ -260,3 +260,20 @@ async def check_in_booking(
     """
     service = GameSessionService(db)
     return await service.check_in_booking(booking_id, current_user)
+
+
+@router.post("/bookings/{booking_id}/no-show", response_model=BookingRead)
+async def mark_no_show(
+    booking_id: UUID,
+    current_user: User = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Mark a booking as no-show.
+
+    Frees up a spot and may promote someone from waitlist.
+
+    Can be done by: session creator (GM) or organizer.
+    """
+    service = GameSessionService(db)
+    return await service.mark_no_show(booking_id, current_user)

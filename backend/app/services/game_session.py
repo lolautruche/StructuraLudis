@@ -291,6 +291,7 @@ class GameSessionService:
         Validates:
         - Session is validated
         - User is not already registered
+        - User has no overlapping bookings
         - Session has available slots (or waitlist)
         """
         session = await self._get_session(data.game_session_id)
@@ -318,6 +319,20 @@ class GameSessionService:
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
                 detail="You are already registered for this session",
+            )
+
+        # Check for overlapping bookings (Issue #5)
+        overlapping = await self._check_booking_overlap(
+            user_id=current_user.id,
+            exhibition_id=session.exhibition_id,
+            scheduled_start=session.scheduled_start,
+            scheduled_end=session.scheduled_end,
+        )
+        if overlapping:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=f"You have an overlapping booking for session '{overlapping.title}' "
+                       f"({overlapping.scheduled_start.strftime('%H:%M')} - {overlapping.scheduled_end.strftime('%H:%M')})",
             )
 
         # Count current confirmed bookings
@@ -422,7 +437,7 @@ class GameSessionService:
         if booking.status != BookingStatus.CONFIRMED:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Cannot check in a {booking.status.value} booking",
+                detail=f"Cannot check in a {booking.status} booking",
             )
 
         booking.status = BookingStatus.CHECKED_IN
@@ -430,6 +445,52 @@ class GameSessionService:
         await self.db.flush()
         await self.db.refresh(booking)
 
+        return booking
+
+    async def mark_no_show(
+        self,
+        booking_id: UUID,
+        current_user: User,
+    ) -> Booking:
+        """
+        Mark a booking as no-show.
+
+        Can be done by: session creator (GM) or organizer.
+        Frees up a spot and may promote someone from waitlist.
+        """
+        booking = await self._get_booking(booking_id)
+        if not booking:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Booking not found",
+            )
+
+        session = await self._get_session(booking.game_session_id)
+
+        # Check permission - only GM or organizers can mark no-show
+        can_mark = (
+            session.created_by_user_id == current_user.id
+            or current_user.global_role in [GlobalRole.SUPER_ADMIN, GlobalRole.ORGANIZER]
+        )
+        if not can_mark:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Only the GM or organizers can mark no-shows",
+            )
+
+        if booking.status not in [BookingStatus.CONFIRMED, BookingStatus.CHECKED_IN]:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Cannot mark a {booking.status} booking as no-show",
+            )
+
+        booking.status = BookingStatus.NO_SHOW
+        await self.db.flush()
+
+        # Promote from waitlist since spot is now free
+        await self._promote_from_waitlist(booking.game_session_id)
+
+        await self.db.refresh(booking)
         return booking
 
     # =========================================================================
@@ -489,6 +550,44 @@ class GameSessionService:
         if next_in_line:
             next_in_line.status = BookingStatus.CONFIRMED
             await self.db.flush()
+
+    async def _check_booking_overlap(
+        self,
+        user_id: UUID,
+        exhibition_id: UUID,
+        scheduled_start,
+        scheduled_end,
+        exclude_session_id: Optional[UUID] = None,
+    ) -> Optional[GameSession]:
+        """
+        Check if user has an overlapping booking in the same exhibition.
+
+        Returns the conflicting session if found, None otherwise.
+        """
+        # Find active bookings for this user in the same exhibition
+        # that overlap with the given time range
+        query = (
+            select(GameSession)
+            .join(Booking, Booking.game_session_id == GameSession.id)
+            .where(
+                Booking.user_id == user_id,
+                Booking.status.in_([
+                    BookingStatus.CONFIRMED,
+                    BookingStatus.CHECKED_IN,
+                    BookingStatus.WAITING_LIST,
+                ]),
+                GameSession.exhibition_id == exhibition_id,
+                # Overlap check
+                GameSession.scheduled_start < scheduled_end,
+                GameSession.scheduled_end > scheduled_start,
+            )
+        )
+
+        if exclude_session_id:
+            query = query.where(GameSession.id != exclude_session_id)
+
+        result = await self.db.execute(query)
+        return result.scalar_one_or_none()
 
     async def _check_table_collision(
         self,

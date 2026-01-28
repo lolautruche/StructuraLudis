@@ -891,3 +891,361 @@ class TestTableAssignment:
         )
 
         assert response.status_code == 200
+
+
+class TestDoubleBookingPrevention:
+    """Tests for preventing double-booking on overlapping sessions."""
+
+    async def _create_validated_session(
+        self,
+        auth_client: AsyncClient,
+        exhibition_id: str,
+        time_slot_id: str,
+        game_id: str,
+        start: str,
+        end: str,
+        title: str = "Test Session",
+        max_players: int = 4,
+    ) -> str:
+        """Helper to create a validated session."""
+        payload = {
+            "title": title,
+            "exhibition_id": exhibition_id,
+            "time_slot_id": time_slot_id,
+            "game_id": game_id,
+            "max_players_count": max_players,
+            "scheduled_start": start,
+            "scheduled_end": end,
+        }
+        create_resp = await auth_client.post("/api/v1/sessions/", json=payload)
+        session_id = create_resp.json()["id"]
+
+        await auth_client.post(f"/api/v1/sessions/{session_id}/submit")
+        await auth_client.post(
+            f"/api/v1/sessions/{session_id}/moderate",
+            json={"action": "approve"},
+        )
+
+        return session_id
+
+    async def test_overlapping_booking_rejected(
+        self,
+        auth_client: AsyncClient,
+        test_exhibition_with_slot: dict,
+        test_game: dict,
+    ):
+        """Booking overlapping sessions returns 409."""
+        # Create two overlapping sessions
+        session1_id = await self._create_validated_session(
+            auth_client,
+            test_exhibition_with_slot["exhibition_id"],
+            test_exhibition_with_slot["time_slot_id"],
+            test_game["id"],
+            "2026-07-01T14:00:00Z",
+            "2026-07-01T16:00:00Z",
+            "Session 1",
+        )
+        session2_id = await self._create_validated_session(
+            auth_client,
+            test_exhibition_with_slot["exhibition_id"],
+            test_exhibition_with_slot["time_slot_id"],
+            test_game["id"],
+            "2026-07-01T15:00:00Z",  # Overlaps with session 1
+            "2026-07-01T17:00:00Z",
+            "Session 2",
+        )
+
+        # Book first session
+        resp1 = await auth_client.post(
+            f"/api/v1/sessions/{session1_id}/bookings",
+            json={"role": "PLAYER"},
+        )
+        assert resp1.status_code == 201
+
+        # Try to book overlapping session - should fail
+        resp2 = await auth_client.post(
+            f"/api/v1/sessions/{session2_id}/bookings",
+            json={"role": "PLAYER"},
+        )
+        assert resp2.status_code == 409
+        assert "overlapping" in resp2.json()["detail"].lower()
+
+    async def test_non_overlapping_booking_allowed(
+        self,
+        auth_client: AsyncClient,
+        test_exhibition_with_slot: dict,
+        test_game: dict,
+    ):
+        """Booking non-overlapping sessions succeeds."""
+        # Create two non-overlapping sessions
+        session1_id = await self._create_validated_session(
+            auth_client,
+            test_exhibition_with_slot["exhibition_id"],
+            test_exhibition_with_slot["time_slot_id"],
+            test_game["id"],
+            "2026-07-01T14:00:00Z",
+            "2026-07-01T15:00:00Z",
+            "Morning Session",
+        )
+        session2_id = await self._create_validated_session(
+            auth_client,
+            test_exhibition_with_slot["exhibition_id"],
+            test_exhibition_with_slot["time_slot_id"],
+            test_game["id"],
+            "2026-07-01T16:00:00Z",  # No overlap
+            "2026-07-01T17:00:00Z",
+            "Afternoon Session",
+        )
+
+        # Book both sessions
+        resp1 = await auth_client.post(
+            f"/api/v1/sessions/{session1_id}/bookings",
+            json={"role": "PLAYER"},
+        )
+        assert resp1.status_code == 201
+
+        resp2 = await auth_client.post(
+            f"/api/v1/sessions/{session2_id}/bookings",
+            json={"role": "PLAYER"},
+        )
+        assert resp2.status_code == 201
+
+    async def test_cancelled_booking_allows_new_overlapping(
+        self,
+        auth_client: AsyncClient,
+        test_exhibition_with_slot: dict,
+        test_game: dict,
+    ):
+        """After cancelling, user can book overlapping session."""
+        # Create two overlapping sessions
+        session1_id = await self._create_validated_session(
+            auth_client,
+            test_exhibition_with_slot["exhibition_id"],
+            test_exhibition_with_slot["time_slot_id"],
+            test_game["id"],
+            "2026-07-01T14:00:00Z",
+            "2026-07-01T16:00:00Z",
+            "Session 1",
+        )
+        session2_id = await self._create_validated_session(
+            auth_client,
+            test_exhibition_with_slot["exhibition_id"],
+            test_exhibition_with_slot["time_slot_id"],
+            test_game["id"],
+            "2026-07-01T15:00:00Z",
+            "2026-07-01T17:00:00Z",
+            "Session 2",
+        )
+
+        # Book first session
+        resp1 = await auth_client.post(
+            f"/api/v1/sessions/{session1_id}/bookings",
+            json={"role": "PLAYER"},
+        )
+        booking1_id = resp1.json()["id"]
+
+        # Cancel first booking
+        await auth_client.delete(f"/api/v1/sessions/bookings/{booking1_id}")
+
+        # Now overlapping session should be bookable
+        resp2 = await auth_client.post(
+            f"/api/v1/sessions/{session2_id}/bookings",
+            json={"role": "PLAYER"},
+        )
+        assert resp2.status_code == 201
+
+
+class TestNoShow:
+    """Tests for no-show functionality."""
+
+    async def _create_validated_session(
+        self,
+        auth_client: AsyncClient,
+        exhibition_id: str,
+        time_slot_id: str,
+        game_id: str,
+    ) -> str:
+        """Helper to create a validated session."""
+        payload = {
+            "title": "No-Show Test Session",
+            "exhibition_id": exhibition_id,
+            "time_slot_id": time_slot_id,
+            "game_id": game_id,
+            "max_players_count": 2,
+            "scheduled_start": "2026-07-01T14:00:00Z",
+            "scheduled_end": "2026-07-01T17:00:00Z",
+        }
+        create_resp = await auth_client.post("/api/v1/sessions/", json=payload)
+        session_id = create_resp.json()["id"]
+
+        await auth_client.post(f"/api/v1/sessions/{session_id}/submit")
+        await auth_client.post(
+            f"/api/v1/sessions/{session_id}/moderate",
+            json={"action": "approve"},
+        )
+
+        return session_id
+
+    async def test_mark_no_show_success(
+        self,
+        auth_client: AsyncClient,
+        client: AsyncClient,
+        test_exhibition_with_slot: dict,
+        test_game: dict,
+        test_user: dict,
+    ):
+        """GM can mark confirmed booking as no-show."""
+        session_id = await self._create_validated_session(
+            auth_client,
+            test_exhibition_with_slot["exhibition_id"],
+            test_exhibition_with_slot["time_slot_id"],
+            test_game["id"],
+        )
+
+        # User books the session
+        booking_resp = await client.post(
+            f"/api/v1/sessions/{session_id}/bookings",
+            json={"role": "PLAYER"},
+            headers={"X-User-ID": test_user["id"]},
+        )
+        booking_id = booking_resp.json()["id"]
+        assert booking_resp.json()["status"] == "CONFIRMED"
+
+        # GM (session creator) marks as no-show
+        response = await auth_client.post(
+            f"/api/v1/sessions/bookings/{booking_id}/no-show"
+        )
+
+        assert response.status_code == 200
+        assert response.json()["status"] == "NO_SHOW"
+
+    async def test_no_show_promotes_waitlist(
+        self,
+        auth_client: AsyncClient,
+        client: AsyncClient,
+        db_session: AsyncSession,
+        test_exhibition_with_slot: dict,
+        test_game: dict,
+        test_user: dict,
+    ):
+        """Marking no-show promotes next person from waitlist."""
+        session_id = await self._create_validated_session(
+            auth_client,
+            test_exhibition_with_slot["exhibition_id"],
+            test_exhibition_with_slot["time_slot_id"],
+            test_game["id"],
+        )
+
+        # Fill up the session (max 2 players)
+        # First booking by organizer
+        booking1_resp = await auth_client.post(
+            f"/api/v1/sessions/{session_id}/bookings",
+            json={"role": "PLAYER"},
+        )
+        booking1_id = booking1_resp.json()["id"]
+
+        # Second booking by test_user
+        await client.post(
+            f"/api/v1/sessions/{session_id}/bookings",
+            json={"role": "PLAYER"},
+            headers={"X-User-ID": test_user["id"]},
+        )
+
+        # Create a third user for waitlist
+        from app.domain.user.entity import User
+        from app.domain.shared.entity import GlobalRole
+        from uuid import uuid4
+
+        waitlist_user = User(
+            id=uuid4(),
+            email="waitlist@example.com",
+            hashed_password="hashed_password",
+            full_name="Waitlist User",
+            global_role=GlobalRole.USER,
+            is_active=True,
+        )
+        db_session.add(waitlist_user)
+        await db_session.commit()
+        await db_session.refresh(waitlist_user)
+
+        # Third booking goes to waitlist
+        booking3_resp = await client.post(
+            f"/api/v1/sessions/{session_id}/bookings",
+            json={"role": "PLAYER"},
+            headers={"X-User-ID": str(waitlist_user.id)},
+        )
+        booking3_id = booking3_resp.json()["id"]
+        assert booking3_resp.json()["status"] == "WAITING_LIST"
+
+        # Mark first booking as no-show
+        await auth_client.post(f"/api/v1/sessions/bookings/{booking1_id}/no-show")
+
+        # Check waitlist person was promoted
+        check_resp = await client.get(f"/api/v1/sessions/{session_id}/bookings")
+        bookings = check_resp.json()
+
+        # Find the waitlist user's booking
+        waitlist_booking = next(
+            b for b in bookings if b["id"] == booking3_id
+        )
+        assert waitlist_booking["status"] == "CONFIRMED"
+
+    async def test_no_show_only_by_gm_or_organizer(
+        self,
+        auth_client: AsyncClient,
+        client: AsyncClient,
+        test_exhibition_with_slot: dict,
+        test_game: dict,
+        test_user: dict,
+    ):
+        """Regular user cannot mark someone else as no-show."""
+        session_id = await self._create_validated_session(
+            auth_client,
+            test_exhibition_with_slot["exhibition_id"],
+            test_exhibition_with_slot["time_slot_id"],
+            test_game["id"],
+        )
+
+        # Organizer books
+        booking_resp = await auth_client.post(
+            f"/api/v1/sessions/{session_id}/bookings",
+            json={"role": "PLAYER"},
+        )
+        booking_id = booking_resp.json()["id"]
+
+        # Regular user tries to mark as no-show - should fail
+        response = await client.post(
+            f"/api/v1/sessions/bookings/{booking_id}/no-show",
+            headers={"X-User-ID": test_user["id"]},
+        )
+
+        assert response.status_code == 403
+
+    async def test_no_show_invalid_status(
+        self,
+        auth_client: AsyncClient,
+        test_exhibition_with_slot: dict,
+        test_game: dict,
+    ):
+        """Cannot mark cancelled booking as no-show."""
+        session_id = await self._create_validated_session(
+            auth_client,
+            test_exhibition_with_slot["exhibition_id"],
+            test_exhibition_with_slot["time_slot_id"],
+            test_game["id"],
+        )
+
+        # Book and cancel
+        booking_resp = await auth_client.post(
+            f"/api/v1/sessions/{session_id}/bookings",
+            json={"role": "PLAYER"},
+        )
+        booking_id = booking_resp.json()["id"]
+        await auth_client.delete(f"/api/v1/sessions/bookings/{booking_id}")
+
+        # Try to mark as no-show
+        response = await auth_client.post(
+            f"/api/v1/sessions/bookings/{booking_id}/no-show"
+        )
+
+        assert response.status_code == 400
