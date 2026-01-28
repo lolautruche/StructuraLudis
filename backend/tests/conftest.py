@@ -239,3 +239,72 @@ async def admin_client(
         yield ac
 
     app.dependency_overrides.clear()
+
+
+@pytest.fixture
+async def second_organizer(db_session: AsyncSession, test_organization: dict) -> dict:
+    """Create a second organizer for multi-GM tests."""
+    from app.domain.user.entity import User, UserGroupMembership
+    from app.domain.organization.entity import UserGroup
+
+    # Create user
+    user = User(
+        id=uuid4(),
+        email="organizer2@example.com",
+        hashed_password="hashed_test_password",
+        full_name="Second Organizer",
+        global_role=GlobalRole.ORGANIZER,
+        is_active=True,
+    )
+    db_session.add(user)
+
+    # Create user group for the organization
+    group = UserGroup(
+        id=uuid4(),
+        organization_id=test_organization["id"],
+        name="Staff 2",
+        type=UserGroupType.STAFF,
+        is_public=False,
+    )
+    db_session.add(group)
+
+    # Add user to group
+    membership = UserGroupMembership(
+        id=uuid4(),
+        user_id=user.id,
+        user_group_id=group.id,
+        group_role=GroupRole.OWNER,
+    )
+    db_session.add(membership)
+
+    await db_session.commit()
+    await db_session.refresh(user)
+
+    return {
+        "id": str(user.id),
+        "email": user.email,
+        "global_role": str(user.global_role),
+        "organization_id": test_organization["id"],
+        "group_id": str(group.id),
+    }
+
+
+@pytest.fixture
+async def second_auth_client(
+    db_session: AsyncSession, second_organizer: dict
+) -> AsyncGenerator[AsyncClient, None]:
+    """Create an authenticated test HTTP client (as second organizer)."""
+
+    async def override_get_db():
+        yield db_session
+
+    app.dependency_overrides[get_db] = override_get_db
+
+    async with AsyncClient(
+        transport=ASGITransport(app=app),
+        base_url="http://test",
+        headers={"X-User-ID": second_organizer["id"]},
+    ) as ac:
+        yield ac
+
+    app.dependency_overrides.clear()

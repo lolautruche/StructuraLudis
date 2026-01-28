@@ -673,6 +673,7 @@ class TestTableAssignment:
     async def test_assign_table_collision(
         self,
         auth_client: AsyncClient,
+        second_auth_client: AsyncClient,
         test_exhibition_with_slot: dict,
         test_game: dict,
     ):
@@ -706,9 +707,9 @@ class TestTableAssignment:
             params={"table_id": table_id},
         )
 
-        # Create second overlapping session
+        # Create second overlapping session by different GM
         session2_id = await self._create_validated_session(
-            auth_client,
+            second_auth_client,
             test_exhibition_with_slot["exhibition_id"],
             test_exhibition_with_slot["time_slot_id"],
             test_game["id"],
@@ -839,6 +840,7 @@ class TestTableAssignment:
     async def test_assign_different_tables_no_collision(
         self,
         auth_client: AsyncClient,
+        second_auth_client: AsyncClient,
         test_exhibition_with_slot: dict,
         test_game: dict,
     ):
@@ -873,9 +875,9 @@ class TestTableAssignment:
             params={"table_id": table1_id},
         )
 
-        # Create overlapping session and assign to table 2
+        # Create overlapping session by different GM and assign to table 2
         session2_id = await self._create_validated_session(
-            auth_client,
+            second_auth_client,
             test_exhibition_with_slot["exhibition_id"],
             test_exhibition_with_slot["time_slot_id"],
             test_game["id"],
@@ -931,11 +933,12 @@ class TestDoubleBookingPrevention:
     async def test_overlapping_booking_rejected(
         self,
         auth_client: AsyncClient,
+        second_auth_client: AsyncClient,
         test_exhibition_with_slot: dict,
         test_game: dict,
     ):
         """Booking overlapping sessions returns 409."""
-        # Create two overlapping sessions
+        # Create two overlapping sessions by different GMs
         session1_id = await self._create_validated_session(
             auth_client,
             test_exhibition_with_slot["exhibition_id"],
@@ -946,7 +949,7 @@ class TestDoubleBookingPrevention:
             "Session 1",
         )
         session2_id = await self._create_validated_session(
-            auth_client,
+            second_auth_client,
             test_exhibition_with_slot["exhibition_id"],
             test_exhibition_with_slot["time_slot_id"],
             test_game["id"],
@@ -1013,11 +1016,12 @@ class TestDoubleBookingPrevention:
     async def test_cancelled_booking_allows_new_overlapping(
         self,
         auth_client: AsyncClient,
+        second_auth_client: AsyncClient,
         test_exhibition_with_slot: dict,
         test_game: dict,
     ):
         """After cancelling, user can book overlapping session."""
-        # Create two overlapping sessions
+        # Create two overlapping sessions by different GMs
         session1_id = await self._create_validated_session(
             auth_client,
             test_exhibition_with_slot["exhibition_id"],
@@ -1028,7 +1032,7 @@ class TestDoubleBookingPrevention:
             "Session 1",
         )
         session2_id = await self._create_validated_session(
-            auth_client,
+            second_auth_client,
             test_exhibition_with_slot["exhibition_id"],
             test_exhibition_with_slot["time_slot_id"],
             test_game["id"],
@@ -1249,3 +1253,426 @@ class TestNoShow:
         )
 
         assert response.status_code == 400
+
+
+class TestGMScheduleOverlap:
+    """Tests for GM schedule overlap detection (Issue #22)."""
+
+    async def test_gm_cannot_create_overlapping_sessions(
+        self,
+        auth_client: AsyncClient,
+        test_exhibition_with_slot: dict,
+        test_game: dict,
+    ):
+        """GM cannot create a session that overlaps with another they're running."""
+        # Create first session and submit for moderation
+        payload1 = {
+            "title": "First GM Session",
+            "exhibition_id": test_exhibition_with_slot["exhibition_id"],
+            "time_slot_id": test_exhibition_with_slot["time_slot_id"],
+            "game_id": test_game["id"],
+            "max_players_count": 4,
+            "scheduled_start": "2026-07-01T14:00:00Z",
+            "scheduled_end": "2026-07-01T16:00:00Z",
+        }
+        resp1 = await auth_client.post("/api/v1/sessions/", json=payload1)
+        session1_id = resp1.json()["id"]
+
+        # Submit first session (makes it count for overlap check)
+        await auth_client.post(f"/api/v1/sessions/{session1_id}/submit")
+
+        # Try to create overlapping session - should fail
+        payload2 = {
+            "title": "Overlapping GM Session",
+            "exhibition_id": test_exhibition_with_slot["exhibition_id"],
+            "time_slot_id": test_exhibition_with_slot["time_slot_id"],
+            "game_id": test_game["id"],
+            "max_players_count": 4,
+            "scheduled_start": "2026-07-01T15:00:00Z",  # Overlaps
+            "scheduled_end": "2026-07-01T17:00:00Z",
+        }
+        resp2 = await auth_client.post("/api/v1/sessions/", json=payload2)
+
+        assert resp2.status_code == 409
+        assert "running session" in resp2.json()["detail"].lower()
+
+    async def test_gm_can_create_non_overlapping_sessions(
+        self,
+        auth_client: AsyncClient,
+        test_exhibition_with_slot: dict,
+        test_game: dict,
+    ):
+        """GM can create multiple non-overlapping sessions."""
+        # Create first session
+        payload1 = {
+            "title": "Morning Session",
+            "exhibition_id": test_exhibition_with_slot["exhibition_id"],
+            "time_slot_id": test_exhibition_with_slot["time_slot_id"],
+            "game_id": test_game["id"],
+            "max_players_count": 4,
+            "scheduled_start": "2026-07-01T14:00:00Z",
+            "scheduled_end": "2026-07-01T15:00:00Z",
+        }
+        resp1 = await auth_client.post("/api/v1/sessions/", json=payload1)
+        session1_id = resp1.json()["id"]
+        await auth_client.post(f"/api/v1/sessions/{session1_id}/submit")
+
+        # Create non-overlapping session - should succeed
+        payload2 = {
+            "title": "Afternoon Session",
+            "exhibition_id": test_exhibition_with_slot["exhibition_id"],
+            "time_slot_id": test_exhibition_with_slot["time_slot_id"],
+            "game_id": test_game["id"],
+            "max_players_count": 4,
+            "scheduled_start": "2026-07-01T16:00:00Z",  # No overlap
+            "scheduled_end": "2026-07-01T17:00:00Z",
+        }
+        resp2 = await auth_client.post("/api/v1/sessions/", json=payload2)
+
+        assert resp2.status_code == 201
+
+    async def test_gm_draft_sessions_dont_block(
+        self,
+        auth_client: AsyncClient,
+        test_exhibition_with_slot: dict,
+        test_game: dict,
+    ):
+        """Draft sessions don't block creation of overlapping sessions."""
+        # Create first session but don't submit (stays DRAFT)
+        payload1 = {
+            "title": "Draft Session",
+            "exhibition_id": test_exhibition_with_slot["exhibition_id"],
+            "time_slot_id": test_exhibition_with_slot["time_slot_id"],
+            "game_id": test_game["id"],
+            "max_players_count": 4,
+            "scheduled_start": "2026-07-01T14:00:00Z",
+            "scheduled_end": "2026-07-01T16:00:00Z",
+        }
+        await auth_client.post("/api/v1/sessions/", json=payload1)
+        # Note: NOT submitting, so it stays DRAFT
+
+        # Create overlapping session - should succeed (draft doesn't block)
+        payload2 = {
+            "title": "Overlapping Session",
+            "exhibition_id": test_exhibition_with_slot["exhibition_id"],
+            "time_slot_id": test_exhibition_with_slot["time_slot_id"],
+            "game_id": test_game["id"],
+            "max_players_count": 4,
+            "scheduled_start": "2026-07-01T15:00:00Z",
+            "scheduled_end": "2026-07-01T17:00:00Z",
+        }
+        resp2 = await auth_client.post("/api/v1/sessions/", json=payload2)
+
+        assert resp2.status_code == 201
+
+    async def test_gm_cannot_propose_if_registered_as_player(
+        self,
+        auth_client: AsyncClient,
+        second_auth_client: AsyncClient,
+        test_exhibition_with_slot: dict,
+        test_game: dict,
+    ):
+        """GM cannot create session if registered as player for overlapping session."""
+        # Create and validate a session by ANOTHER GM
+        payload1 = {
+            "title": "Other GM Session",
+            "exhibition_id": test_exhibition_with_slot["exhibition_id"],
+            "time_slot_id": test_exhibition_with_slot["time_slot_id"],
+            "game_id": test_game["id"],
+            "max_players_count": 4,
+            "scheduled_start": "2026-07-01T14:00:00Z",
+            "scheduled_end": "2026-07-01T16:00:00Z",
+        }
+        resp1 = await second_auth_client.post("/api/v1/sessions/", json=payload1)
+        session1_id = resp1.json()["id"]
+        await second_auth_client.post(f"/api/v1/sessions/{session1_id}/submit")
+        await second_auth_client.post(
+            f"/api/v1/sessions/{session1_id}/moderate",
+            json={"action": "approve"},
+        )
+
+        # First organizer registers as a player for that session
+        await auth_client.post(
+            f"/api/v1/sessions/{session1_id}/bookings",
+            json={"role": "PLAYER"},
+        )
+
+        # First organizer tries to create an overlapping session as GM - should fail
+        payload2 = {
+            "title": "Conflicting GM Session",
+            "exhibition_id": test_exhibition_with_slot["exhibition_id"],
+            "time_slot_id": test_exhibition_with_slot["time_slot_id"],
+            "game_id": test_game["id"],
+            "max_players_count": 4,
+            "scheduled_start": "2026-07-01T15:00:00Z",
+            "scheduled_end": "2026-07-01T17:00:00Z",
+        }
+        resp2 = await auth_client.post("/api/v1/sessions/", json=payload2)
+
+        assert resp2.status_code == 409
+        assert "registered as a player" in resp2.json()["detail"].lower()
+
+    async def test_update_session_schedule_checks_overlap(
+        self,
+        auth_client: AsyncClient,
+        test_exhibition_with_slot: dict,
+        test_game: dict,
+    ):
+        """Updating session schedule checks for GM overlap."""
+        # Create two sessions with no overlap
+        payload1 = {
+            "title": "First Session",
+            "exhibition_id": test_exhibition_with_slot["exhibition_id"],
+            "time_slot_id": test_exhibition_with_slot["time_slot_id"],
+            "game_id": test_game["id"],
+            "max_players_count": 4,
+            "scheduled_start": "2026-07-01T14:00:00Z",
+            "scheduled_end": "2026-07-01T15:00:00Z",
+        }
+        resp1 = await auth_client.post("/api/v1/sessions/", json=payload1)
+        session1_id = resp1.json()["id"]
+        await auth_client.post(f"/api/v1/sessions/{session1_id}/submit")
+
+        payload2 = {
+            "title": "Second Session",
+            "exhibition_id": test_exhibition_with_slot["exhibition_id"],
+            "time_slot_id": test_exhibition_with_slot["time_slot_id"],
+            "game_id": test_game["id"],
+            "max_players_count": 4,
+            "scheduled_start": "2026-07-01T16:00:00Z",
+            "scheduled_end": "2026-07-01T17:00:00Z",
+        }
+        resp2 = await auth_client.post("/api/v1/sessions/", json=payload2)
+        session2_id = resp2.json()["id"]
+
+        # Try to update second session to overlap with first - should fail
+        update_resp = await auth_client.put(
+            f"/api/v1/sessions/{session2_id}",
+            json={
+                "scheduled_start": "2026-07-01T14:30:00Z",  # Would overlap
+                "scheduled_end": "2026-07-01T16:00:00Z",
+            },
+        )
+
+        assert update_resp.status_code == 409
+
+
+class TestAgeVerification:
+    """Tests for minimum age verification on bookings (Issue #23)."""
+
+    async def _create_validated_session_with_age(
+        self,
+        auth_client: AsyncClient,
+        exhibition_id: str,
+        time_slot_id: str,
+        game_id: str,
+        min_age: int,
+    ) -> str:
+        """Helper to create a validated session with age requirement."""
+        payload = {
+            "title": "Adult Session",
+            "exhibition_id": exhibition_id,
+            "time_slot_id": time_slot_id,
+            "game_id": game_id,
+            "max_players_count": 4,
+            "min_age": min_age,
+            "scheduled_start": "2026-07-01T14:00:00Z",
+            "scheduled_end": "2026-07-01T17:00:00Z",
+        }
+        create_resp = await auth_client.post("/api/v1/sessions/", json=payload)
+        session_id = create_resp.json()["id"]
+
+        await auth_client.post(f"/api/v1/sessions/{session_id}/submit")
+        await auth_client.post(
+            f"/api/v1/sessions/{session_id}/moderate",
+            json={"action": "approve"},
+        )
+
+        return session_id
+
+    async def test_booking_requires_birth_date_for_age_restricted_session(
+        self,
+        auth_client: AsyncClient,
+        client: AsyncClient,
+        db_session: AsyncSession,
+        test_exhibition_with_slot: dict,
+        test_game: dict,
+    ):
+        """Booking age-restricted session without birth_date returns 400."""
+        from app.domain.user.entity import User
+        from app.domain.shared.entity import GlobalRole
+
+        # Create user without birth_date
+        user_no_age = User(
+            id=uuid4(),
+            email="noage@example.com",
+            hashed_password="hashed_password",
+            full_name="No Age User",
+            global_role=GlobalRole.USER,
+            is_active=True,
+            birth_date=None,
+        )
+        db_session.add(user_no_age)
+        await db_session.commit()
+        await db_session.refresh(user_no_age)
+
+        session_id = await self._create_validated_session_with_age(
+            auth_client,
+            test_exhibition_with_slot["exhibition_id"],
+            test_exhibition_with_slot["time_slot_id"],
+            test_game["id"],
+            min_age=18,
+        )
+
+        # Try to book without birth_date
+        response = await client.post(
+            f"/api/v1/sessions/{session_id}/bookings",
+            json={"role": "PLAYER"},
+            headers={"X-User-ID": str(user_no_age.id)},
+        )
+
+        assert response.status_code == 400
+        assert "birth date" in response.json()["detail"].lower()
+
+    async def test_booking_rejected_if_too_young(
+        self,
+        auth_client: AsyncClient,
+        client: AsyncClient,
+        db_session: AsyncSession,
+        test_exhibition_with_slot: dict,
+        test_game: dict,
+    ):
+        """Booking age-restricted session when too young returns 403."""
+        from app.domain.user.entity import User
+        from app.domain.shared.entity import GlobalRole
+        from datetime import date
+
+        # Create user who is 16 years old
+        user_young = User(
+            id=uuid4(),
+            email="young@example.com",
+            hashed_password="hashed_password",
+            full_name="Young User",
+            global_role=GlobalRole.USER,
+            is_active=True,
+            birth_date=date(2010, 1, 1),  # 16 years old in 2026
+        )
+        db_session.add(user_young)
+        await db_session.commit()
+        await db_session.refresh(user_young)
+
+        session_id = await self._create_validated_session_with_age(
+            auth_client,
+            test_exhibition_with_slot["exhibition_id"],
+            test_exhibition_with_slot["time_slot_id"],
+            test_game["id"],
+            min_age=18,
+        )
+
+        # Try to book when too young
+        response = await client.post(
+            f"/api/v1/sessions/{session_id}/bookings",
+            json={"role": "PLAYER"},
+            headers={"X-User-ID": str(user_young.id)},
+        )
+
+        assert response.status_code == 403
+        assert "18 years old" in response.json()["detail"]
+
+    async def test_booking_allowed_if_old_enough(
+        self,
+        auth_client: AsyncClient,
+        client: AsyncClient,
+        db_session: AsyncSession,
+        test_exhibition_with_slot: dict,
+        test_game: dict,
+    ):
+        """Booking age-restricted session when old enough succeeds."""
+        from app.domain.user.entity import User
+        from app.domain.shared.entity import GlobalRole
+        from datetime import date
+
+        # Create user who is 25 years old
+        user_adult = User(
+            id=uuid4(),
+            email="adult@example.com",
+            hashed_password="hashed_password",
+            full_name="Adult User",
+            global_role=GlobalRole.USER,
+            is_active=True,
+            birth_date=date(2001, 1, 1),  # 25 years old in 2026
+        )
+        db_session.add(user_adult)
+        await db_session.commit()
+        await db_session.refresh(user_adult)
+
+        session_id = await self._create_validated_session_with_age(
+            auth_client,
+            test_exhibition_with_slot["exhibition_id"],
+            test_exhibition_with_slot["time_slot_id"],
+            test_game["id"],
+            min_age=18,
+        )
+
+        # Book when old enough
+        response = await client.post(
+            f"/api/v1/sessions/{session_id}/bookings",
+            json={"role": "PLAYER"},
+            headers={"X-User-ID": str(user_adult.id)},
+        )
+
+        assert response.status_code == 201
+        assert response.json()["status"] == "CONFIRMED"
+
+    async def test_booking_no_age_check_for_all_ages_session(
+        self,
+        auth_client: AsyncClient,
+        client: AsyncClient,
+        db_session: AsyncSession,
+        test_exhibition_with_slot: dict,
+        test_game: dict,
+    ):
+        """Booking session without min_age skips age verification."""
+        from app.domain.user.entity import User
+        from app.domain.shared.entity import GlobalRole
+
+        # Create user without birth_date
+        user_no_age = User(
+            id=uuid4(),
+            email="noage2@example.com",
+            hashed_password="hashed_password",
+            full_name="No Age User 2",
+            global_role=GlobalRole.USER,
+            is_active=True,
+            birth_date=None,
+        )
+        db_session.add(user_no_age)
+        await db_session.commit()
+        await db_session.refresh(user_no_age)
+
+        # Create session without age requirement
+        payload = {
+            "title": "All Ages Session",
+            "exhibition_id": test_exhibition_with_slot["exhibition_id"],
+            "time_slot_id": test_exhibition_with_slot["time_slot_id"],
+            "game_id": test_game["id"],
+            "max_players_count": 4,
+            "scheduled_start": "2026-07-01T14:00:00Z",
+            "scheduled_end": "2026-07-01T17:00:00Z",
+        }
+        create_resp = await auth_client.post("/api/v1/sessions/", json=payload)
+        session_id = create_resp.json()["id"]
+        await auth_client.post(f"/api/v1/sessions/{session_id}/submit")
+        await auth_client.post(
+            f"/api/v1/sessions/{session_id}/moderate",
+            json={"action": "approve"},
+        )
+
+        # Book without birth_date - should succeed (no age requirement)
+        response = await client.post(
+            f"/api/v1/sessions/{session_id}/bookings",
+            json={"role": "PLAYER"},
+            headers={"X-User-ID": str(user_no_age.id)},
+        )
+
+        assert response.status_code == 201

@@ -103,6 +103,36 @@ class GameSessionService:
                        f"maximum allowed ({time_slot.max_duration_minutes} min)",
             )
 
+        # Check GM schedule overlap - cannot run two sessions at the same time
+        gm_session_conflict = await self._check_gm_session_overlap(
+            user_id=current_user.id,
+            exhibition_id=data.exhibition_id,
+            scheduled_start=data.scheduled_start,
+            scheduled_end=data.scheduled_end,
+        )
+        if gm_session_conflict:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=f"You are already running session '{gm_session_conflict.title}' "
+                       f"({gm_session_conflict.scheduled_start.strftime('%H:%M')} - "
+                       f"{gm_session_conflict.scheduled_end.strftime('%H:%M')})",
+            )
+
+        # Check GM booking overlap - cannot be a player at another table
+        gm_booking_conflict = await self._check_booking_overlap(
+            user_id=current_user.id,
+            exhibition_id=data.exhibition_id,
+            scheduled_start=data.scheduled_start,
+            scheduled_end=data.scheduled_end,
+        )
+        if gm_booking_conflict:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=f"You are registered as a player for session '{gm_booking_conflict.title}' "
+                       f"({gm_booking_conflict.scheduled_start.strftime('%H:%M')} - "
+                       f"{gm_booking_conflict.scheduled_end.strftime('%H:%M')})",
+            )
+
         session = GameSession(
             **data.model_dump(),
             created_by_user_id=current_user.id,
@@ -153,6 +183,47 @@ class GameSessionService:
                     )
 
         update_data = data.model_dump(exclude_unset=True)
+
+        # Check GM schedule overlap if times are being changed
+        new_start = update_data.get("scheduled_start", session.scheduled_start)
+        new_end = update_data.get("scheduled_end", session.scheduled_end)
+        schedule_changed = (
+            "scheduled_start" in update_data or "scheduled_end" in update_data
+        )
+
+        if schedule_changed:
+            # Check GM session overlap
+            gm_session_conflict = await self._check_gm_session_overlap(
+                user_id=session.created_by_user_id,
+                exhibition_id=session.exhibition_id,
+                scheduled_start=new_start,
+                scheduled_end=new_end,
+                exclude_session_id=session_id,
+            )
+            if gm_session_conflict:
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail=f"Schedule conflict with session '{gm_session_conflict.title}' "
+                           f"({gm_session_conflict.scheduled_start.strftime('%H:%M')} - "
+                           f"{gm_session_conflict.scheduled_end.strftime('%H:%M')})",
+                )
+
+            # Check GM booking overlap
+            gm_booking_conflict = await self._check_booking_overlap(
+                user_id=session.created_by_user_id,
+                exhibition_id=session.exhibition_id,
+                scheduled_start=new_start,
+                scheduled_end=new_end,
+                exclude_session_id=session_id,
+            )
+            if gm_booking_conflict:
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail=f"You are registered as a player for session '{gm_booking_conflict.title}' "
+                           f"({gm_booking_conflict.scheduled_start.strftime('%H:%M')} - "
+                           f"{gm_booking_conflict.scheduled_end.strftime('%H:%M')})",
+                )
+
         for field, value in update_data.items():
             setattr(session, field, value)
 
@@ -306,6 +377,21 @@ class GameSessionService:
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Can only book validated sessions",
             )
+
+        # Check minimum age requirement
+        if session.min_age is not None:
+            user_age = current_user.get_age()
+            if user_age is None:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"This session requires a minimum age of {session.min_age}. "
+                           "Please update your profile with your birth date.",
+                )
+            if user_age < session.min_age:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail=f"You must be at least {session.min_age} years old to join this session",
+                )
 
         # Check not already registered
         existing = await self.db.execute(
@@ -581,6 +667,37 @@ class GameSessionService:
                 GameSession.scheduled_start < scheduled_end,
                 GameSession.scheduled_end > scheduled_start,
             )
+        )
+
+        if exclude_session_id:
+            query = query.where(GameSession.id != exclude_session_id)
+
+        result = await self.db.execute(query)
+        return result.scalar_one_or_none()
+
+    async def _check_gm_session_overlap(
+        self,
+        user_id: UUID,
+        exhibition_id: UUID,
+        scheduled_start,
+        scheduled_end,
+        exclude_session_id: Optional[UUID] = None,
+    ) -> Optional[GameSession]:
+        """
+        Check if user is already running a session that overlaps.
+
+        A GM cannot run two sessions at the same time.
+        Only considers non-draft sessions (submitted or validated).
+
+        Returns the conflicting session if found, None otherwise.
+        """
+        query = select(GameSession).where(
+            GameSession.created_by_user_id == user_id,
+            GameSession.exhibition_id == exhibition_id,
+            GameSession.status.notin_([SessionStatus.DRAFT, SessionStatus.REJECTED, SessionStatus.CANCELLED]),
+            # Overlap check
+            GameSession.scheduled_start < scheduled_end,
+            GameSession.scheduled_end > scheduled_start,
         )
 
         if exclude_session_id:

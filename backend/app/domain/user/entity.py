@@ -7,11 +7,12 @@ from datetime import datetime
 from typing import List, Optional, TYPE_CHECKING
 import uuid
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, String, func
+from sqlalchemy import Boolean, Date, DateTime, ForeignKey, String, func
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.domain.shared.entity import Base, TimestampMixin, GroupRole, GlobalRole
+from datetime import date
 
 if TYPE_CHECKING:
     from app.domain.organization.entity import UserGroup
@@ -36,7 +37,18 @@ class User(Base, TimestampMixin):
 
     timezone: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
     locale: Mapped[str] = mapped_column(String(10), default="en")
+    birth_date: Mapped[Optional[date]] = mapped_column(Date, nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+
+    def get_age(self) -> Optional[int]:
+        """Calculate age from birth_date."""
+        if not self.birth_date:
+            return None
+        today = date.today()
+        age = today.year - self.birth_date.year
+        if (today.month, today.day) < (self.birth_date.month, self.birth_date.day):
+            age -= 1
+        return age
     last_login: Mapped[Optional[datetime]] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
