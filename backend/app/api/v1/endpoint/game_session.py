@@ -3,10 +3,11 @@ GameSession API endpoints.
 
 Session management, workflow, and bookings.
 """
-from typing import List
+from datetime import datetime
+from typing import List, Optional
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -20,6 +21,8 @@ from app.domain.game.schemas import (
     BookingCreate,
     BookingCreateBody,
     BookingRead,
+    SessionFilters,
+    SessionSearchResult,
 )
 from app.domain.user.entity import User
 from app.api.deps import get_current_active_user
@@ -52,6 +55,51 @@ async def list_sessions(
     query = query.order_by(GameSession.scheduled_start)
     result = await db.execute(query)
     return result.scalars().all()
+
+
+@router.get("/search", response_model=List[SessionSearchResult])
+async def search_sessions(
+    exhibition_id: UUID,
+    category_id: Optional[UUID] = Query(None, description="Filter by game category"),
+    language: Optional[str] = Query(None, description="Filter by language (en, fr)"),
+    is_accessible_disability: Optional[bool] = Query(None, description="Accessibility filter"),
+    max_age_requirement: Optional[int] = Query(None, ge=0, le=99, description="Max age requirement"),
+    has_available_seats: Optional[bool] = Query(None, description="Only sessions with seats"),
+    zone_id: Optional[UUID] = Query(None, description="Filter by zone"),
+    time_slot_id: Optional[UUID] = Query(None, description="Filter by time slot"),
+    starts_after: Optional[datetime] = Query(None, description="Sessions starting after"),
+    starts_before: Optional[datetime] = Query(None, description="Sessions starting before"),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Search sessions with advanced filters for player discovery (JS.C1, JS.C6).
+
+    Returns validated sessions with availability info.
+
+    Filters:
+    - category_id: Game type (RPG, Board Game, etc.)
+    - language: Session language (en, fr, etc.)
+    - is_accessible_disability: Accessibility for people with disabilities
+    - max_age_requirement: Show sessions accessible to this age
+    - has_available_seats: Only sessions with available spots
+    - zone_id: Physical zone location
+    - time_slot_id: Time slot
+    - starts_after/starts_before: Time range
+    """
+    filters = SessionFilters(
+        category_id=category_id,
+        language=language,
+        is_accessible_disability=is_accessible_disability,
+        max_age_requirement=max_age_requirement,
+        has_available_seats=has_available_seats,
+        zone_id=zone_id,
+        time_slot_id=time_slot_id,
+        starts_after=starts_after,
+        starts_before=starts_before,
+    )
+
+    service = GameSessionService(db)
+    return await service.search_sessions(exhibition_id, filters)
 
 
 @router.post("/", response_model=GameSessionRead, status_code=status.HTTP_201_CREATED)

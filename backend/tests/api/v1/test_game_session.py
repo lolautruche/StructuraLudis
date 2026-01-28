@@ -1676,3 +1676,342 @@ class TestAgeVerification:
         )
 
         assert response.status_code == 201
+
+
+class TestSessionDiscovery:
+    """Tests for session discovery with advanced filters (JS.C1, JS.C6)."""
+
+    async def _create_validated_session(
+        self,
+        auth_client: AsyncClient,
+        exhibition_id: str,
+        time_slot_id: str,
+        game_id: str,
+        title: str = "Test Session",
+        language: str = "en",
+        min_age: int = None,
+        is_accessible: bool = False,
+    ) -> str:
+        """Helper to create a validated session with options."""
+        payload = {
+            "title": title,
+            "exhibition_id": exhibition_id,
+            "time_slot_id": time_slot_id,
+            "game_id": game_id,
+            "max_players_count": 4,
+            "language": language,
+            "is_accessible_disability": is_accessible,
+            "scheduled_start": "2026-07-01T14:00:00Z",
+            "scheduled_end": "2026-07-01T17:00:00Z",
+        }
+        if min_age is not None:
+            payload["min_age"] = min_age
+
+        create_resp = await auth_client.post("/api/v1/sessions/", json=payload)
+        session_id = create_resp.json()["id"]
+
+        await auth_client.post(f"/api/v1/sessions/{session_id}/submit")
+        await auth_client.post(
+            f"/api/v1/sessions/{session_id}/moderate",
+            json={"action": "approve"},
+        )
+
+        return session_id
+
+    async def test_search_returns_validated_sessions(
+        self,
+        auth_client: AsyncClient,
+        test_exhibition_with_slot: dict,
+        test_game: dict,
+    ):
+        """Search only returns validated sessions."""
+        # Create a draft session (don't submit)
+        draft_payload = {
+            "title": "Draft Session",
+            "exhibition_id": test_exhibition_with_slot["exhibition_id"],
+            "time_slot_id": test_exhibition_with_slot["time_slot_id"],
+            "game_id": test_game["id"],
+            "max_players_count": 4,
+            "scheduled_start": "2026-07-01T14:00:00Z",
+            "scheduled_end": "2026-07-01T15:00:00Z",
+        }
+        await auth_client.post("/api/v1/sessions/", json=draft_payload)
+
+        # Create a validated session
+        await self._create_validated_session(
+            auth_client,
+            test_exhibition_with_slot["exhibition_id"],
+            test_exhibition_with_slot["time_slot_id"],
+            test_game["id"],
+            "Validated Session",
+        )
+
+        # Search should only return validated
+        response = await auth_client.get(
+            "/api/v1/sessions/search",
+            params={"exhibition_id": test_exhibition_with_slot["exhibition_id"]},
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert len(data) == 1
+        assert data[0]["title"] == "Validated Session"
+
+    async def test_search_filter_by_language(
+        self,
+        auth_client: AsyncClient,
+        second_auth_client: AsyncClient,
+        test_exhibition_with_slot: dict,
+        test_game: dict,
+    ):
+        """Search can filter by language."""
+        # Create English session
+        await self._create_validated_session(
+            auth_client,
+            test_exhibition_with_slot["exhibition_id"],
+            test_exhibition_with_slot["time_slot_id"],
+            test_game["id"],
+            "English Session",
+            language="en",
+        )
+
+        # Create French session (different GM to avoid overlap)
+        await self._create_validated_session(
+            second_auth_client,
+            test_exhibition_with_slot["exhibition_id"],
+            test_exhibition_with_slot["time_slot_id"],
+            test_game["id"],
+            "French Session",
+            language="fr",
+        )
+
+        # Filter by French
+        response = await auth_client.get(
+            "/api/v1/sessions/search",
+            params={
+                "exhibition_id": test_exhibition_with_slot["exhibition_id"],
+                "language": "fr",
+            },
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert len(data) == 1
+        assert data[0]["title"] == "French Session"
+        assert data[0]["language"] == "fr"
+
+    async def test_search_filter_by_accessibility(
+        self,
+        auth_client: AsyncClient,
+        second_auth_client: AsyncClient,
+        test_exhibition_with_slot: dict,
+        test_game: dict,
+    ):
+        """Search can filter by accessibility."""
+        # Create accessible session
+        await self._create_validated_session(
+            auth_client,
+            test_exhibition_with_slot["exhibition_id"],
+            test_exhibition_with_slot["time_slot_id"],
+            test_game["id"],
+            "Accessible Session",
+            is_accessible=True,
+        )
+
+        # Create non-accessible session
+        await self._create_validated_session(
+            second_auth_client,
+            test_exhibition_with_slot["exhibition_id"],
+            test_exhibition_with_slot["time_slot_id"],
+            test_game["id"],
+            "Regular Session",
+            is_accessible=False,
+        )
+
+        # Filter accessible only
+        response = await auth_client.get(
+            "/api/v1/sessions/search",
+            params={
+                "exhibition_id": test_exhibition_with_slot["exhibition_id"],
+                "is_accessible_disability": True,
+            },
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert len(data) == 1
+        assert data[0]["title"] == "Accessible Session"
+        assert data[0]["is_accessible_disability"] is True
+
+    async def test_search_filter_by_age(
+        self,
+        auth_client: AsyncClient,
+        second_auth_client: AsyncClient,
+        test_exhibition_with_slot: dict,
+        test_game: dict,
+    ):
+        """Search can filter by age requirement."""
+        # Create all-ages session
+        await self._create_validated_session(
+            auth_client,
+            test_exhibition_with_slot["exhibition_id"],
+            test_exhibition_with_slot["time_slot_id"],
+            test_game["id"],
+            "All Ages Session",
+            min_age=None,
+        )
+
+        # Create 18+ session
+        await self._create_validated_session(
+            second_auth_client,
+            test_exhibition_with_slot["exhibition_id"],
+            test_exhibition_with_slot["time_slot_id"],
+            test_game["id"],
+            "Adult Session",
+            min_age=18,
+        )
+
+        # Filter for 16 year old - should only see all-ages
+        response = await auth_client.get(
+            "/api/v1/sessions/search",
+            params={
+                "exhibition_id": test_exhibition_with_slot["exhibition_id"],
+                "max_age_requirement": 16,
+            },
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert len(data) == 1
+        assert data[0]["title"] == "All Ages Session"
+
+        # Filter for 18+ - should see both
+        response2 = await auth_client.get(
+            "/api/v1/sessions/search",
+            params={
+                "exhibition_id": test_exhibition_with_slot["exhibition_id"],
+                "max_age_requirement": 18,
+            },
+        )
+        assert len(response2.json()) == 2
+
+    async def test_search_filter_available_seats(
+        self,
+        auth_client: AsyncClient,
+        second_auth_client: AsyncClient,
+        client: AsyncClient,
+        db_session: AsyncSession,
+        test_exhibition_with_slot: dict,
+        test_game: dict,
+    ):
+        """Search can filter by seat availability."""
+        from app.domain.user.entity import User
+        from app.domain.shared.entity import GlobalRole
+
+        # Create a third user to fill the session
+        filler_user = User(
+            id=uuid4(),
+            email="filler@example.com",
+            hashed_password="hashed_password",
+            full_name="Filler User",
+            global_role=GlobalRole.USER,
+            is_active=True,
+        )
+        db_session.add(filler_user)
+        await db_session.commit()
+        await db_session.refresh(filler_user)
+
+        # Create session with 2 seats by first GM
+        payload = {
+            "title": "Small Session",
+            "exhibition_id": test_exhibition_with_slot["exhibition_id"],
+            "time_slot_id": test_exhibition_with_slot["time_slot_id"],
+            "game_id": test_game["id"],
+            "max_players_count": 2,
+            "scheduled_start": "2026-07-01T14:00:00Z",
+            "scheduled_end": "2026-07-01T15:00:00Z",
+        }
+        resp = await auth_client.post("/api/v1/sessions/", json=payload)
+        session1_id = resp.json()["id"]
+        await auth_client.post(f"/api/v1/sessions/{session1_id}/submit")
+        await auth_client.post(
+            f"/api/v1/sessions/{session1_id}/moderate",
+            json={"action": "approve"},
+        )
+
+        # Fill up the session with two other users
+        await second_auth_client.post(
+            f"/api/v1/sessions/{session1_id}/bookings",
+            json={"role": "PLAYER"},
+        )
+        await client.post(
+            f"/api/v1/sessions/{session1_id}/bookings",
+            json={"role": "PLAYER"},
+            headers={"X-User-ID": str(filler_user.id)},
+        )
+
+        # Create another session with available seats (later time to avoid overlap)
+        payload2 = {
+            "title": "Available Session",
+            "exhibition_id": test_exhibition_with_slot["exhibition_id"],
+            "time_slot_id": test_exhibition_with_slot["time_slot_id"],
+            "game_id": test_game["id"],
+            "max_players_count": 4,
+            "scheduled_start": "2026-07-01T16:00:00Z",
+            "scheduled_end": "2026-07-01T18:00:00Z",
+        }
+        resp2 = await second_auth_client.post("/api/v1/sessions/", json=payload2)
+        session2_id = resp2.json()["id"]
+        await second_auth_client.post(f"/api/v1/sessions/{session2_id}/submit")
+        await second_auth_client.post(
+            f"/api/v1/sessions/{session2_id}/moderate",
+            json={"action": "approve"},
+        )
+
+        # Filter for available seats only
+        response = await auth_client.get(
+            "/api/v1/sessions/search",
+            params={
+                "exhibition_id": test_exhibition_with_slot["exhibition_id"],
+                "has_available_seats": True,
+            },
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert len(data) == 1
+        assert data[0]["title"] == "Available Session"
+        assert data[0]["available_seats"] > 0
+
+    async def test_search_returns_computed_fields(
+        self,
+        auth_client: AsyncClient,
+        test_exhibition_with_slot: dict,
+        test_game: dict,
+        test_game_category: dict,
+    ):
+        """Search returns computed fields like available_seats, category_slug."""
+        await self._create_validated_session(
+            auth_client,
+            test_exhibition_with_slot["exhibition_id"],
+            test_exhibition_with_slot["time_slot_id"],
+            test_game["id"],
+            "Test Session",
+        )
+
+        response = await auth_client.get(
+            "/api/v1/sessions/search",
+            params={"exhibition_id": test_exhibition_with_slot["exhibition_id"]},
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert len(data) == 1
+
+        session = data[0]
+        assert "available_seats" in session
+        assert session["available_seats"] == 4  # max_players_count
+        assert "category_slug" in session
+        assert session["category_slug"] == "rpg"
+        assert "game_title" in session
+        assert session["game_title"] == "Dungeons & Dragons 5e"

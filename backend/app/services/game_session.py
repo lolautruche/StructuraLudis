@@ -11,14 +11,15 @@ from fastapi import HTTPException, status
 from sqlalchemy import select, func, and_, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.domain.game.entity import GameSession, Game, Booking
+from app.domain.game.entity import GameSession, Game, GameCategory, Booking
 from app.domain.game.schemas import (
     GameSessionCreate,
     GameSessionUpdate,
     GameSessionModerate,
     BookingCreate,
+    SessionFilters,
 )
-from app.domain.exhibition.entity import Exhibition, TimeSlot, PhysicalTable
+from app.domain.exhibition.entity import Exhibition, TimeSlot, PhysicalTable, Zone
 from app.domain.user.entity import User
 from app.domain.shared.entity import (
     SessionStatus,
@@ -34,6 +35,140 @@ class GameSessionService:
 
     def __init__(self, db: AsyncSession):
         self.db = db
+
+    # =========================================================================
+    # Session Discovery
+    # =========================================================================
+
+    async def search_sessions(
+        self,
+        exhibition_id: UUID,
+        filters: SessionFilters,
+        include_drafts: bool = False,
+    ) -> List[dict]:
+        """
+        Search sessions with advanced filters (JS.C1, JS.C6).
+
+        Returns sessions with computed fields like available_seats.
+        By default, only returns VALIDATED sessions (public discovery).
+        """
+        # Base query with joins for filtering
+        query = (
+            select(
+                GameSession,
+                Game.title.label("game_title"),
+                GameCategory.slug.label("category_slug"),
+                Zone.name.label("zone_name"),
+            )
+            .join(Game, GameSession.game_id == Game.id)
+            .join(GameCategory, Game.category_id == GameCategory.id)
+            .outerjoin(PhysicalTable, GameSession.physical_table_id == PhysicalTable.id)
+            .outerjoin(Zone, PhysicalTable.zone_id == Zone.id)
+            .where(GameSession.exhibition_id == exhibition_id)
+        )
+
+        # Default: only validated sessions for public discovery
+        if not include_drafts:
+            query = query.where(GameSession.status == SessionStatus.VALIDATED)
+
+        # Apply filters
+        if filters.category_id:
+            query = query.where(Game.category_id == filters.category_id)
+
+        if filters.language:
+            query = query.where(GameSession.language == filters.language)
+
+        if filters.is_accessible_disability is not None:
+            query = query.where(
+                GameSession.is_accessible_disability == filters.is_accessible_disability
+            )
+
+        if filters.max_age_requirement is not None:
+            # Show sessions with no age requirement OR min_age <= given value
+            query = query.where(
+                or_(
+                    GameSession.min_age.is_(None),
+                    GameSession.min_age <= filters.max_age_requirement,
+                )
+            )
+
+        if filters.zone_id:
+            query = query.where(Zone.id == filters.zone_id)
+
+        if filters.time_slot_id:
+            query = query.where(GameSession.time_slot_id == filters.time_slot_id)
+
+        if filters.starts_after:
+            query = query.where(GameSession.scheduled_start >= filters.starts_after)
+
+        if filters.starts_before:
+            query = query.where(GameSession.scheduled_start <= filters.starts_before)
+
+        # Order by start time
+        query = query.order_by(GameSession.scheduled_start)
+
+        result = await self.db.execute(query)
+        rows = result.all()
+
+        # Build results with computed fields
+        sessions_with_availability = []
+        for row in rows:
+            session = row[0]
+            game_title = row[1]
+            category_slug = row[2]
+            zone_name = row[3]
+
+            # Count confirmed bookings
+            booking_count = await self.db.execute(
+                select(func.count(Booking.id)).where(
+                    Booking.game_session_id == session.id,
+                    Booking.status.in_([
+                        BookingStatus.CONFIRMED,
+                        BookingStatus.CHECKED_IN,
+                    ]),
+                )
+            )
+            confirmed_count = booking_count.scalar() or 0
+            available_seats = max(0, session.max_players_count - confirmed_count)
+
+            # Apply availability filter
+            if filters.has_available_seats is True and available_seats == 0:
+                continue
+            if filters.has_available_seats is False and available_seats > 0:
+                continue
+
+            sessions_with_availability.append({
+                "id": session.id,
+                "exhibition_id": session.exhibition_id,
+                "time_slot_id": session.time_slot_id,
+                "game_id": session.game_id,
+                "physical_table_id": session.physical_table_id,
+                "provided_by_group_id": session.provided_by_group_id,
+                "created_by_user_id": session.created_by_user_id,
+                "title": session.title,
+                "description": session.description,
+                "language": session.language,
+                "min_age": session.min_age,
+                "max_players_count": session.max_players_count,
+                "safety_tools": session.safety_tools,
+                "is_accessible_disability": session.is_accessible_disability,
+                "status": session.status,
+                "rejection_reason": session.rejection_reason,
+                "scheduled_start": session.scheduled_start,
+                "scheduled_end": session.scheduled_end,
+                "gm_checked_in_at": session.gm_checked_in_at,
+                "actual_start": session.actual_start,
+                "actual_end": session.actual_end,
+                "created_at": session.created_at,
+                "updated_at": session.updated_at,
+                # Computed fields
+                "available_seats": available_seats,
+                "category_slug": category_slug,
+                "zone_name": zone_name,
+                "game_title": game_title,
+            })
+
+        return sessions_with_availability
 
     # =========================================================================
     # GameSession CRUD

@@ -198,3 +198,74 @@ class BookingCheckIn(BaseModel):
 class BookingMarkNoShow(BaseModel):
     """Schema for marking a booking as no-show."""
     pass  # No additional fields needed
+
+
+# =============================================================================
+# Session Discovery / Filter Schemas
+# =============================================================================
+
+class SessionFilters(BaseModel):
+    """
+    Filters for session discovery (JS.C1, JS.C6).
+
+    All filters are optional and can be combined.
+    """
+    # Game type filter
+    category_id: Optional[UUID] = Field(
+        None, description="Filter by game category (RPG, Board Game, etc.)"
+    )
+
+    # Language filter
+    language: Optional[str] = Field(
+        None, max_length=10, description="Filter by session language (en, fr, etc.)"
+    )
+
+    # Accessibility filter
+    is_accessible_disability: Optional[bool] = Field(
+        None, description="Filter sessions accessible for people with disabilities"
+    )
+
+    # Age filter (show sessions accessible to this age)
+    max_age_requirement: Optional[int] = Field(
+        None, ge=0, le=99,
+        description="Show sessions where min_age <= this value (or no age restriction)"
+    )
+
+    # Availability filter
+    has_available_seats: Optional[bool] = Field(
+        None, description="Only show sessions with available seats"
+    )
+
+    # Location filters
+    zone_id: Optional[UUID] = Field(
+        None, description="Filter by zone"
+    )
+    time_slot_id: Optional[UUID] = Field(
+        None, description="Filter by time slot"
+    )
+
+    # Time filters
+    starts_after: Optional[datetime] = Field(
+        None, description="Sessions starting after this time"
+    )
+    starts_before: Optional[datetime] = Field(
+        None, description="Sessions starting before this time"
+    )
+
+
+class SessionSearchResult(GameSessionRead):
+    """
+    Extended session read with computed fields for discovery.
+    """
+    available_seats: int = Field(
+        ..., description="Number of available seats"
+    )
+    category_slug: Optional[str] = Field(
+        None, description="Game category slug for display"
+    )
+    zone_name: Optional[str] = Field(
+        None, description="Zone name for display"
+    )
+    game_title: Optional[str] = Field(
+        None, description="Game title for display"
+    )
