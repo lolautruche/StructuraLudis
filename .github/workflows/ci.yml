@@ -58,4 +58,5 @@ jobs:
       - name: Run tests
         env:
           DATABASE_URL: postgresql+asyncpg://structuraludis:structuraludis@localhost:5432/structuraludis_test
+          PYTHONPATH: .
         run: poetry run pytest --tb=short -v
