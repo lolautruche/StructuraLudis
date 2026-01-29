@@ -4,6 +4,7 @@ Game domain schemas (DTOs).
 Pydantic models for GameCategory, Game, GameSession, and Booking.
 """
 from datetime import datetime
+from enum import Enum
 from typing import List, Optional
 from uuid import UUID
 
@@ -138,6 +139,10 @@ class GameSessionRead(GameSessionBase):
     gm_checked_in_at: Optional[datetime] = None
     actual_start: Optional[datetime] = None
     actual_end: Optional[datetime] = None
+    # Session reporting fields (#35)
+    actual_player_count: Optional[int] = None
+    table_condition: Optional[str] = None
+    end_notes: Optional[str] = None
     created_at: datetime
     updated_at: Optional[datetime] = None
 
@@ -360,3 +365,47 @@ class SessionCopyRequest(BaseModel):
         max_length=255,
         description="New title (defaults to 'Copy of [original]')"
     )
+
+
+# =============================================================================
+# Session Reporting Schemas (#35 - JS.B8)
+# =============================================================================
+
+class TableCondition(str, Enum):
+    """Condition of the table after session ends."""
+    CLEAN = "CLEAN"
+    NEEDS_CLEANING = "NEEDS_CLEANING"
+    DAMAGED = "DAMAGED"
+
+
+class SessionStartRequest(BaseModel):
+    """Schema for starting a session (optional, can be empty)."""
+    pass  # actual_start is set automatically
+
+
+class SessionEndReport(BaseModel):
+    """Schema for ending a session with a report."""
+    actual_player_count: Optional[int] = Field(
+        None,
+        ge=0,
+        le=100,
+        description="Actual number of players who attended"
+    )
+    table_condition: Optional[TableCondition] = Field(
+        None,
+        description="Condition of the table after the session"
+    )
+    notes: Optional[str] = Field(
+        None,
+        max_length=1000,
+        description="Any notes about the session (issues, highlights, etc.)"
+    )
+
+
+class SessionReportRead(BaseModel):
+    """Schema for reading session report data."""
+    actual_start: Optional[datetime] = None
+    actual_end: Optional[datetime] = None
+    actual_player_count: Optional[int] = None
+    table_condition: Optional[str] = None
+    end_notes: Optional[str] = None
