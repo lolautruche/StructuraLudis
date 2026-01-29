@@ -67,6 +67,11 @@ erDiagram
         string country_code
         jsonb settings
         enum status "DRAFT|PUBLISHED|ARCHIVED"
+        boolean is_registration_open "Issue 39"
+        datetime registration_opens_at "Issue 39"
+        datetime registration_closes_at "Issue 39"
+        string primary_language "Issue 39"
+        jsonb secondary_languages "Issue 39"
         datetime created_at
         datetime updated_at
     }
@@ -100,6 +105,19 @@ erDiagram
         string label
         int capacity
         enum status "AVAILABLE|OCCUPIED|RESERVED|MAINTENANCE"
+        datetime created_at
+        datetime updated_at
+    }
+
+    SafetyTool {
+        uuid id PK
+        uuid exhibition_id FK
+        string name
+        string slug
+        text description
+        string url
+        boolean is_required
+        int display_order
         datetime created_at
         datetime updated_at
     }
@@ -138,9 +156,9 @@ erDiagram
         string language
         int min_age
         int max_players_count
-        jsonb safety_tools "X_CARD|LINES_AND_VEILS|..."
+        jsonb safety_tools "Selected tools slugs"
         boolean is_accessible_disability
-        enum status "DRAFT|PENDING_MODERATION|VALIDATED|..."
+        enum status "DRAFT|PENDING_MODERATION|CHANGES_REQUESTED|VALIDATED|REJECTED|IN_PROGRESS|FINISHED|CANCELLED"
         string rejection_reason
         datetime scheduled_start
         datetime scheduled_end
@@ -156,9 +174,18 @@ erDiagram
         uuid game_session_id FK
         uuid user_id FK
         enum role "GM|PLAYER|ASSISTANT|SPECTATOR"
-        enum status "PENDING|CONFIRMED|CHECKED_IN|ATTENDED|NO_SHOW|..."
+        enum status "PENDING|CONFIRMED|WAITING_LIST|CHECKED_IN|ATTENDED|NO_SHOW|CANCELLED"
         datetime checked_in_at
         datetime registered_at
+        datetime updated_at
+    }
+
+    ModerationComment {
+        uuid id PK
+        uuid game_session_id FK
+        uuid user_id FK
+        string content "max 2000 chars"
+        datetime created_at
         datetime updated_at
     }
 
@@ -196,9 +223,11 @@ erDiagram
     User ||--o{ GameSession : "creates"
     User ||--o{ Booking : "books"
     User ||--o{ Media : "uploads"
+    User ||--o{ ModerationComment : "writes"
 
     Exhibition ||--o{ TimeSlot : "has"
     Exhibition ||--o{ Zone : "contains"
+    Exhibition ||--o{ SafetyTool : "defines"
     Exhibition ||--o{ GameSession : "hosts"
 
     Zone ||--o{ PhysicalTable : "contains"
@@ -211,3 +240,4 @@ erDiagram
     Game ||--o{ GameSession : "played at"
 
     GameSession ||--o{ Booking : "has"
+    GameSession ||--o{ ModerationComment : "has"
