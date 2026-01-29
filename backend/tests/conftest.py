@@ -53,7 +53,7 @@ async def db_session(test_engine) -> AsyncGenerator[AsyncSession, None]:
     # Clean up tables after each test
     async with test_engine.begin() as conn:
         # Truncate in correct order (respecting FKs)
-        for table in ["bookings", "game_sessions", "physical_tables", "zones",
+        for table in ["moderation_comments", "bookings", "game_sessions", "physical_tables", "zones",
                       "safety_tools", "time_slots", "games", "game_categories",
                       "user_group_memberships", "group_permissions", "user_groups",
                       "exhibitions", "media", "audit_logs", "users", "organizations"]:
@@ -168,10 +168,35 @@ async def test_organizer(db_session: AsyncSession, test_organization: dict) -> d
 
     return {
         "id": str(user.id),
+        "user_id": str(user.id),  # Alias for convenience
         "email": user.email,
         "global_role": str(user.global_role),
         "organization_id": test_organization["id"],
         "group_id": str(group.id),
+    }
+
+
+@pytest.fixture
+async def second_test_user(db_session: AsyncSession) -> dict:
+    """Create a second test user with USER role."""
+    from app.domain.user.entity import User
+
+    user = User(
+        id=uuid4(),
+        email="testuser2@example.com",
+        hashed_password="hashed_test_password",
+        full_name="Second Test User",
+        global_role=GlobalRole.USER,
+        is_active=True,
+    )
+    db_session.add(user)
+    await db_session.commit()
+    await db_session.refresh(user)
+
+    return {
+        "id": str(user.id),
+        "email": user.email,
+        "global_role": str(user.global_role),
     }
 
 
