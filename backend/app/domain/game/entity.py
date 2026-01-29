@@ -36,6 +36,9 @@ class GameCategory(Base):
     name: Mapped[str] = mapped_column(String(100))
     slug: Mapped[str] = mapped_column(String(50), unique=True, index=True)
 
+    # i18n fields (#34) - JSONB with locale keys: {"en": "...", "fr": "..."}
+    name_i18n: Mapped[Optional[dict]] = mapped_column(JSONB, nullable=True)
+
     # Relationships
     games: Mapped[List["Game"]] = relationship(back_populates="category")
 

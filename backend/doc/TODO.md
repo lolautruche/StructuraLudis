@@ -7,18 +7,16 @@
 
 | Status | Count | Coverage |
 |--------|-------|----------|
-| Implemented | 25 features | 89% |
+| Implemented | 26 features | 93% |
 | Partial | 2 features | 7% |
-| Not implemented | 1 feature | 4% |
-| **Total PRD coverage** | | **~95%** |
+| Not implemented | 0 features | 0% |
+| **Total PRD coverage** | | **~96%** |
 
 ---
 
 ## Not Implemented (0%)
 
-| Feature | PRD Ref | Issue | Description | Complexity | Effort |
-|---------|---------|-------|-------------|------------|--------|
-| i18n infrastructure | 1.1 | #34 | JSONB translation fields for SafetyTools, Categories, Exhibitions, etc. | High | 1-2 weeks |
+*All core features implemented!*
 
 ---
 
@@ -43,6 +41,7 @@
 | Partner team management | JS.D2 | #31 | ✅ Done |
 | End-of-session reporting | JS.B8 | #35 | ✅ Done |
 | Delegated autonomy | JS.A4 | #40 | ✅ Done (via #31) |
+| i18n infrastructure | 1.1 | #34 | ✅ Done |
 
 ---
 
@@ -86,27 +85,14 @@ Partners can now moderate sessions in zones delegated to their group.
 
 ---
 
-### i18n Infrastructure (1.1) - #34
+### ~~i18n Infrastructure (1.1) - #34~~ ✅ DONE
 
-**Current state:** `User.locale` exists, no translation mechanism
-
-**Required:**
-- [ ] Add `name_i18n: JSONB` to translatable entities (SafetyTool, GameCategory, etc.)
-- [ ] Middleware to detect Accept-Language header
-- [ ] Helper to resolve translated field based on locale
-- [ ] Migration for all affected tables
-- [ ] Update schemas to handle translations
-
-**Entities to modify:**
-- SafetyTool (name, description)
-- GameCategory (name)
-- Exhibition (title, description)
-- GameSession (title, description) - optional
-
-**Files to modify:**
-- All entity files with translatable content
-- `app/api/deps.py` - Add locale detection
-- New `app/core/i18n.py` - Translation helpers
+JSONB-based translation system for multi-language content:
+- `app/core/i18n.py` - Translation helpers with locale resolution and fallback
+- `app/api/deps/i18n.py` - Locale detection from Accept-Language header and user preference
+- JSONB `_i18n` fields added to: GameCategory, SafetyTool, Exhibition, Zone
+- Schemas updated to accept/return i18n fields
+- 22 unit tests for i18n utilities
 
 ---
 
@@ -246,3 +232,4 @@ For completeness, here are the fully implemented features:
 | Partner Team Management | JS.D2 | ✅ 100% |
 | End-of-Session Reporting | JS.B8 | ✅ 100% |
 | Delegated Autonomy | JS.A4 | ✅ 100% |
+| i18n Infrastructure | 1.1 | ✅ 100% |

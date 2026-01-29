@@ -19,6 +19,14 @@ from app.domain.shared.entity import (
 
 
 # =============================================================================
+# i18n Type
+# =============================================================================
+
+# Type alias for i18n JSONB fields: {"en": "...", "fr": "...", ...}
+I18nField = Optional[dict[str, str]]
+
+
+# =============================================================================
 # GameCategory Schemas
 # =============================================================================
 
@@ -30,12 +38,26 @@ class GameCategoryBase(BaseModel):
 
 class GameCategoryCreate(GameCategoryBase):
     """Schema for creating a game category."""
-    pass
+    name_i18n: I18nField = Field(
+        None,
+        description="Translations for name: {'en': '...', 'fr': '...'}"
+    )
+
+
+class GameCategoryUpdate(BaseModel):
+    """Schema for updating a game category."""
+    name: Optional[str] = Field(None, min_length=1, max_length=100)
+    slug: Optional[str] = Field(None, min_length=1, max_length=50, pattern=r"^[a-z0-9-]+$")
+    name_i18n: I18nField = Field(
+        None,
+        description="Translations for name: {'en': '...', 'fr': '...'}"
+    )
 
 
 class GameCategoryRead(GameCategoryBase):
     """Schema for reading a game category."""
     id: UUID
+    name_i18n: I18nField = None
 
     model_config = ConfigDict(from_attributes=True)
 

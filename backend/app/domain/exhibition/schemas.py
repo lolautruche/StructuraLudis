@@ -16,6 +16,10 @@ from app.domain.shared.entity import (
 )
 
 
+# Type alias for i18n JSONB fields: {"en": "...", "fr": "...", ...}
+I18nField = Optional[dict[str, str]]
+
+
 # =============================================================================
 # Exhibition Schemas
 # =============================================================================
@@ -64,6 +68,9 @@ class ExhibitionCreate(ExhibitionBase):
     """Schema for creating a new exhibition."""
     organization_id: UUID
     slug: str = Field(..., min_length=1, max_length=100, pattern=r"^[a-z0-9-]+$")
+    # i18n fields (#34)
+    title_i18n: I18nField = Field(None, description="Translations for title")
+    description_i18n: I18nField = Field(None, description="Translations for description")
 
 
 class ExhibitionUpdate(BaseModel):
@@ -85,6 +92,9 @@ class ExhibitionUpdate(BaseModel):
     # Language settings (Issue #39 - JS.03)
     primary_language: Optional[str] = Field(None, max_length=10)
     secondary_languages: Optional[List[str]] = None
+    # i18n fields (#34)
+    title_i18n: I18nField = Field(None, description="Translations for title")
+    description_i18n: I18nField = Field(None, description="Translations for description")
 
 
 class ExhibitionRead(ExhibitionBase):
@@ -95,6 +105,9 @@ class ExhibitionRead(ExhibitionBase):
     status: ExhibitionStatusEnum
     settings: Optional[dict] = None
     address: Optional[str] = None
+    # i18n fields (#34)
+    title_i18n: I18nField = None
+    description_i18n: I18nField = None
     created_at: datetime
     updated_at: Optional[datetime] = None
 
@@ -159,6 +172,9 @@ class ZoneCreate(ZoneBase):
     """Schema for creating a zone."""
     exhibition_id: UUID
     delegated_to_group_id: Optional[UUID] = None
+    # i18n fields (#34)
+    name_i18n: I18nField = Field(None, description="Translations for name")
+    description_i18n: I18nField = Field(None, description="Translations for description")
 
 
 class ZoneUpdate(BaseModel):
@@ -166,6 +182,9 @@ class ZoneUpdate(BaseModel):
     name: Optional[str] = Field(None, min_length=1, max_length=100)
     description: Optional[str] = None
     type: Optional[ZoneType] = None
+    # i18n fields (#34)
+    name_i18n: I18nField = Field(None, description="Translations for name")
+    description_i18n: I18nField = Field(None, description="Translations for description")
 
 
 class ZoneDelegate(BaseModel):
@@ -181,6 +200,9 @@ class ZoneRead(ZoneBase):
     id: UUID
     exhibition_id: UUID
     delegated_to_group_id: Optional[UUID] = None
+    # i18n fields (#34)
+    name_i18n: I18nField = None
+    description_i18n: I18nField = None
     created_at: datetime
     updated_at: Optional[datetime] = None
 
@@ -244,6 +266,9 @@ class SafetyToolBase(BaseModel):
 class SafetyToolCreate(SafetyToolBase):
     """Schema for creating a safety tool."""
     exhibition_id: UUID
+    # i18n fields (#34)
+    name_i18n: I18nField = Field(None, description="Translations for name")
+    description_i18n: I18nField = Field(None, description="Translations for description")
 
 
 class SafetyToolUpdate(BaseModel):
@@ -253,12 +278,18 @@ class SafetyToolUpdate(BaseModel):
     url: Optional[str] = Field(None, max_length=500)
     is_required: Optional[bool] = None
     display_order: Optional[int] = Field(None, ge=0)
+    # i18n fields (#34)
+    name_i18n: I18nField = Field(None, description="Translations for name")
+    description_i18n: I18nField = Field(None, description="Translations for description")
 
 
 class SafetyToolRead(SafetyToolBase):
     """Schema for reading a safety tool."""
     id: UUID
     exhibition_id: UUID
+    # i18n fields (#34)
+    name_i18n: I18nField = None
+    description_i18n: I18nField = None
     created_at: datetime
     updated_at: Optional[datetime] = None
 

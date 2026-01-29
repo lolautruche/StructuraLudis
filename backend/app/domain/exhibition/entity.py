@@ -41,6 +41,11 @@ class Exhibition(Base, TimestampMixin):
     title: Mapped[str] = mapped_column(String(255))
     slug: Mapped[str] = mapped_column(String(100), unique=True, index=True)
     description: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+
+    # i18n fields (#34) - JSONB with locale keys: {"en": "...", "fr": "..."}
+    title_i18n: Mapped[Optional[dict]] = mapped_column(JSONB, nullable=True)
+    description_i18n: Mapped[Optional[dict]] = mapped_column(JSONB, nullable=True)
+
     start_date: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     end_date: Mapped[datetime] = mapped_column(DateTime(timezone=True))
 
@@ -135,6 +140,10 @@ class Zone(Base, TimestampMixin):
     description: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     type: Mapped[ZoneType] = mapped_column(String(20), default=ZoneType.MIXED)
 
+    # i18n fields (#34) - JSONB with locale keys: {"en": "...", "fr": "..."}
+    name_i18n: Mapped[Optional[dict]] = mapped_column(JSONB, nullable=True)
+    description_i18n: Mapped[Optional[dict]] = mapped_column(JSONB, nullable=True)
+
     # Partner delegation (Issue #2, #3 - JS.A4)
     delegated_to_group_id: Mapped[Optional[uuid.UUID]] = mapped_column(
         ForeignKey("user_groups.id", ondelete="SET NULL"), nullable=True
@@ -169,6 +178,10 @@ class SafetyTool(Base, TimestampMixin):
     url: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)  # Link to docs
     is_required: Mapped[bool] = mapped_column(default=False)  # Must be used by all sessions
     display_order: Mapped[int] = mapped_column(Integer, default=0)
+
+    # i18n fields (#34) - JSONB with locale keys: {"en": "...", "fr": "..."}
+    name_i18n: Mapped[Optional[dict]] = mapped_column(JSONB, nullable=True)
+    description_i18n: Mapped[Optional[dict]] = mapped_column(JSONB, nullable=True)
 
     # Relationships
     exhibition: Mapped["Exhibition"] = relationship(back_populates="safety_tools")

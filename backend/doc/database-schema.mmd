@@ -57,6 +57,8 @@ erDiagram
         string title
         string slug UK
         text description
+        jsonb title_i18n "Issue 34 - i18n translations"
+        jsonb description_i18n "Issue 34 - i18n translations"
         datetime start_date
         datetime end_date
         string timezone
@@ -94,6 +96,8 @@ erDiagram
         uuid delegated_to_group_id FK "nullable - Partner delegation"
         string name
         text description
+        jsonb name_i18n "Issue 34 - i18n translations"
+        jsonb description_i18n "Issue 34 - i18n translations"
         enum type "RPG|BOARD_GAME|WARGAME|TCG|DEMO|MIXED"
         datetime created_at
         datetime updated_at
@@ -115,6 +119,8 @@ erDiagram
         string name
         string slug
         text description
+        jsonb name_i18n "Issue 34 - i18n translations"
+        jsonb description_i18n "Issue 34 - i18n translations"
         string url
         boolean is_required
         int display_order
@@ -127,6 +133,7 @@ erDiagram
         uuid id PK
         string name
         string slug UK
+        jsonb name_i18n "Issue 34 - i18n translations"
     }
 
     Game {
