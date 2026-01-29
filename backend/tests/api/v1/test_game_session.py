@@ -2015,3 +2015,224 @@ class TestSessionDiscovery:
         assert session["category_slug"] == "rpg"
         assert "game_title" in session
         assert session["game_title"] == "Dungeons & Dragons 5e"
+
+
+class TestSessionCancellation:
+    """Tests for session cancellation (JS.B4)."""
+
+    async def _create_validated_session(
+        self,
+        auth_client: AsyncClient,
+        exhibition_id: str,
+        time_slot_id: str,
+        game_id: str,
+        title: str = "Test Session",
+    ) -> str:
+        """Helper to create a validated session."""
+        payload = {
+            "title": title,
+            "exhibition_id": exhibition_id,
+            "time_slot_id": time_slot_id,
+            "game_id": game_id,
+            "max_players_count": 4,
+            "scheduled_start": "2026-07-01T14:00:00Z",
+            "scheduled_end": "2026-07-01T17:00:00Z",
+        }
+        resp = await auth_client.post("/api/v1/sessions/", json=payload)
+        session_id = resp.json()["id"]
+
+        await auth_client.post(f"/api/v1/sessions/{session_id}/submit")
+        await auth_client.post(
+            f"/api/v1/sessions/{session_id}/moderate",
+            json={"action": "approve"},
+        )
+
+        return session_id
+
+    async def test_cancel_session_no_bookings(
+        self,
+        auth_client: AsyncClient,
+        test_exhibition_with_slot: dict,
+        test_game: dict,
+    ):
+        """Cancel a session without bookings returns success."""
+        session_id = await self._create_validated_session(
+            auth_client,
+            test_exhibition_with_slot["exhibition_id"],
+            test_exhibition_with_slot["time_slot_id"],
+            test_game["id"],
+        )
+
+        response = await auth_client.post(
+            f"/api/v1/sessions/{session_id}/cancel",
+            json={"reason": "GM is sick"},
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["session"]["status"] == "CANCELLED"
+        assert data["session"]["rejection_reason"] == "GM is sick"
+        assert data["affected_users"] == []
+        assert data["notifications_sent"] == 0
+
+    async def test_cancel_session_with_bookings(
+        self,
+        auth_client: AsyncClient,
+        second_auth_client: AsyncClient,
+        test_exhibition_with_slot: dict,
+        test_game: dict,
+    ):
+        """Cancel a session with bookings notifies affected users."""
+        # Create session as second organizer
+        session_id = await self._create_validated_session(
+            second_auth_client,
+            test_exhibition_with_slot["exhibition_id"],
+            test_exhibition_with_slot["time_slot_id"],
+            test_game["id"],
+        )
+
+        # Book as first user
+        await auth_client.post(
+            f"/api/v1/sessions/{session_id}/bookings",
+            json={"role": "PLAYER"},
+        )
+
+        # Cancel as session creator (second organizer)
+        response = await second_auth_client.post(
+            f"/api/v1/sessions/{session_id}/cancel",
+            json={"reason": "Emergency cancellation"},
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["session"]["status"] == "CANCELLED"
+        assert len(data["affected_users"]) == 1
+        # affected_users shows ORIGINAL status (what they were before cancellation)
+        assert data["affected_users"][0]["booking_status"] == "CONFIRMED"
+        assert data["notifications_sent"] == 1
+
+    async def test_cancel_session_forbidden_for_regular_user(
+        self,
+        auth_client: AsyncClient,
+        second_auth_client: AsyncClient,
+        client: AsyncClient,
+        test_exhibition_with_slot: dict,
+        test_game: dict,
+        test_user: dict,
+    ):
+        """Regular user cannot cancel a session they don't own."""
+        # Create session as second organizer
+        session_id = await self._create_validated_session(
+            second_auth_client,
+            test_exhibition_with_slot["exhibition_id"],
+            test_exhibition_with_slot["time_slot_id"],
+            test_game["id"],
+        )
+
+        # Try to cancel as regular user (not an organizer)
+        from httpx import AsyncClient as HttpxClient
+        from httpx import ASGITransport
+        from app.main import app
+
+        async with HttpxClient(
+            transport=ASGITransport(app=app),
+            base_url="http://test",
+            headers={"X-User-ID": test_user["id"]},
+        ) as user_client:
+            response = await user_client.post(
+                f"/api/v1/sessions/{session_id}/cancel",
+                json={"reason": "Should not work"},
+            )
+
+        assert response.status_code == 403
+
+    async def test_cancel_already_cancelled_session(
+        self,
+        auth_client: AsyncClient,
+        test_exhibition_with_slot: dict,
+        test_game: dict,
+    ):
+        """Cannot cancel an already cancelled session."""
+        session_id = await self._create_validated_session(
+            auth_client,
+            test_exhibition_with_slot["exhibition_id"],
+            test_exhibition_with_slot["time_slot_id"],
+            test_game["id"],
+        )
+
+        # Cancel once
+        await auth_client.post(
+            f"/api/v1/sessions/{session_id}/cancel",
+            json={"reason": "First cancellation"},
+        )
+
+        # Try to cancel again
+        response = await auth_client.post(
+            f"/api/v1/sessions/{session_id}/cancel",
+            json={"reason": "Second attempt"},
+        )
+
+        assert response.status_code == 400
+        assert "already cancelled" in response.json()["detail"]
+
+    async def test_cancel_session_not_found(
+        self,
+        auth_client: AsyncClient,
+    ):
+        """Cancel non-existent session returns 404."""
+        fake_id = "00000000-0000-0000-0000-000000000000"
+
+        response = await auth_client.post(
+            f"/api/v1/sessions/{fake_id}/cancel",
+            json={"reason": "Does not exist"},
+        )
+
+        assert response.status_code == 404
+
+    async def test_cancel_cancels_waitlist_bookings(
+        self,
+        auth_client: AsyncClient,
+        second_auth_client: AsyncClient,
+        test_exhibition_with_slot: dict,
+        test_game: dict,
+    ):
+        """Cancel a session also cancels waitlist bookings."""
+        # Create session with 1 max player as second organizer
+        payload = {
+            "title": "Small Session",
+            "exhibition_id": test_exhibition_with_slot["exhibition_id"],
+            "time_slot_id": test_exhibition_with_slot["time_slot_id"],
+            "game_id": test_game["id"],
+            "max_players_count": 1,
+            "scheduled_start": "2026-07-01T14:00:00Z",
+            "scheduled_end": "2026-07-01T17:00:00Z",
+        }
+        resp = await second_auth_client.post("/api/v1/sessions/", json=payload)
+        session_id = resp.json()["id"]
+
+        await second_auth_client.post(f"/api/v1/sessions/{session_id}/submit")
+        await second_auth_client.post(
+            f"/api/v1/sessions/{session_id}/moderate",
+            json={"action": "approve"},
+        )
+
+        # Book as first user (confirmed)
+        await auth_client.post(
+            f"/api/v1/sessions/{session_id}/bookings",
+            json={"role": "PLAYER"},
+        )
+
+        # Second booking would go to waitlist - but second_auth_client is the GM
+        # so we only have 1 booking
+
+        # Cancel as GM
+        response = await second_auth_client.post(
+            f"/api/v1/sessions/{session_id}/cancel",
+            json={"reason": "Cancelling small session"},
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert len(data["affected_users"]) == 1
+        # affected_users shows ORIGINAL status (CONFIRMED in this case)
+        assert data["affected_users"][0]["booking_status"] == "CONFIRMED"

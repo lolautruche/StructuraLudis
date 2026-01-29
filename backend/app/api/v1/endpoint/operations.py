@@ -8,15 +8,23 @@ from typing import List
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
+from app.domain.exhibition.entity import Exhibition
 from app.domain.exhibition.schemas import PhysicalTableRead
-from app.domain.game.schemas import GameSessionRead
+from app.domain.game.schemas import GameSessionRead, SessionCancellationResult
 from app.domain.user.entity import User
 from app.domain.shared.entity import GlobalRole
 from app.api.deps import get_current_active_user
 from app.services.operations import OperationsService
+from app.services.notification import (
+    NotificationService,
+    NotificationRecipient,
+    NotificationPayload,
+    NotificationType,
+)
 
 router = APIRouter()
 
@@ -36,7 +44,7 @@ async def get_available_tables(
     return await service.get_available_tables(exhibition_id)
 
 
-@router.post("/exhibitions/{exhibition_id}/auto-cancel", response_model=List[GameSessionRead])
+@router.post("/exhibitions/{exhibition_id}/auto-cancel", response_model=List[SessionCancellationResult])
 async def auto_cancel_sessions(
     exhibition_id: UUID,
     current_user: User = Depends(get_current_active_user),
@@ -46,6 +54,7 @@ async def auto_cancel_sessions(
     Auto-cancel sessions where GM hasn't checked in after grace period.
 
     This endpoint can be called manually by organizers or triggered by a background job.
+    Notifies all affected players of the cancellation.
 
     Requires: Organizer or SUPER_ADMIN.
     """
@@ -55,10 +64,55 @@ async def auto_cancel_sessions(
             detail="Only organizers can trigger auto-cancellation",
         )
 
-    service = OperationsService(db)
-    cancelled = await service.auto_cancel_sessions(exhibition_id)
+    # Get exhibition info for notifications
+    exhibition_result = await db.execute(
+        select(Exhibition).where(Exhibition.id == exhibition_id)
+    )
+    exhibition = exhibition_result.scalar_one_or_none()
+    if not exhibition:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Exhibition not found",
+        )
 
-    return cancelled
+    service = OperationsService(db)
+    cancelled_results = await service.auto_cancel_sessions(exhibition_id)
+
+    # Send notifications for each cancelled session
+    notification_service = NotificationService()
+    results = []
+
+    for session, affected_users in cancelled_results:
+        notifications_sent = 0
+        if affected_users:
+            recipients = [
+                NotificationRecipient(
+                    user_id=user.user_id,
+                    email=user.email,
+                    full_name=user.full_name,
+                )
+                for user in affected_users
+            ]
+            payload = NotificationPayload(
+                notification_type=NotificationType.SESSION_CANCELLED,
+                session_id=session.id,
+                session_title=session.title,
+                exhibition_title=exhibition.title,
+                scheduled_start=session.scheduled_start,
+                scheduled_end=session.scheduled_end,
+                cancellation_reason="GM did not check in within the grace period",
+            )
+            notifications_sent = await notification_service.notify_session_cancelled(
+                recipients, payload
+            )
+
+        results.append(SessionCancellationResult(
+            session=session,
+            affected_users=affected_users,
+            notifications_sent=notifications_sent,
+        ))
+
+    return results
 
 
 @router.post("/sessions/{session_id}/gm-check-in", response_model=GameSessionRead)

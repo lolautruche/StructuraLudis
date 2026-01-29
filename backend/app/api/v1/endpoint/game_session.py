@@ -23,10 +23,19 @@ from app.domain.game.schemas import (
     BookingRead,
     SessionFilters,
     SessionSearchResult,
+    SessionCancelRequest,
+    SessionCancellationResult,
 )
 from app.domain.user.entity import User
+from app.domain.exhibition.entity import Exhibition
 from app.api.deps import get_current_active_user
 from app.services.game_session import GameSessionService
+from app.services.notification import (
+    NotificationService,
+    NotificationRecipient,
+    NotificationPayload,
+    NotificationType,
+)
 
 router = APIRouter()
 
@@ -229,6 +238,66 @@ async def moderate_session(
     """
     service = GameSessionService(db)
     return await service.moderate_session(session_id, moderation, current_user)
+
+
+@router.post("/{session_id}/cancel", response_model=SessionCancellationResult)
+async def cancel_session(
+    session_id: UUID,
+    cancel_request: SessionCancelRequest,
+    current_user: User = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Cancel a session and notify registered players (JS.B4).
+
+    Cancels the session and all associated bookings.
+    Sends notifications to all affected users.
+
+    Can be done by: session creator (GM), organizers, or super admin.
+
+    Body: { "reason": "Reason for cancellation" }
+    """
+    service = GameSessionService(db)
+    session, affected_users = await service.cancel_session(
+        session_id, cancel_request.reason, current_user
+    )
+
+    # Get exhibition info for notification
+    exhibition_result = await db.execute(
+        select(Exhibition).where(Exhibition.id == session.exhibition_id)
+    )
+    exhibition = exhibition_result.scalar_one()
+
+    # Send notifications
+    notifications_sent = 0
+    if affected_users:
+        notification_service = NotificationService()
+        recipients = [
+            NotificationRecipient(
+                user_id=user.user_id,
+                email=user.email,
+                full_name=user.full_name,
+            )
+            for user in affected_users
+        ]
+        payload = NotificationPayload(
+            notification_type=NotificationType.SESSION_CANCELLED,
+            session_id=session.id,
+            session_title=session.title,
+            exhibition_title=exhibition.title,
+            scheduled_start=session.scheduled_start,
+            scheduled_end=session.scheduled_end,
+            cancellation_reason=cancel_request.reason,
+        )
+        notifications_sent = await notification_service.notify_session_cancelled(
+            recipients, payload
+        )
+
+    return SessionCancellationResult(
+        session=session,
+        affected_users=affected_users,
+        notifications_sent=notifications_sent,
+    )
 
 
 # =============================================================================

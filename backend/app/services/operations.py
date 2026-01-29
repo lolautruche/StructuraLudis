@@ -11,8 +11,10 @@ from sqlalchemy import select, and_, or_, not_
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domain.exhibition.entity import Exhibition, PhysicalTable, Zone
-from app.domain.game.entity import GameSession
-from app.domain.shared.entity import SessionStatus, PhysicalTableStatus
+from app.domain.game.entity import GameSession, Booking
+from app.domain.user.entity import User
+from app.domain.shared.entity import SessionStatus, PhysicalTableStatus, BookingStatus
+from app.domain.game.schemas import AffectedUser
 
 
 class OperationsService:
@@ -117,23 +119,55 @@ class OperationsService:
         self,
         exhibition_id: UUID,
         current_time: datetime = None,
-    ) -> List[GameSession]:
+    ) -> List[tuple[GameSession, List[AffectedUser]]]:
         """
         Auto-cancel sessions where GM hasn't checked in after grace period.
 
-        Returns list of cancelled sessions.
+        Returns list of (session, affected_users) tuples.
+        Bookings are cancelled and users can be notified.
         """
         sessions = await self.get_sessions_to_cancel(exhibition_id, current_time)
 
+        results = []
         for session in sessions:
+            # Get all active bookings for this session
+            bookings_result = await self.db.execute(
+                select(Booking, User)
+                .join(User, Booking.user_id == User.id)
+                .where(
+                    Booking.game_session_id == session.id,
+                    Booking.status.in_([
+                        BookingStatus.CONFIRMED,
+                        BookingStatus.CHECKED_IN,
+                        BookingStatus.WAITING_LIST,
+                    ]),
+                )
+            )
+            booking_rows = bookings_result.all()
+
+            # Build list of affected users and cancel bookings
+            affected_users = []
+            for booking, user in booking_rows:
+                affected_users.append(AffectedUser(
+                    user_id=user.id,
+                    email=user.email,
+                    full_name=user.full_name,
+                    booking_status=booking.status,
+                ))
+                booking.status = BookingStatus.CANCELLED
+
+            # Cancel the session
             session.status = SessionStatus.CANCELLED
+            session.rejection_reason = "Auto-cancelled: GM did not check in"
+
+            results.append((session, affected_users))
 
         if sessions:
             await self.db.flush()
             for session in sessions:
                 await self.db.refresh(session)
 
-        return sessions
+        return results
 
     async def gm_check_in(
         self,
