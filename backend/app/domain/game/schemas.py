@@ -129,6 +129,9 @@ class GameSessionRead(GameSessionBase):
     game_id: UUID
     physical_table_id: Optional[UUID] = None
     provided_by_group_id: Optional[UUID] = None
+    provided_by_group_name: Optional[str] = Field(
+        None, description="Partner/group name for 'Organized by' display"
+    )
     created_by_user_id: UUID
     status: SessionStatus
     rejection_reason: Optional[str] = None

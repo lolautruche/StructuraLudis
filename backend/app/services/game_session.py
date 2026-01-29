@@ -21,6 +21,7 @@ from app.domain.game.schemas import (
     AffectedUser,
 )
 from app.domain.exhibition.entity import Exhibition, TimeSlot, PhysicalTable, Zone
+from app.domain.organization.entity import UserGroup
 from app.domain.user.entity import User
 from app.domain.shared.entity import (
     SessionStatus,
@@ -60,11 +61,13 @@ class GameSessionService:
                 Game.title.label("game_title"),
                 GameCategory.slug.label("category_slug"),
                 Zone.name.label("zone_name"),
+                UserGroup.name.label("provided_by_group_name"),
             )
             .join(Game, GameSession.game_id == Game.id)
             .join(GameCategory, Game.category_id == GameCategory.id)
             .outerjoin(PhysicalTable, GameSession.physical_table_id == PhysicalTable.id)
             .outerjoin(Zone, PhysicalTable.zone_id == Zone.id)
+            .outerjoin(UserGroup, GameSession.provided_by_group_id == UserGroup.id)
             .where(GameSession.exhibition_id == exhibition_id)
         )
 
@@ -118,6 +121,7 @@ class GameSessionService:
             game_title = row[1]
             category_slug = row[2]
             zone_name = row[3]
+            provided_by_group_name = row[4]
 
             # Count confirmed bookings
             booking_count = await self.db.execute(
@@ -145,6 +149,7 @@ class GameSessionService:
                 "game_id": session.game_id,
                 "physical_table_id": session.physical_table_id,
                 "provided_by_group_id": session.provided_by_group_id,
+                "provided_by_group_name": provided_by_group_name,
                 "created_by_user_id": session.created_by_user_id,
                 "title": session.title,
                 "description": session.description,

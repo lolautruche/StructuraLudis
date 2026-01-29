@@ -134,18 +134,51 @@ async def get_session(
     db: AsyncSession = Depends(get_db),
 ):
     """Get a single game session by ID."""
-    result = await db.execute(
-        select(GameSession).where(GameSession.id == session_id)
-    )
-    session = result.scalar_one_or_none()
+    from app.domain.organization.entity import UserGroup
 
-    if not session:
+    result = await db.execute(
+        select(GameSession, UserGroup.name.label("group_name"))
+        .outerjoin(UserGroup, GameSession.provided_by_group_id == UserGroup.id)
+        .where(GameSession.id == session_id)
+    )
+    row = result.one_or_none()
+
+    if not row:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Game session not found",
         )
 
-    return session
+    session = row[0]
+    group_name = row[1]
+
+    # Build response with group name
+    return GameSessionRead(
+        id=session.id,
+        exhibition_id=session.exhibition_id,
+        time_slot_id=session.time_slot_id,
+        game_id=session.game_id,
+        physical_table_id=session.physical_table_id,
+        provided_by_group_id=session.provided_by_group_id,
+        provided_by_group_name=group_name,
+        created_by_user_id=session.created_by_user_id,
+        title=session.title,
+        description=session.description,
+        language=session.language,
+        min_age=session.min_age,
+        max_players_count=session.max_players_count,
+        safety_tools=session.safety_tools,
+        is_accessible_disability=session.is_accessible_disability,
+        status=session.status,
+        rejection_reason=session.rejection_reason,
+        scheduled_start=session.scheduled_start,
+        scheduled_end=session.scheduled_end,
+        gm_checked_in_at=session.gm_checked_in_at,
+        actual_start=session.actual_start,
+        actual_end=session.actual_end,
+        created_at=session.created_at,
+        updated_at=session.updated_at,
+    )
 
 
 @router.put("/{session_id}", response_model=GameSessionRead)
