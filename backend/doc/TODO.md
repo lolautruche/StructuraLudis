@@ -7,10 +7,10 @@
 
 | Status | Count | Coverage |
 |--------|-------|----------|
-| Implemented | 22 features | 79% |
-| Partial | 4 features | 14% |
-| Not implemented | 3 features | 11% |
-| **Total PRD coverage** | | **~90%** |
+| Implemented | 25 features | 89% |
+| Partial | 2 features | 7% |
+| Not implemented | 1 feature | 4% |
+| **Total PRD coverage** | | **~95%** |
 
 ---
 
@@ -18,8 +18,6 @@
 
 | Feature | PRD Ref | Issue | Description | Complexity | Effort |
 |---------|---------|-------|-------------|------------|--------|
-| Moderation dialogue | JS.A7, JS.B5 | #30 | Comment/thread system on sessions for negotiation before validation | Medium | 3-5 days |
-| Partner team management | JS.D2 | #31 | Invite/assign demonstrators to partner groups | Medium | 3-5 days |
 | i18n infrastructure | 1.1 | #34 | JSONB translation fields for SafetyTools, Categories, Exhibitions, etc. | High | 1-2 weeks |
 
 ---
@@ -28,14 +26,12 @@
 
 | Feature | PRD Ref | Issue | Current % | What's Missing | Complexity | Effort |
 |---------|---------|-------|-----------|----------------|------------|--------|
-| Delegated autonomy | JS.A4 | #40 | 70% | Endpoints for group member management (see #31) | Medium | 3-5 days |
-| End-of-session reporting | JS.B8 | #35 | 40% | Endpoints for actual attendance, table cleanliness, session closure | Medium | 3-5 days |
 | Smart check-in | JS.C3 | #38 | 60% | Automatic reminders before session, check-in window enforcement | Medium | 3-5 days |
 | Notifications | Cross-cutting | #37 | 10% | Email integration (SendGrid/SES), push notifications, in-app persistence | High | 1-2 weeks |
 
 ---
 
-## Recently Completed (Phase 1 Quick Wins)
+## Recently Completed (Phase 1 & Phase 2)
 
 | Feature | PRD Ref | Issue | Status |
 |---------|---------|-------|--------|
@@ -43,44 +39,38 @@
 | Partner visibility | JS.D4 | #36 | ✅ Done |
 | Delegated moderation | JS.D3 | #32 | ✅ Done |
 | Event configuration | JS.03 | #39 | ✅ Done |
+| Moderation dialogue | JS.A7, JS.B5 | #30 | ✅ Done |
+| Partner team management | JS.D2 | #31 | ✅ Done |
+| End-of-session reporting | JS.B8 | #35 | ✅ Done |
+| Delegated autonomy | JS.A4 | #40 | ✅ Done (via #31) |
 
 ---
 
 ## Detailed Feature Breakdown
 
-### Moderation Dialogue (JS.A7, JS.B5) - #30
+### ~~Moderation Dialogue (JS.A7, JS.B5) - #30~~ ✅ DONE
 
-**Current state:** Simple approve/reject with one-way rejection_reason
-
-**Required:**
-- [ ] `ModerationComment` entity (session_id, user_id, content, created_at)
-- [ ] `POST /sessions/{id}/comments` - Add comment
-- [ ] `GET /sessions/{id}/comments` - List comments
-- [ ] Notification when new comment added
-- [ ] Status for "changes requested" workflow
-
-**Files to modify:**
-- `app/domain/game/entity.py` - Add ModerationComment
-- `app/domain/game/schemas.py` - Add comment schemas
-- `app/api/v1/endpoint/game_session.py` - Add endpoints
-- `app/services/game_session.py` - Add comment logic
+Two-way comment/dialogue system for session moderation:
+- `ModerationComment` entity with session_id, user_id, content, created_at
+- `POST /sessions/{id}/comments` - Add comment to thread
+- `GET /sessions/{id}/comments` - List comments chronologically
+- `CHANGES_REQUESTED` status for back-and-forth workflow
+- Proposer can resubmit after addressing feedback
 
 ---
 
-### Partner Team Management (JS.D2) - #31
+### ~~Partner Team Management (JS.D2) - #31~~ ✅ DONE
 
-**Current state:** UserGroup and UserGroupMembership entities exist, no CRUD endpoints
-
-**Required:**
-- [ ] `POST /groups/{id}/members` - Invite user to group
-- [ ] `GET /groups/{id}/members` - List group members
-- [ ] `DELETE /groups/{id}/members/{user_id}` - Remove member
-- [ ] `PATCH /groups/{id}/members/{user_id}` - Update member role
-- [ ] Email invitation system
-
-**Files to modify:**
-- `app/api/v1/endpoint/organization.py` or new `group.py`
-- `app/services/organization.py` - Add member management logic
+Full CRUD for partner groups and member management:
+- `GET /groups/` - List groups (with filters)
+- `POST /groups/` - Create group (organizers)
+- `GET /groups/{id}` - Get group with members
+- `PUT /groups/{id}` - Update group details
+- `DELETE /groups/{id}` - Delete group
+- `POST /groups/{id}/members` - Add member with role
+- `PATCH /groups/{id}/members/{user_id}` - Update member role
+- `DELETE /groups/{id}/members/{user_id}` - Remove member
+- Role hierarchy: OWNER > ADMIN > MODERATOR > MEMBER
 
 ---
 
@@ -120,21 +110,14 @@ Partners can now moderate sessions in zones delegated to their group.
 
 ---
 
-### End-of-Session Reporting (JS.B8) - #35
+### ~~End-of-Session Reporting (JS.B8) - #35~~ ✅ DONE
 
-**Current state:** Fields exist (actual_start, actual_end) but no endpoints
-
-**Required:**
-- [ ] `POST /sessions/{id}/start` - Mark session as started (sets actual_start)
-- [ ] `POST /sessions/{id}/end` - Mark session as ended with report
-- [ ] `SessionEndReport` schema (actual_attendance, table_condition, notes)
-- [ ] Update session status to FINISHED
-- [ ] Release physical table
-
-**Files to modify:**
-- `app/domain/game/schemas.py` - Add SessionEndReport
-- `app/api/v1/endpoint/game_session.py` - Add endpoints
-- `app/services/game_session.py` - Add reporting logic
+Session lifecycle management with reporting:
+- `POST /sessions/{id}/start` - Start session (sets actual_start, transitions to IN_PROGRESS)
+- `POST /sessions/{id}/end` - End session with optional report
+- `SessionEndReport` schema with actual_player_count, table_condition (CLEAN/NEEDS_CLEANING/DAMAGED), notes
+- Automatic status transition to FINISHED
+- Report data stored in session entity
 
 ---
 
@@ -214,10 +197,10 @@ Added to Exhibition entity:
 3. ~~#32 - Delegated moderation (JS.D3)~~ ✅
 4. ~~#39 - Event configuration complete (JS.03)~~ ✅
 
-### Phase 2: Core Features (2 weeks)
-5. #30 - Moderation dialogue (JS.A7, JS.B5)
-6. #31 - Partner team management (JS.D2)
-7. #35 - End-of-session reporting (JS.B8)
+### ~~Phase 2: Core Features~~ ✅ COMPLETED
+5. ~~#30 - Moderation dialogue (JS.A7, JS.B5)~~ ✅
+6. ~~#31 - Partner team management (JS.D2)~~ ✅
+7. ~~#35 - End-of-session reporting (JS.B8)~~ ✅
 
 ### Phase 3: Infrastructure (2-3 weeks)
 8. #34 - i18n infrastructure
@@ -259,3 +242,7 @@ For completeness, here are the fully implemented features:
 | Partner Visibility | JS.D4 | ✅ 100% |
 | Delegated Moderation | JS.D3 | ✅ 100% |
 | Event Configuration | JS.03 | ✅ 100% |
+| Moderation Dialogue | JS.A7, JS.B5 | ✅ 100% |
+| Partner Team Management | JS.D2 | ✅ 100% |
+| End-of-Session Reporting | JS.B8 | ✅ 100% |
+| Delegated Autonomy | JS.A4 | ✅ 100% |

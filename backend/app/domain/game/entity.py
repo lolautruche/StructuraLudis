@@ -141,6 +141,13 @@ class GameSession(Base, TimestampMixin):
         DateTime(timezone=True), nullable=True
     )
 
+    # End-of-session report (Issue #35 - JS.B8)
+    actual_player_count: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    table_condition: Mapped[Optional[str]] = mapped_column(
+        String(20), nullable=True
+    )  # CLEAN, NEEDS_CLEANING, DAMAGED
+    end_notes: Mapped[Optional[str]] = mapped_column(String(1000), nullable=True)
+
     # Relationships
     exhibition: Mapped["Exhibition"] = relationship(back_populates="game_sessions")
     time_slot: Mapped["TimeSlot"] = relationship(back_populates="game_sessions")

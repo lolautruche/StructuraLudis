@@ -21,6 +21,7 @@ from app.domain.game.schemas import (
     AffectedUser,
     ModerationCommentCreate,
     ModerationCommentRead,
+    SessionEndReport,
 )
 from app.domain.exhibition.entity import Exhibition, TimeSlot, PhysicalTable, Zone
 from app.domain.organization.entity import UserGroup
@@ -1330,3 +1331,129 @@ class GameSessionService:
             )
             for comment, full_name in rows
         ]
+
+    # =========================================================================
+    # Session Reporting (#35 - JS.B8)
+    # =========================================================================
+
+    async def start_session(
+        self,
+        session_id: UUID,
+        current_user: User,
+        current_time: datetime = None,
+    ) -> GameSession:
+        """
+        Mark a session as started (#35).
+
+        Sets actual_start and transitions to IN_PROGRESS if not already.
+        Can be done by: session creator (GM), organizers, or super admin.
+        """
+        from datetime import timezone as tz
+
+        if current_time is None:
+            current_time = datetime.now(tz.utc)
+
+        session = await self._get_session(session_id)
+        if not session:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Game session not found",
+            )
+
+        # Check permissions
+        can_start = (
+            session.created_by_user_id == current_user.id
+            or current_user.global_role in [GlobalRole.SUPER_ADMIN, GlobalRole.ORGANIZER]
+        )
+
+        if not can_start:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Only the session creator or organizers can start a session",
+            )
+
+        # Must be validated or in progress
+        if session.status not in [SessionStatus.VALIDATED, SessionStatus.IN_PROGRESS]:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Cannot start a {session.status} session",
+            )
+
+        # Set actual start if not already set
+        if session.actual_start is None:
+            session.actual_start = current_time
+
+        # Transition to in progress if validated
+        if session.status == SessionStatus.VALIDATED:
+            session.status = SessionStatus.IN_PROGRESS
+            if session.gm_checked_in_at is None:
+                session.gm_checked_in_at = current_time
+
+        await self.db.flush()
+        await self.db.refresh(session)
+
+        return session
+
+    async def end_session(
+        self,
+        session_id: UUID,
+        report: "SessionEndReport",
+        current_user: User,
+        current_time: datetime = None,
+    ) -> GameSession:
+        """
+        Mark a session as ended with a report (#35).
+
+        Sets actual_end, records report data, transitions to FINISHED.
+        Can be done by: session creator (GM), organizers, or super admin.
+        """
+        from datetime import timezone as tz
+        from app.domain.game.schemas import SessionEndReport
+
+        if current_time is None:
+            current_time = datetime.now(tz.utc)
+
+        session = await self._get_session(session_id)
+        if not session:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Game session not found",
+            )
+
+        # Check permissions
+        can_end = (
+            session.created_by_user_id == current_user.id
+            or current_user.global_role in [GlobalRole.SUPER_ADMIN, GlobalRole.ORGANIZER]
+        )
+
+        if not can_end:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Only the session creator or organizers can end a session",
+            )
+
+        # Must be in progress
+        if session.status != SessionStatus.IN_PROGRESS:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Cannot end a {session.status} session (must be IN_PROGRESS)",
+            )
+
+        # Set actual end
+        session.actual_end = current_time
+
+        # Record report data
+        if report.actual_player_count is not None:
+            session.actual_player_count = report.actual_player_count
+        if report.table_condition is not None:
+            session.table_condition = report.table_condition.value
+        if report.notes is not None:
+            session.end_notes = report.notes
+
+        # Transition to finished
+        session.status = SessionStatus.FINISHED
+
+        await self.db.flush()
+        await self.db.refresh(session)
+
+        return session

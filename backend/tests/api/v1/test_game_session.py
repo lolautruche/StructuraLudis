@@ -2664,3 +2664,279 @@ class TestModerationDialogue:
         )
 
         assert response.status_code == 422
+
+
+class TestSessionReporting:
+    """Tests for session start/end reporting endpoints (#35)."""
+
+    async def test_start_session_success(
+        self,
+        auth_client: AsyncClient,
+        test_exhibition_with_slot: dict,
+        test_game: dict,
+    ):
+        """GM can start a validated session."""
+        # Create, submit, and approve session
+        payload = {
+            "title": "Starting Soon",
+            "exhibition_id": test_exhibition_with_slot["exhibition_id"],
+            "time_slot_id": test_exhibition_with_slot["time_slot_id"],
+            "game_id": test_game["id"],
+            "max_players_count": 4,
+            "scheduled_start": "2026-07-01T14:00:00Z",
+            "scheduled_end": "2026-07-01T17:00:00Z",
+        }
+        create_resp = await auth_client.post("/api/v1/sessions/", json=payload)
+        session_id = create_resp.json()["id"]
+
+        await auth_client.post(f"/api/v1/sessions/{session_id}/submit")
+        await auth_client.post(
+            f"/api/v1/sessions/{session_id}/moderate",
+            json={"action": "approve"},
+        )
+
+        # Start the session
+        response = await auth_client.post(f"/api/v1/sessions/{session_id}/start")
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["status"] == "IN_PROGRESS"
+        assert data["actual_start"] is not None
+        assert data["gm_checked_in_at"] is not None
+
+    async def test_start_session_not_found(
+        self,
+        auth_client: AsyncClient,
+    ):
+        """Start non-existent session returns 404."""
+        fake_id = "00000000-0000-0000-0000-000000000000"
+
+        response = await auth_client.post(f"/api/v1/sessions/{fake_id}/start")
+
+        assert response.status_code == 404
+
+    async def test_start_session_wrong_status(
+        self,
+        auth_client: AsyncClient,
+        test_exhibition_with_slot: dict,
+        test_game: dict,
+    ):
+        """Cannot start a session that is not validated."""
+        # Create session but don't submit/approve
+        payload = {
+            "title": "Draft Session",
+            "exhibition_id": test_exhibition_with_slot["exhibition_id"],
+            "time_slot_id": test_exhibition_with_slot["time_slot_id"],
+            "game_id": test_game["id"],
+            "max_players_count": 4,
+            "scheduled_start": "2026-07-01T14:00:00Z",
+            "scheduled_end": "2026-07-01T17:00:00Z",
+        }
+        create_resp = await auth_client.post("/api/v1/sessions/", json=payload)
+        session_id = create_resp.json()["id"]
+
+        # Try to start draft session
+        response = await auth_client.post(f"/api/v1/sessions/{session_id}/start")
+
+        assert response.status_code == 400
+        assert "DRAFT" in response.json()["detail"]
+
+    async def test_end_session_success(
+        self,
+        auth_client: AsyncClient,
+        test_exhibition_with_slot: dict,
+        test_game: dict,
+    ):
+        """GM can end an in-progress session."""
+        # Create, submit, approve, and start session
+        payload = {
+            "title": "Ending Soon",
+            "exhibition_id": test_exhibition_with_slot["exhibition_id"],
+            "time_slot_id": test_exhibition_with_slot["time_slot_id"],
+            "game_id": test_game["id"],
+            "max_players_count": 4,
+            "scheduled_start": "2026-07-01T14:00:00Z",
+            "scheduled_end": "2026-07-01T17:00:00Z",
+        }
+        create_resp = await auth_client.post("/api/v1/sessions/", json=payload)
+        session_id = create_resp.json()["id"]
+
+        await auth_client.post(f"/api/v1/sessions/{session_id}/submit")
+        await auth_client.post(
+            f"/api/v1/sessions/{session_id}/moderate",
+            json={"action": "approve"},
+        )
+        await auth_client.post(f"/api/v1/sessions/{session_id}/start")
+
+        # End the session
+        response = await auth_client.post(f"/api/v1/sessions/{session_id}/end")
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["status"] == "FINISHED"
+        assert data["actual_end"] is not None
+
+    async def test_end_session_with_report(
+        self,
+        auth_client: AsyncClient,
+        test_exhibition_with_slot: dict,
+        test_game: dict,
+    ):
+        """GM can end session with full report data."""
+        # Create, submit, approve, and start session
+        payload = {
+            "title": "Session With Report",
+            "exhibition_id": test_exhibition_with_slot["exhibition_id"],
+            "time_slot_id": test_exhibition_with_slot["time_slot_id"],
+            "game_id": test_game["id"],
+            "max_players_count": 6,
+            "scheduled_start": "2026-07-01T14:00:00Z",
+            "scheduled_end": "2026-07-01T17:00:00Z",
+        }
+        create_resp = await auth_client.post("/api/v1/sessions/", json=payload)
+        session_id = create_resp.json()["id"]
+
+        await auth_client.post(f"/api/v1/sessions/{session_id}/submit")
+        await auth_client.post(
+            f"/api/v1/sessions/{session_id}/moderate",
+            json={"action": "approve"},
+        )
+        await auth_client.post(f"/api/v1/sessions/{session_id}/start")
+
+        # End with report
+        report = {
+            "actual_player_count": 5,
+            "table_condition": "CLEAN",
+            "notes": "Great session, everyone had fun!",
+        }
+        response = await auth_client.post(
+            f"/api/v1/sessions/{session_id}/end",
+            json=report,
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["status"] == "FINISHED"
+        assert data["actual_player_count"] == 5
+        assert data["table_condition"] == "CLEAN"
+        assert data["end_notes"] == "Great session, everyone had fun!"
+
+    async def test_end_session_not_found(
+        self,
+        auth_client: AsyncClient,
+    ):
+        """End non-existent session returns 404."""
+        fake_id = "00000000-0000-0000-0000-000000000000"
+
+        response = await auth_client.post(f"/api/v1/sessions/{fake_id}/end")
+
+        assert response.status_code == 404
+
+    async def test_end_session_wrong_status(
+        self,
+        auth_client: AsyncClient,
+        test_exhibition_with_slot: dict,
+        test_game: dict,
+    ):
+        """Cannot end a session that is not in progress."""
+        # Create and approve but don't start
+        payload = {
+            "title": "Not Started",
+            "exhibition_id": test_exhibition_with_slot["exhibition_id"],
+            "time_slot_id": test_exhibition_with_slot["time_slot_id"],
+            "game_id": test_game["id"],
+            "max_players_count": 4,
+            "scheduled_start": "2026-07-01T14:00:00Z",
+            "scheduled_end": "2026-07-01T17:00:00Z",
+        }
+        create_resp = await auth_client.post("/api/v1/sessions/", json=payload)
+        session_id = create_resp.json()["id"]
+
+        await auth_client.post(f"/api/v1/sessions/{session_id}/submit")
+        await auth_client.post(
+            f"/api/v1/sessions/{session_id}/moderate",
+            json={"action": "approve"},
+        )
+
+        # Try to end validated (not started) session
+        response = await auth_client.post(f"/api/v1/sessions/{session_id}/end")
+
+        assert response.status_code == 400
+        assert "VALIDATED" in response.json()["detail"]
+
+    async def test_end_session_needs_cleaning(
+        self,
+        auth_client: AsyncClient,
+        test_exhibition_with_slot: dict,
+        test_game: dict,
+    ):
+        """GM can report table needs cleaning."""
+        # Create, submit, approve, and start session
+        payload = {
+            "title": "Messy Session",
+            "exhibition_id": test_exhibition_with_slot["exhibition_id"],
+            "time_slot_id": test_exhibition_with_slot["time_slot_id"],
+            "game_id": test_game["id"],
+            "max_players_count": 4,
+            "scheduled_start": "2026-07-01T14:00:00Z",
+            "scheduled_end": "2026-07-01T17:00:00Z",
+        }
+        create_resp = await auth_client.post("/api/v1/sessions/", json=payload)
+        session_id = create_resp.json()["id"]
+
+        await auth_client.post(f"/api/v1/sessions/{session_id}/submit")
+        await auth_client.post(
+            f"/api/v1/sessions/{session_id}/moderate",
+            json={"action": "approve"},
+        )
+        await auth_client.post(f"/api/v1/sessions/{session_id}/start")
+
+        # End with NEEDS_CLEANING
+        response = await auth_client.post(
+            f"/api/v1/sessions/{session_id}/end",
+            json={"table_condition": "NEEDS_CLEANING"},
+        )
+
+        assert response.status_code == 200
+        assert response.json()["table_condition"] == "NEEDS_CLEANING"
+
+    async def test_end_session_damaged_table(
+        self,
+        auth_client: AsyncClient,
+        test_exhibition_with_slot: dict,
+        test_game: dict,
+    ):
+        """GM can report damaged table."""
+        # Create, submit, approve, and start session
+        payload = {
+            "title": "Incident Session",
+            "exhibition_id": test_exhibition_with_slot["exhibition_id"],
+            "time_slot_id": test_exhibition_with_slot["time_slot_id"],
+            "game_id": test_game["id"],
+            "max_players_count": 4,
+            "scheduled_start": "2026-07-01T14:00:00Z",
+            "scheduled_end": "2026-07-01T17:00:00Z",
+        }
+        create_resp = await auth_client.post("/api/v1/sessions/", json=payload)
+        session_id = create_resp.json()["id"]
+
+        await auth_client.post(f"/api/v1/sessions/{session_id}/submit")
+        await auth_client.post(
+            f"/api/v1/sessions/{session_id}/moderate",
+            json={"action": "approve"},
+        )
+        await auth_client.post(f"/api/v1/sessions/{session_id}/start")
+
+        # End with DAMAGED and notes
+        response = await auth_client.post(
+            f"/api/v1/sessions/{session_id}/end",
+            json={
+                "table_condition": "DAMAGED",
+                "notes": "Spilled drink damaged the tablecloth",
+            },
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["table_condition"] == "DAMAGED"
+        assert "Spilled drink" in data["end_notes"]

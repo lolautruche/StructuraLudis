@@ -28,6 +28,7 @@ from app.domain.game.schemas import (
     SessionCopyRequest,
     ModerationCommentCreate,
     ModerationCommentRead,
+    SessionEndReport,
 )
 from app.domain.user.entity import User
 from app.domain.exhibition.entity import Exhibition
@@ -416,6 +417,54 @@ async def copy_session(
         title=copy_request.title,
         current_user=current_user,
     )
+
+
+# =============================================================================
+# Session Reporting (#35 - JS.B8)
+# =============================================================================
+
+@router.post("/{session_id}/start", response_model=GameSessionRead)
+async def start_session(
+    session_id: UUID,
+    current_user: User = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Mark a session as started (#35).
+
+    Sets actual_start timestamp and transitions to IN_PROGRESS if not already.
+    Also sets gm_checked_in_at if not already set.
+
+    Can be done by: session creator (GM), organizers, or super admin.
+    """
+    service = GameSessionService(db)
+    return await service.start_session(session_id, current_user)
+
+
+@router.post("/{session_id}/end", response_model=GameSessionRead)
+async def end_session(
+    session_id: UUID,
+    report: SessionEndReport = None,
+    current_user: User = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Mark a session as ended with a report (#35).
+
+    Sets actual_end timestamp, records report data, transitions to FINISHED.
+
+    Optional report fields:
+    - actual_player_count: How many players actually attended
+    - table_condition: CLEAN, NEEDS_CLEANING, or DAMAGED
+    - notes: Any additional notes about the session
+
+    Can be done by: session creator (GM), organizers, or super admin.
+    """
+    if report is None:
+        report = SessionEndReport()
+
+    service = GameSessionService(db)
+    return await service.end_session(session_id, report, current_user)
 
 
 # =============================================================================
