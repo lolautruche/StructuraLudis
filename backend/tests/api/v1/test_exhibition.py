@@ -471,3 +471,222 @@ class TestDashboard:
         response = await client.get(f"/api/v1/exhibitions/{fake_id}/status")
 
         assert response.status_code == 401
+
+
+class TestSafetyTools:
+    """Tests for Safety Tools endpoints (JS.A5)."""
+
+    async def _create_exhibition(
+        self,
+        auth_client: AsyncClient,
+        organization_id: str,
+        slug: str = "safety-test-exhibition",
+    ) -> str:
+        """Helper to create an exhibition."""
+        payload = {
+            "title": "Safety Test Exhibition",
+            "slug": slug,
+            "start_date": "2026-06-15T09:00:00Z",
+            "end_date": "2026-06-17T18:00:00Z",
+            "organization_id": organization_id,
+        }
+        resp = await auth_client.post("/api/v1/exhibitions/", json=payload)
+        return resp.json()["id"]
+
+    async def test_create_safety_tool(
+        self, auth_client: AsyncClient, test_organizer: dict
+    ):
+        """Create safety tool returns 201."""
+        exhibition_id = await self._create_exhibition(
+            auth_client, test_organizer["organization_id"], "safety-create"
+        )
+
+        payload = {
+            "name": "X-Card",
+            "slug": "x-card",
+            "description": "Tap to skip content",
+            "exhibition_id": exhibition_id,
+        }
+        response = await auth_client.post(
+            f"/api/v1/exhibitions/{exhibition_id}/safety-tools",
+            json=payload,
+        )
+
+        assert response.status_code == 201
+        data = response.json()
+        assert data["name"] == "X-Card"
+        assert data["slug"] == "x-card"
+        assert data["is_required"] is False
+
+    async def test_create_safety_tool_duplicate_slug(
+        self, auth_client: AsyncClient, test_organizer: dict
+    ):
+        """Create safety tool with duplicate slug returns 409."""
+        exhibition_id = await self._create_exhibition(
+            auth_client, test_organizer["organization_id"], "safety-dup"
+        )
+
+        payload = {
+            "name": "X-Card",
+            "slug": "x-card",
+            "exhibition_id": exhibition_id,
+        }
+        await auth_client.post(
+            f"/api/v1/exhibitions/{exhibition_id}/safety-tools",
+            json=payload,
+        )
+
+        # Try to create again with same slug
+        response = await auth_client.post(
+            f"/api/v1/exhibitions/{exhibition_id}/safety-tools",
+            json=payload,
+        )
+
+        assert response.status_code == 409
+
+    async def test_list_safety_tools(
+        self, auth_client: AsyncClient, test_organizer: dict
+    ):
+        """List safety tools returns all tools ordered."""
+        exhibition_id = await self._create_exhibition(
+            auth_client, test_organizer["organization_id"], "safety-list"
+        )
+
+        # Create two tools
+        await auth_client.post(
+            f"/api/v1/exhibitions/{exhibition_id}/safety-tools",
+            json={"name": "Tool B", "slug": "tool-b", "display_order": 2, "exhibition_id": exhibition_id},
+        )
+        await auth_client.post(
+            f"/api/v1/exhibitions/{exhibition_id}/safety-tools",
+            json={"name": "Tool A", "slug": "tool-a", "display_order": 1, "exhibition_id": exhibition_id},
+        )
+
+        response = await auth_client.get(
+            f"/api/v1/exhibitions/{exhibition_id}/safety-tools"
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert len(data) == 2
+        # Should be ordered by display_order
+        assert data[0]["name"] == "Tool A"
+        assert data[1]["name"] == "Tool B"
+
+    async def test_create_default_safety_tools(
+        self, auth_client: AsyncClient, test_organizer: dict
+    ):
+        """Create default safety tools adds common tools."""
+        exhibition_id = await self._create_exhibition(
+            auth_client, test_organizer["organization_id"], "safety-defaults"
+        )
+
+        response = await auth_client.post(
+            f"/api/v1/exhibitions/{exhibition_id}/safety-tools/defaults"
+        )
+
+        assert response.status_code == 201
+        data = response.json()
+        assert data["created_count"] >= 5  # At least 5 default tools
+        assert len(data["tools"]) >= 5
+
+        # Check some known tools exist
+        slugs = [t["slug"] for t in data["tools"]]
+        assert "x-card" in slugs
+        assert "lines-and-veils" in slugs
+
+    async def test_create_default_safety_tools_idempotent(
+        self, auth_client: AsyncClient, test_organizer: dict
+    ):
+        """Creating defaults twice doesn't duplicate tools."""
+        exhibition_id = await self._create_exhibition(
+            auth_client, test_organizer["organization_id"], "safety-idem"
+        )
+
+        # Create defaults twice
+        resp1 = await auth_client.post(
+            f"/api/v1/exhibitions/{exhibition_id}/safety-tools/defaults"
+        )
+        resp2 = await auth_client.post(
+            f"/api/v1/exhibitions/{exhibition_id}/safety-tools/defaults"
+        )
+
+        assert resp1.status_code == 201
+        assert resp2.status_code == 201
+        assert resp2.json()["created_count"] == 0  # No new tools created
+
+    async def test_update_safety_tool(
+        self, auth_client: AsyncClient, test_organizer: dict
+    ):
+        """Update safety tool modifies fields."""
+        exhibition_id = await self._create_exhibition(
+            auth_client, test_organizer["organization_id"], "safety-update"
+        )
+
+        # Create a tool
+        create_resp = await auth_client.post(
+            f"/api/v1/exhibitions/{exhibition_id}/safety-tools",
+            json={"name": "Old Name", "slug": "test-tool", "exhibition_id": exhibition_id},
+        )
+        tool_id = create_resp.json()["id"]
+
+        # Update it
+        response = await auth_client.put(
+            f"/api/v1/exhibitions/{exhibition_id}/safety-tools/{tool_id}",
+            json={"name": "New Name", "is_required": True},
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["name"] == "New Name"
+        assert data["is_required"] is True
+        assert data["slug"] == "test-tool"  # Unchanged
+
+    async def test_delete_safety_tool(
+        self, auth_client: AsyncClient, test_organizer: dict
+    ):
+        """Delete safety tool removes it."""
+        exhibition_id = await self._create_exhibition(
+            auth_client, test_organizer["organization_id"], "safety-delete"
+        )
+
+        # Create a tool
+        create_resp = await auth_client.post(
+            f"/api/v1/exhibitions/{exhibition_id}/safety-tools",
+            json={"name": "To Delete", "slug": "delete-me", "exhibition_id": exhibition_id},
+        )
+        tool_id = create_resp.json()["id"]
+
+        # Delete it
+        response = await auth_client.delete(
+            f"/api/v1/exhibitions/{exhibition_id}/safety-tools/{tool_id}"
+        )
+        assert response.status_code == 204
+
+        # Verify it's gone
+        get_resp = await auth_client.get(
+            f"/api/v1/exhibitions/{exhibition_id}/safety-tools/{tool_id}"
+        )
+        assert get_resp.status_code == 404
+
+    async def test_list_safety_tools_public(
+        self, client: AsyncClient, auth_client: AsyncClient, test_organizer: dict
+    ):
+        """List safety tools is public (no auth required)."""
+        exhibition_id = await self._create_exhibition(
+            auth_client, test_organizer["organization_id"], "safety-public"
+        )
+
+        # Create a tool as organizer
+        await auth_client.post(
+            f"/api/v1/exhibitions/{exhibition_id}/safety-tools",
+            json={"name": "Public Tool", "slug": "public", "exhibition_id": exhibition_id},
+        )
+
+        # List as unauthenticated user
+        response = await client.get(
+            f"/api/v1/exhibitions/{exhibition_id}/safety-tools"
+        )
+
+        assert response.status_code == 200
+        assert len(response.json()) == 1

@@ -199,6 +199,59 @@ class BatchTablesResponse(BaseModel):
 
 
 # =============================================================================
+# SafetyTool Schemas (JS.A5)
+# =============================================================================
+
+class SafetyToolBase(BaseModel):
+    """Base schema for safety tools."""
+    name: str = Field(..., min_length=1, max_length=100)
+    slug: str = Field(..., min_length=1, max_length=50, pattern=r"^[a-z0-9-]+$")
+    description: Optional[str] = Field(None, max_length=500)
+    url: Optional[str] = Field(None, max_length=500)
+    is_required: bool = Field(default=False)
+    display_order: int = Field(default=0, ge=0)
+
+
+class SafetyToolCreate(SafetyToolBase):
+    """Schema for creating a safety tool."""
+    exhibition_id: UUID
+
+
+class SafetyToolUpdate(BaseModel):
+    """Schema for updating a safety tool."""
+    name: Optional[str] = Field(None, min_length=1, max_length=100)
+    description: Optional[str] = Field(None, max_length=500)
+    url: Optional[str] = Field(None, max_length=500)
+    is_required: Optional[bool] = None
+    display_order: Optional[int] = Field(None, ge=0)
+
+
+class SafetyToolRead(SafetyToolBase):
+    """Schema for reading a safety tool."""
+    id: UUID
+    exhibition_id: UUID
+    created_at: datetime
+    updated_at: Optional[datetime] = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class SafetyToolBatchCreate(BaseModel):
+    """Schema for batch creating common safety tools."""
+    exhibition_id: UUID
+    include_defaults: bool = Field(
+        default=True,
+        description="Include common safety tools (X-Card, Lines & Veils, etc.)"
+    )
+
+
+class SafetyToolBatchResponse(BaseModel):
+    """Response for batch safety tool creation."""
+    created_count: int
+    tools: List[SafetyToolRead]
+
+
+# =============================================================================
 # Dashboard Schemas
 # =============================================================================
 
