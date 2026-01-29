@@ -464,10 +464,37 @@ class GameSessionService:
             )
 
         # Check moderator permissions
-        if current_user.global_role not in [GlobalRole.SUPER_ADMIN, GlobalRole.ORGANIZER]:
+        # Allowed: SUPER_ADMIN, ORGANIZER, or partner managing the zone (#32)
+        can_moderate = current_user.global_role in [GlobalRole.SUPER_ADMIN, GlobalRole.ORGANIZER]
+
+        # Check if user is a partner managing the zone where the session's table is located
+        if not can_moderate and session.physical_table_id:
+            from app.domain.user.entity import UserGroupMembership
+
+            # Get the zone's delegated group and check membership
+            zone_check = await self.db.execute(
+                select(Zone.delegated_to_group_id)
+                .join(PhysicalTable, PhysicalTable.zone_id == Zone.id)
+                .where(PhysicalTable.id == session.physical_table_id)
+            )
+            delegated_group_id = zone_check.scalar_one_or_none()
+
+            if delegated_group_id:
+                # Check if current user is a member of this group
+                membership_check = await self.db.execute(
+                    select(UserGroupMembership.id)
+                    .where(
+                        UserGroupMembership.user_group_id == delegated_group_id,
+                        UserGroupMembership.user_id == current_user.id,
+                    )
+                )
+                if membership_check.scalar_one_or_none():
+                    can_moderate = True
+
+        if not can_moderate:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail="Only organizers can moderate sessions",
+                detail="Only organizers or zone managers can moderate sessions",
             )
 
         if session.status != SessionStatus.PENDING_MODERATION:

@@ -2238,6 +2238,102 @@ class TestSessionCancellation:
         assert data["affected_users"][0]["booking_status"] == "CONFIRMED"
 
 
+class TestDelegatedModeration:
+    """Tests for delegated moderation by zone partners (#32)."""
+
+    async def test_partner_can_moderate_session_in_delegated_zone(
+        self,
+        auth_client: AsyncClient,
+        second_auth_client: AsyncClient,
+        test_exhibition_with_slot: dict,
+        test_game: dict,
+        test_organizer: dict,
+        db_session,
+    ):
+        """Partner managing a zone can moderate sessions on tables in that zone."""
+        from uuid import uuid4
+        from app.domain.exhibition.entity import Zone, PhysicalTable
+        from app.domain.organization.entity import UserGroup
+        from app.domain.user.entity import UserGroupMembership
+        from app.domain.shared.entity import ZoneType, PhysicalTableStatus, GroupRole
+
+        # Create a partner group using the actual organization
+        partner_group = UserGroup(
+            id=uuid4(),
+            organization_id=test_organizer["organization_id"],
+            name="Partner Group",
+            type="STAFF",
+            is_public=False,
+        )
+        db_session.add(partner_group)
+
+        # Get second organizer's user ID (they will be the partner)
+        # second_auth_client uses second_organizer fixture
+        second_organizer_resp = await second_auth_client.get("/api/v1/users/me")
+        second_organizer_id = second_organizer_resp.json()["id"]
+
+        # Add second organizer to partner group
+        membership = UserGroupMembership(
+            id=uuid4(),
+            user_id=second_organizer_id,
+            user_group_id=partner_group.id,
+            group_role=GroupRole.MEMBER,
+        )
+        db_session.add(membership)
+
+        # Create a zone delegated to the partner group
+        zone = Zone(
+            id=uuid4(),
+            exhibition_id=test_exhibition_with_slot["exhibition_id"],
+            name="Partner Zone",
+            type=ZoneType.RPG,
+            delegated_to_group_id=partner_group.id,
+        )
+        db_session.add(zone)
+
+        # Create a table in the zone
+        table = PhysicalTable(
+            id=uuid4(),
+            zone_id=zone.id,
+            label="P1",
+            capacity=6,
+            status=PhysicalTableStatus.AVAILABLE,
+        )
+        db_session.add(table)
+        await db_session.commit()
+
+        # Create a session (as first organizer) and assign to the table
+        payload = {
+            "title": "Partner Zone Session",
+            "exhibition_id": test_exhibition_with_slot["exhibition_id"],
+            "time_slot_id": test_exhibition_with_slot["time_slot_id"],
+            "game_id": test_game["id"],
+            "max_players_count": 4,
+            "scheduled_start": "2026-07-01T14:00:00Z",
+            "scheduled_end": "2026-07-01T17:00:00Z",
+        }
+        create_resp = await auth_client.post("/api/v1/sessions/", json=payload)
+        session_id = create_resp.json()["id"]
+
+        # Assign table to session
+        await auth_client.post(
+            f"/api/v1/sessions/{session_id}/assign-table",
+            params={"table_id": str(table.id)},
+        )
+
+        # Submit for moderation
+        await auth_client.post(f"/api/v1/sessions/{session_id}/submit")
+
+        # Partner (second organizer) should be able to moderate
+        response = await second_auth_client.post(
+            f"/api/v1/sessions/{session_id}/moderate",
+            json={"action": "approve"},
+        )
+
+        assert response.status_code == 200
+        assert response.json()["status"] == "VALIDATED"
+
+
 class TestSessionCopy:
     """Tests for session copy/duplicate (#33)."""
 
