@@ -10,7 +10,7 @@ from fastapi import HTTPException, status
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.domain.exhibition.entity import Exhibition, TimeSlot, Zone, PhysicalTable
+from app.domain.exhibition.entity import Exhibition, TimeSlot, Zone, PhysicalTable, SafetyTool
 from app.domain.exhibition.schemas import (
     ExhibitionCreate,
     ExhibitionDashboard,
@@ -18,6 +18,8 @@ from app.domain.exhibition.schemas import (
     ZoneCreate,
     BatchTablesCreate,
     SessionStatusCount,
+    SafetyToolCreate,
+    SafetyToolBatchResponse,
 )
 from app.domain.game.entity import GameSession, Booking
 from app.domain.organization.entity import Organization, UserGroup
@@ -362,4 +364,148 @@ class ExhibitionService:
             sessions_by_status=sessions_by_status,
             total_sessions=total_sessions,
             total_bookings=total_bookings,
+        )
+
+    # =========================================================================
+    # SafetyTool Operations (JS.A5)
+    # =========================================================================
+
+    # Default safety tools to create
+    DEFAULT_SAFETY_TOOLS = [
+        {
+            "name": "X-Card",
+            "slug": "x-card",
+            "description": "A card that can be tapped to skip uncomfortable content without explanation.",
+            "url": "https://docs.google.com/document/d/1SB0jsx34bWHZWbnNIVVuMjhDkrdFGo1_hSC2BWPlI3A/",
+            "display_order": 1,
+        },
+        {
+            "name": "Lines & Veils",
+            "slug": "lines-and-veils",
+            "description": "Lines are hard limits (never in game), Veils are fade-to-black (implied but not detailed).",
+            "url": "https://rpg.stackexchange.com/questions/30906/what-do-the-terms-lines-and-veils-mean",
+            "display_order": 2,
+        },
+        {
+            "name": "Script Change",
+            "slug": "script-change",
+            "description": "Rewind, fast-forward, or pause scenes like controlling a movie.",
+            "url": "https://briebeau.com/thoughty/script-change/",
+            "display_order": 3,
+        },
+        {
+            "name": "Open Door Policy",
+            "slug": "open-door",
+            "description": "Players can leave the table at any time without needing to explain.",
+            "display_order": 4,
+        },
+        {
+            "name": "Stars & Wishes",
+            "slug": "stars-and-wishes",
+            "description": "End-of-session feedback: stars (what was great) and wishes (what to improve).",
+            "display_order": 5,
+        },
+        {
+            "name": "Session Zero",
+            "slug": "session-zero",
+            "description": "Pre-game session to discuss expectations, boundaries, and character creation.",
+            "display_order": 6,
+        },
+    ]
+
+    async def create_safety_tool(
+        self,
+        exhibition_id: UUID,
+        data: SafetyToolCreate,
+    ) -> SafetyTool:
+        """
+        Create a safety tool for an exhibition.
+
+        Validates:
+        - Exhibition exists
+        - Slug is unique within the exhibition
+        """
+        # Get exhibition
+        result = await self.db.execute(
+            select(Exhibition).where(Exhibition.id == exhibition_id)
+        )
+        exhibition = result.scalar_one_or_none()
+        if not exhibition:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Exhibition not found",
+            )
+
+        # Check slug uniqueness within exhibition
+        existing = await self.db.execute(
+            select(SafetyTool).where(
+                SafetyTool.exhibition_id == exhibition_id,
+                SafetyTool.slug == data.slug,
+            )
+        )
+        if existing.scalar_one_or_none():
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=f"Safety tool with slug '{data.slug}' already exists for this exhibition",
+            )
+
+        tool = SafetyTool(
+            exhibition_id=exhibition_id,
+            name=data.name,
+            slug=data.slug,
+            description=data.description,
+            url=data.url,
+            is_required=data.is_required,
+            display_order=data.display_order,
+        )
+        self.db.add(tool)
+        await self.db.flush()
+        await self.db.refresh(tool)
+
+        return tool
+
+    async def create_default_safety_tools(
+        self,
+        exhibition_id: UUID,
+    ) -> SafetyToolBatchResponse:
+        """
+        Create default safety tools for an exhibition.
+
+        Skips tools that already exist (by slug).
+        """
+        # Get exhibition
+        result = await self.db.execute(
+            select(Exhibition).where(Exhibition.id == exhibition_id)
+        )
+        exhibition = result.scalar_one_or_none()
+        if not exhibition:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Exhibition not found",
+            )
+
+        # Get existing slugs
+        existing_slugs = await self.db.execute(
+            select(SafetyTool.slug).where(SafetyTool.exhibition_id == exhibition_id)
+        )
+        existing_set = {row[0] for row in existing_slugs.fetchall()}
+
+        # Create tools that don't exist
+        tools = []
+        for tool_data in self.DEFAULT_SAFETY_TOOLS:
+            if tool_data["slug"] not in existing_set:
+                tool = SafetyTool(
+                    exhibition_id=exhibition_id,
+                    **tool_data,
+                )
+                self.db.add(tool)
+                tools.append(tool)
+
+        await self.db.flush()
+        for tool in tools:
+            await self.db.refresh(tool)
+
+        return SafetyToolBatchResponse(
+            created_count=len(tools),
+            tools=tools,
         )

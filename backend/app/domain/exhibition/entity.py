@@ -67,6 +67,9 @@ class Exhibition(Base, TimestampMixin):
     zones: Mapped[List["Zone"]] = relationship(
         back_populates="exhibition", cascade="all, delete-orphan"
     )
+    safety_tools: Mapped[List["SafetyTool"]] = relationship(
+        back_populates="exhibition", cascade="all, delete-orphan"
+    )
     game_sessions: Mapped[List["GameSession"]] = relationship(
         back_populates="exhibition", cascade="all, delete-orphan"
     )
@@ -130,6 +133,32 @@ class Zone(Base, TimestampMixin):
     physical_tables: Mapped[List["PhysicalTable"]] = relationship(
         back_populates="zone", cascade="all, delete-orphan"
     )
+
+
+class SafetyTool(Base, TimestampMixin):
+    """
+    A safety tool available for game sessions in an exhibition.
+
+    Examples: X-Card, Lines & Veils, Script Change, etc.
+    Organizers define the available tools, GMs select which ones they'll use.
+    """
+    __tablename__ = "safety_tools"
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
+    exhibition_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("exhibitions.id", ondelete="CASCADE")
+    )
+    name: Mapped[str] = mapped_column(String(100))
+    slug: Mapped[str] = mapped_column(String(50))  # For programmatic access
+    description: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
+    url: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)  # Link to docs
+    is_required: Mapped[bool] = mapped_column(default=False)  # Must be used by all sessions
+    display_order: Mapped[int] = mapped_column(Integer, default=0)
+
+    # Relationships
+    exhibition: Mapped["Exhibition"] = relationship(back_populates="safety_tools")
 
 
 class PhysicalTable(Base, TimestampMixin):

@@ -54,7 +54,7 @@ async def db_session(test_engine) -> AsyncGenerator[AsyncSession, None]:
     async with test_engine.begin() as conn:
         # Truncate in correct order (respecting FKs)
         for table in ["bookings", "game_sessions", "physical_tables", "zones",
-                      "time_slots", "games", "game_categories",
+                      "safety_tools", "time_slots", "games", "game_categories",
                       "user_group_memberships", "group_permissions", "user_groups",
                       "exhibitions", "media", "audit_logs", "users", "organizations"]:
             try:
