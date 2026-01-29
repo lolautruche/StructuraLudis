@@ -3,7 +3,7 @@ GameSession service layer.
 
 Contains business logic for game sessions, bookings, and workflow.
 """
-from datetime import timedelta
+from datetime import datetime, timedelta
 from typing import List, Optional
 from uuid import UUID
 
@@ -564,6 +564,100 @@ class GameSessionService:
         await self.db.refresh(session)
 
         return session, affected_users
+
+    async def copy_session(
+        self,
+        session_id: UUID,
+        time_slot_id: UUID | None,
+        scheduled_start: datetime | None,
+        scheduled_end: datetime | None,
+        title: str | None,
+        current_user: User,
+    ) -> GameSession:
+        """
+        Copy/duplicate an existing session (#33).
+
+        Creates a new session in DRAFT status with the same properties.
+        Useful for recurring sessions or similar events.
+
+        Can be done by: session creator (GM), organizers, or super admin.
+        """
+        original = await self._get_session(session_id)
+        if not original:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Game session not found",
+            )
+
+        # Check permission
+        can_copy = (
+            original.created_by_user_id == current_user.id
+            or current_user.global_role in [GlobalRole.SUPER_ADMIN, GlobalRole.ORGANIZER]
+        )
+        if not can_copy:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You cannot copy this session",
+            )
+
+        # Determine target time slot and schedule
+        target_time_slot_id = time_slot_id or original.time_slot_id
+        target_start = scheduled_start or original.scheduled_start
+        target_end = scheduled_end or original.scheduled_end
+
+        # Validate time slot if changed
+        if time_slot_id and time_slot_id != original.time_slot_id:
+            time_slot = await self._get_time_slot(time_slot_id)
+            if not time_slot:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Time slot not found",
+                )
+            if time_slot.exhibition_id != original.exhibition_id:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Time slot does not belong to this exhibition",
+                )
+            # Require new times if slot changed
+            if not scheduled_start or not scheduled_end:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="scheduled_start and scheduled_end are required when changing time slot",
+                )
+            # Validate schedule within new time slot
+            if target_start < time_slot.start_time or target_end > time_slot.end_time:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Schedule must be within the time slot bounds",
+                )
+
+        # Generate title
+        new_title = title or f"Copy of {original.title}"
+
+        # Create the copy
+        copied_session = GameSession(
+            exhibition_id=original.exhibition_id,
+            time_slot_id=target_time_slot_id,
+            game_id=original.game_id,
+            provided_by_group_id=original.provided_by_group_id,
+            created_by_user_id=current_user.id,
+            title=new_title,
+            description=original.description,
+            language=original.language,
+            min_age=original.min_age,
+            max_players_count=original.max_players_count,
+            safety_tools=original.safety_tools,
+            is_accessible_disability=original.is_accessible_disability,
+            scheduled_start=target_start,
+            scheduled_end=target_end,
+            status=SessionStatus.DRAFT,
+        )
+
+        self.db.add(copied_session)
+        await self.db.flush()
+        await self.db.refresh(copied_session)
+
+        return copied_session
 
     # =========================================================================
     # Booking Operations

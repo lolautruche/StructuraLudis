@@ -2236,3 +2236,117 @@ class TestSessionCancellation:
         assert len(data["affected_users"]) == 1
         # affected_users shows ORIGINAL status (CONFIRMED in this case)
         assert data["affected_users"][0]["booking_status"] == "CONFIRMED"
+
+
+class TestSessionCopy:
+    """Tests for session copy/duplicate (#33)."""
+
+    async def test_copy_session_basic(
+        self,
+        auth_client: AsyncClient,
+        test_exhibition_with_slot: dict,
+        test_game: dict,
+    ):
+        """Copy a session creates a new draft with same properties."""
+        # Create original session
+        payload = {
+            "title": "Original Session",
+            "description": "A great adventure",
+            "exhibition_id": test_exhibition_with_slot["exhibition_id"],
+            "time_slot_id": test_exhibition_with_slot["time_slot_id"],
+            "game_id": test_game["id"],
+            "max_players_count": 5,
+            "language": "fr",
+            "min_age": 12,
+            "scheduled_start": "2026-07-01T14:00:00Z",
+            "scheduled_end": "2026-07-01T17:00:00Z",
+        }
+        create_resp = await auth_client.post("/api/v1/sessions/", json=payload)
+        session_id = create_resp.json()["id"]
+
+        # Copy the session
+        response = await auth_client.post(f"/api/v1/sessions/{session_id}/copy")
+
+        assert response.status_code == 201
+        data = response.json()
+        assert data["id"] != session_id
+        assert data["title"] == "Copy of Original Session"
+        assert data["description"] == "A great adventure"
+        assert data["max_players_count"] == 5
+        assert data["language"] == "fr"
+        assert data["min_age"] == 12
+        assert data["status"] == "DRAFT"
+
+    async def test_copy_session_custom_title(
+        self,
+        auth_client: AsyncClient,
+        test_exhibition_with_slot: dict,
+        test_game: dict,
+    ):
+        """Copy with custom title uses provided title."""
+        payload = {
+            "title": "Original",
+            "exhibition_id": test_exhibition_with_slot["exhibition_id"],
+            "time_slot_id": test_exhibition_with_slot["time_slot_id"],
+            "game_id": test_game["id"],
+            "max_players_count": 4,
+            "scheduled_start": "2026-07-01T14:00:00Z",
+            "scheduled_end": "2026-07-01T17:00:00Z",
+        }
+        create_resp = await auth_client.post("/api/v1/sessions/", json=payload)
+        session_id = create_resp.json()["id"]
+
+        response = await auth_client.post(
+            f"/api/v1/sessions/{session_id}/copy",
+            json={"title": "My Custom Copy"},
+        )
+
+        assert response.status_code == 201
+        assert response.json()["title"] == "My Custom Copy"
+
+    async def test_copy_session_not_found(
+        self,
+        auth_client: AsyncClient,
+    ):
+        """Copy non-existent session returns 404."""
+        fake_id = "00000000-0000-0000-0000-000000000000"
+
+        response = await auth_client.post(f"/api/v1/sessions/{fake_id}/copy")
+
+        assert response.status_code == 404
+
+    async def test_copy_session_forbidden_for_other_user(
+        self,
+        auth_client: AsyncClient,
+        second_auth_client: AsyncClient,
+        test_exhibition_with_slot: dict,
+        test_game: dict,
+        test_user: dict,
+    ):
+        """Regular user cannot copy someone else's session."""
+        # Create session as second organizer
+        payload = {
+            "title": "Other's Session",
+            "exhibition_id": test_exhibition_with_slot["exhibition_id"],
+            "time_slot_id": test_exhibition_with_slot["time_slot_id"],
+            "game_id": test_game["id"],
+            "max_players_count": 4,
+            "scheduled_start": "2026-07-01T14:00:00Z",
+            "scheduled_end": "2026-07-01T17:00:00Z",
+        }
+        create_resp = await second_auth_client.post("/api/v1/sessions/", json=payload)
+        session_id = create_resp.json()["id"]
+
+        # Try to copy as regular user
+        from httpx import AsyncClient as HttpxClient
+        from httpx import ASGITransport
+        from app.main import app
+
+        async with HttpxClient(
+            transport=ASGITransport(app=app),
+            base_url="http://test",
+            headers={"X-User-ID": test_user["id"]},
+        ) as user_client:
+            response = await user_client.post(f"/api/v1/sessions/{session_id}/copy")
+
+        assert response.status_code == 403

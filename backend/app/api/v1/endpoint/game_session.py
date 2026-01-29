@@ -25,6 +25,7 @@ from app.domain.game.schemas import (
     SessionSearchResult,
     SessionCancelRequest,
     SessionCancellationResult,
+    SessionCopyRequest,
 )
 from app.domain.user.entity import User
 from app.domain.exhibition.entity import Exhibition
@@ -297,6 +298,40 @@ async def cancel_session(
         session=session,
         affected_users=affected_users,
         notifications_sent=notifications_sent,
+    )
+
+
+@router.post("/{session_id}/copy", response_model=GameSessionRead, status_code=status.HTTP_201_CREATED)
+async def copy_session(
+    session_id: UUID,
+    copy_request: SessionCopyRequest = None,
+    current_user: User = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Copy/duplicate an existing session (#33).
+
+    Creates a new session in DRAFT status with the same properties as the original.
+    Useful for recurring sessions or creating similar events.
+
+    Optional parameters:
+    - time_slot_id: Target a different time slot (same exhibition)
+    - scheduled_start/end: New schedule (required if time_slot_id changes)
+    - title: Custom title (defaults to "Copy of [original]")
+
+    Can be done by: session creator (GM), organizers, or super admin.
+    """
+    if copy_request is None:
+        copy_request = SessionCopyRequest()
+
+    service = GameSessionService(db)
+    return await service.copy_session(
+        session_id=session_id,
+        time_slot_id=copy_request.time_slot_id,
+        scheduled_start=copy_request.scheduled_start,
+        scheduled_end=copy_request.scheduled_end,
+        title=copy_request.title,
+        current_user=current_user,
     )
 
 

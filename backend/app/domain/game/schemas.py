@@ -303,3 +303,29 @@ class SessionCancellationResult(BaseModel):
     notifications_sent: int = Field(
         0, description="Number of notifications sent"
     )
+
+
+# =============================================================================
+# Session Copy Schemas
+# =============================================================================
+
+class SessionCopyRequest(BaseModel):
+    """Schema for copying/duplicating a session."""
+    time_slot_id: Optional[UUID] = Field(
+        None,
+        description="Target time slot (uses original if not specified)"
+    )
+    scheduled_start: Optional[datetime] = Field(
+        None,
+        description="New start time (required if time_slot_id changes)"
+    )
+    scheduled_end: Optional[datetime] = Field(
+        None,
+        description="New end time (required if time_slot_id changes)"
+    )
+    title: Optional[str] = Field(
+        None,
+        min_length=1,
+        max_length=255,
+        description="New title (defaults to 'Copy of [original]')"
+    )
