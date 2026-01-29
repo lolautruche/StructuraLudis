@@ -690,3 +690,151 @@ class TestSafetyTools:
 
         assert response.status_code == 200
         assert len(response.json()) == 1
+
+
+class TestEventConfiguration:
+    """Tests for event configuration fields (#39 - JS.03)."""
+
+    async def test_create_with_registration_config(
+        self, auth_client: AsyncClient, test_organizer: dict
+    ):
+        """Create exhibition with registration configuration."""
+        payload = {
+            "title": "Configured Event",
+            "slug": "configured-event",
+            "start_date": "2026-07-01T10:00:00Z",
+            "end_date": "2026-07-03T18:00:00Z",
+            "organization_id": test_organizer["organization_id"],
+            "is_registration_open": True,
+            "registration_opens_at": "2026-06-01T00:00:00Z",
+            "registration_closes_at": "2026-06-30T23:59:59Z",
+        }
+
+        response = await auth_client.post("/api/v1/exhibitions/", json=payload)
+
+        assert response.status_code == 201
+        data = response.json()
+        assert data["is_registration_open"] is True
+        assert data["registration_opens_at"] == "2026-06-01T00:00:00Z"
+        assert data["registration_closes_at"] == "2026-06-30T23:59:59Z"
+
+    async def test_create_with_language_config(
+        self, auth_client: AsyncClient, test_organizer: dict
+    ):
+        """Create exhibition with language configuration."""
+        payload = {
+            "title": "Multilingual Event",
+            "slug": "multilingual-event",
+            "start_date": "2026-07-01T10:00:00Z",
+            "end_date": "2026-07-03T18:00:00Z",
+            "organization_id": test_organizer["organization_id"],
+            "primary_language": "fr",
+            "secondary_languages": ["en", "de"],
+        }
+
+        response = await auth_client.post("/api/v1/exhibitions/", json=payload)
+
+        assert response.status_code == 201
+        data = response.json()
+        assert data["primary_language"] == "fr"
+        assert data["secondary_languages"] == ["en", "de"]
+
+    async def test_create_defaults(
+        self, auth_client: AsyncClient, test_organizer: dict
+    ):
+        """Exhibition without config uses defaults."""
+        payload = {
+            "title": "Default Config Event",
+            "slug": "default-config-event",
+            "start_date": "2026-07-01T10:00:00Z",
+            "end_date": "2026-07-03T18:00:00Z",
+            "organization_id": test_organizer["organization_id"],
+        }
+
+        response = await auth_client.post("/api/v1/exhibitions/", json=payload)
+
+        assert response.status_code == 201
+        data = response.json()
+        assert data["is_registration_open"] is False
+        assert data["registration_opens_at"] is None
+        assert data["registration_closes_at"] is None
+        assert data["primary_language"] == "en"
+        assert data["secondary_languages"] is None
+
+    async def test_update_registration_config(
+        self, auth_client: AsyncClient, test_organizer: dict
+    ):
+        """Update registration configuration."""
+        # Create exhibition
+        payload = {
+            "title": "Update Config Test",
+            "slug": "update-config-test",
+            "start_date": "2026-07-01T10:00:00Z",
+            "end_date": "2026-07-03T18:00:00Z",
+            "organization_id": test_organizer["organization_id"],
+        }
+        create_resp = await auth_client.post("/api/v1/exhibitions/", json=payload)
+        exhibition_id = create_resp.json()["id"]
+
+        # Update registration config
+        update_payload = {
+            "is_registration_open": True,
+            "registration_opens_at": "2026-06-15T00:00:00Z",
+            "registration_closes_at": "2026-06-28T23:59:59Z",
+        }
+        response = await auth_client.put(
+            f"/api/v1/exhibitions/{exhibition_id}", json=update_payload
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["is_registration_open"] is True
+        assert data["registration_opens_at"] == "2026-06-15T00:00:00Z"
+        assert data["registration_closes_at"] == "2026-06-28T23:59:59Z"
+
+    async def test_update_language_config(
+        self, auth_client: AsyncClient, test_organizer: dict
+    ):
+        """Update language configuration."""
+        # Create exhibition
+        payload = {
+            "title": "Language Update Test",
+            "slug": "language-update-test",
+            "start_date": "2026-07-01T10:00:00Z",
+            "end_date": "2026-07-03T18:00:00Z",
+            "organization_id": test_organizer["organization_id"],
+            "primary_language": "en",
+        }
+        create_resp = await auth_client.post("/api/v1/exhibitions/", json=payload)
+        exhibition_id = create_resp.json()["id"]
+
+        # Update language config
+        update_payload = {
+            "primary_language": "fr",
+            "secondary_languages": ["en", "es"],
+        }
+        response = await auth_client.put(
+            f"/api/v1/exhibitions/{exhibition_id}", json=update_payload
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["primary_language"] == "fr"
+        assert data["secondary_languages"] == ["en", "es"]
+
+    async def test_invalid_registration_dates(
+        self, auth_client: AsyncClient, test_organizer: dict
+    ):
+        """Registration closes before opens returns 422."""
+        payload = {
+            "title": "Invalid Reg Dates",
+            "slug": "invalid-reg-dates",
+            "start_date": "2026-07-01T10:00:00Z",
+            "end_date": "2026-07-03T18:00:00Z",
+            "organization_id": test_organizer["organization_id"],
+            "registration_opens_at": "2026-06-30T00:00:00Z",
+            "registration_closes_at": "2026-06-01T00:00:00Z",  # Before opens
+        }
+
+        response = await auth_client.post("/api/v1/exhibitions/", json=payload)
+        assert response.status_code == 422

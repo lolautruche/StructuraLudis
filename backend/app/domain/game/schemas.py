@@ -129,6 +129,9 @@ class GameSessionRead(GameSessionBase):
     game_id: UUID
     physical_table_id: Optional[UUID] = None
     provided_by_group_id: Optional[UUID] = None
+    provided_by_group_name: Optional[str] = Field(
+        None, description="Partner/group name for 'Organized by' display"
+    )
     created_by_user_id: UUID
     status: SessionStatus
     rejection_reason: Optional[str] = None
@@ -147,15 +150,43 @@ class GameSessionSubmit(BaseModel):
 
 
 class GameSessionModerate(BaseModel):
-    """Schema for moderating a session (approve/reject)."""
-    action: str = Field(..., pattern=r"^(approve|reject)$")
+    """Schema for moderating a session (approve/reject/request_changes)."""
+    action: str = Field(..., pattern=r"^(approve|reject|request_changes)$")
     rejection_reason: Optional[str] = Field(None, max_length=1000)
+    comment: Optional[str] = Field(
+        None,
+        max_length=2000,
+        description="Comment explaining the moderation decision or requested changes"
+    )
 
     @model_validator(mode="after")
     def validate_rejection(self):
         if self.action == "reject" and not self.rejection_reason:
             raise ValueError("rejection_reason is required when rejecting")
+        if self.action == "request_changes" and not self.comment:
+            raise ValueError("comment is required when requesting changes")
         return self
+
+
+# =============================================================================
+# Moderation Comment Schemas (#30)
+# =============================================================================
+
+class ModerationCommentCreate(BaseModel):
+    """Schema for creating a moderation comment."""
+    content: str = Field(..., min_length=1, max_length=2000)
+
+
+class ModerationCommentRead(BaseModel):
+    """Schema for reading a moderation comment."""
+    id: UUID
+    game_session_id: UUID
+    user_id: UUID
+    user_full_name: Optional[str] = Field(None, description="Author's name for display")
+    content: str
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
 
 
 # =============================================================================
@@ -302,4 +333,30 @@ class SessionCancellationResult(BaseModel):
     )
     notifications_sent: int = Field(
         0, description="Number of notifications sent"
+    )
+
+
+# =============================================================================
+# Session Copy Schemas
+# =============================================================================
+
+class SessionCopyRequest(BaseModel):
+    """Schema for copying/duplicating a session."""
+    time_slot_id: Optional[UUID] = Field(
+        None,
+        description="Target time slot (uses original if not specified)"
+    )
+    scheduled_start: Optional[datetime] = Field(
+        None,
+        description="New start time (required if time_slot_id changes)"
+    )
+    scheduled_end: Optional[datetime] = Field(
+        None,
+        description="New end time (required if time_slot_id changes)"
+    )
+    title: Optional[str] = Field(
+        None,
+        min_length=1,
+        max_length=255,
+        description="New title (defaults to 'Copy of [original]')"
     )

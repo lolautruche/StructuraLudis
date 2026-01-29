@@ -50,10 +50,23 @@ class Exhibition(Base, TimestampMixin):
     city: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
     country_code: Mapped[Optional[str]] = mapped_column(String(2), nullable=True)
 
-    # Configuration (Issue #6, #12)
+    # Configuration (Issue #6, #12, #39)
     timezone: Mapped[str] = mapped_column(String(50), default="UTC")
     grace_period_minutes: Mapped[int] = mapped_column(Integer, default=15)
     settings: Mapped[Optional[dict]] = mapped_column(JSONB, nullable=True)
+
+    # Registration control (Issue #39 - JS.03)
+    is_registration_open: Mapped[bool] = mapped_column(default=False)
+    registration_opens_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    registration_closes_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+
+    # Language settings (Issue #39 - JS.03)
+    primary_language: Mapped[str] = mapped_column(String(10), default="en")
+    secondary_languages: Mapped[Optional[List[str]]] = mapped_column(JSONB, nullable=True)
 
     status: Mapped[ExhibitionStatus] = mapped_column(
         String(20), default=ExhibitionStatus.DRAFT

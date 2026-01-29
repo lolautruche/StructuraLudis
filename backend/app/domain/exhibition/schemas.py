@@ -32,10 +32,31 @@ class ExhibitionBase(BaseModel):
     timezone: str = Field(default="UTC", max_length=50)
     grace_period_minutes: int = Field(default=15, ge=0, le=120)
 
+    # Registration control (Issue #39 - JS.03)
+    is_registration_open: bool = Field(default=False)
+    registration_opens_at: Optional[datetime] = Field(
+        None, description="When registrations open for this exhibition"
+    )
+    registration_closes_at: Optional[datetime] = Field(
+        None, description="When registrations close for this exhibition"
+    )
+
+    # Language settings (Issue #39 - JS.03)
+    primary_language: str = Field(
+        default="en", max_length=10, description="Main event language"
+    )
+    secondary_languages: Optional[List[str]] = Field(
+        None, description="Additional supported languages"
+    )
+
     @model_validator(mode="after")
     def validate_dates(self):
         if self.start_date >= self.end_date:
             raise ValueError("start_date must be before end_date")
+        # Validate registration dates if provided
+        if self.registration_opens_at and self.registration_closes_at:
+            if self.registration_opens_at >= self.registration_closes_at:
+                raise ValueError("registration_opens_at must be before registration_closes_at")
         return self
 
 
@@ -57,6 +78,13 @@ class ExhibitionUpdate(BaseModel):
     timezone: Optional[str] = Field(None, max_length=50)
     grace_period_minutes: Optional[int] = Field(None, ge=0, le=120)
     status: Optional[ExhibitionStatusEnum] = None
+    # Registration control (Issue #39 - JS.03)
+    is_registration_open: Optional[bool] = None
+    registration_opens_at: Optional[datetime] = None
+    registration_closes_at: Optional[datetime] = None
+    # Language settings (Issue #39 - JS.03)
+    primary_language: Optional[str] = Field(None, max_length=10)
+    secondary_languages: Optional[List[str]] = None
 
 
 class ExhibitionRead(ExhibitionBase):
@@ -66,6 +94,7 @@ class ExhibitionRead(ExhibitionBase):
     slug: str
     status: ExhibitionStatusEnum
     settings: Optional[dict] = None
+    address: Optional[str] = None
     created_at: datetime
     updated_at: Optional[datetime] = None
 

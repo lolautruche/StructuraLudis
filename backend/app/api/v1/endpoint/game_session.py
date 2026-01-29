@@ -25,6 +25,9 @@ from app.domain.game.schemas import (
     SessionSearchResult,
     SessionCancelRequest,
     SessionCancellationResult,
+    SessionCopyRequest,
+    ModerationCommentCreate,
+    ModerationCommentRead,
 )
 from app.domain.user.entity import User
 from app.domain.exhibition.entity import Exhibition
@@ -133,18 +136,51 @@ async def get_session(
     db: AsyncSession = Depends(get_db),
 ):
     """Get a single game session by ID."""
-    result = await db.execute(
-        select(GameSession).where(GameSession.id == session_id)
-    )
-    session = result.scalar_one_or_none()
+    from app.domain.organization.entity import UserGroup
 
-    if not session:
+    result = await db.execute(
+        select(GameSession, UserGroup.name.label("group_name"))
+        .outerjoin(UserGroup, GameSession.provided_by_group_id == UserGroup.id)
+        .where(GameSession.id == session_id)
+    )
+    row = result.one_or_none()
+
+    if not row:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Game session not found",
         )
 
-    return session
+    session = row[0]
+    group_name = row[1]
+
+    # Build response with group name
+    return GameSessionRead(
+        id=session.id,
+        exhibition_id=session.exhibition_id,
+        time_slot_id=session.time_slot_id,
+        game_id=session.game_id,
+        physical_table_id=session.physical_table_id,
+        provided_by_group_id=session.provided_by_group_id,
+        provided_by_group_name=group_name,
+        created_by_user_id=session.created_by_user_id,
+        title=session.title,
+        description=session.description,
+        language=session.language,
+        min_age=session.min_age,
+        max_players_count=session.max_players_count,
+        safety_tools=session.safety_tools,
+        is_accessible_disability=session.is_accessible_disability,
+        status=session.status,
+        rejection_reason=session.rejection_reason,
+        scheduled_start=session.scheduled_start,
+        scheduled_end=session.scheduled_end,
+        gm_checked_in_at=session.gm_checked_in_at,
+        actual_start=session.actual_start,
+        actual_end=session.actual_end,
+        created_at=session.created_at,
+        updated_at=session.updated_at,
+    )
 
 
 @router.put("/{session_id}", response_model=GameSessionRead)
@@ -230,14 +266,62 @@ async def moderate_session(
     db: AsyncSession = Depends(get_db),
 ):
     """
-    Approve or reject a session.
+    Approve, reject, or request changes on a session (#30).
 
-    Body: { "action": "approve" } or { "action": "reject", "rejection_reason": "..." }
+    Actions:
+    - approve: Validate the session
+    - reject: Reject with reason
+    - request_changes: Ask proposer to modify (adds comment to dialogue)
 
-    Requires: Organizer or SUPER_ADMIN.
+    Body examples:
+    - { "action": "approve" }
+    - { "action": "reject", "rejection_reason": "..." }
+    - { "action": "request_changes", "comment": "Please add safety tools" }
+
+    Requires: Organizer, SUPER_ADMIN, or zone manager.
     """
     service = GameSessionService(db)
     return await service.moderate_session(session_id, moderation, current_user)
+
+
+# =============================================================================
+# Moderation Comments (#30)
+# =============================================================================
+
+@router.get("/{session_id}/comments", response_model=List[ModerationCommentRead])
+async def list_moderation_comments(
+    session_id: UUID,
+    current_user: User = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    List moderation comments for a session (#30).
+
+    Returns the dialogue thread between proposer and moderators.
+
+    Can be viewed by: session creator, organizers, or zone managers.
+    """
+    service = GameSessionService(db)
+    return await service.list_moderation_comments(session_id, current_user)
+
+
+@router.post("/{session_id}/comments", response_model=ModerationCommentRead, status_code=status.HTTP_201_CREATED)
+async def create_moderation_comment(
+    session_id: UUID,
+    comment: ModerationCommentCreate,
+    current_user: User = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Add a comment to the moderation dialogue (#30).
+
+    Enables two-way communication during the moderation process.
+    Only allowed on sessions in PENDING_MODERATION or CHANGES_REQUESTED status.
+
+    Can be posted by: session creator, organizers, or zone managers.
+    """
+    service = GameSessionService(db)
+    return await service.create_moderation_comment(session_id, comment, current_user)
 
 
 @router.post("/{session_id}/cancel", response_model=SessionCancellationResult)
@@ -297,6 +381,40 @@ async def cancel_session(
         session=session,
         affected_users=affected_users,
         notifications_sent=notifications_sent,
+    )
+
+
+@router.post("/{session_id}/copy", response_model=GameSessionRead, status_code=status.HTTP_201_CREATED)
+async def copy_session(
+    session_id: UUID,
+    copy_request: SessionCopyRequest = None,
+    current_user: User = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Copy/duplicate an existing session (#33).
+
+    Creates a new session in DRAFT status with the same properties as the original.
+    Useful for recurring sessions or creating similar events.
+
+    Optional parameters:
+    - time_slot_id: Target a different time slot (same exhibition)
+    - scheduled_start/end: New schedule (required if time_slot_id changes)
+    - title: Custom title (defaults to "Copy of [original]")
+
+    Can be done by: session creator (GM), organizers, or super admin.
+    """
+    if copy_request is None:
+        copy_request = SessionCopyRequest()
+
+    service = GameSessionService(db)
+    return await service.copy_session(
+        session_id=session_id,
+        time_slot_id=copy_request.time_slot_id,
+        scheduled_start=copy_request.scheduled_start,
+        scheduled_end=copy_request.scheduled_end,
+        title=copy_request.title,
+        current_user=current_user,
     )
 
 
