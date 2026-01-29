@@ -26,6 +26,8 @@ from app.domain.game.schemas import (
     SessionCancelRequest,
     SessionCancellationResult,
     SessionCopyRequest,
+    ModerationCommentCreate,
+    ModerationCommentRead,
 )
 from app.domain.user.entity import User
 from app.domain.exhibition.entity import Exhibition
@@ -264,14 +266,62 @@ async def moderate_session(
     db: AsyncSession = Depends(get_db),
 ):
     """
-    Approve or reject a session.
+    Approve, reject, or request changes on a session (#30).
 
-    Body: { "action": "approve" } or { "action": "reject", "rejection_reason": "..." }
+    Actions:
+    - approve: Validate the session
+    - reject: Reject with reason
+    - request_changes: Ask proposer to modify (adds comment to dialogue)
 
-    Requires: Organizer or SUPER_ADMIN.
+    Body examples:
+    - { "action": "approve" }
+    - { "action": "reject", "rejection_reason": "..." }
+    - { "action": "request_changes", "comment": "Please add safety tools" }
+
+    Requires: Organizer, SUPER_ADMIN, or zone manager.
     """
     service = GameSessionService(db)
     return await service.moderate_session(session_id, moderation, current_user)
+
+
+# =============================================================================
+# Moderation Comments (#30)
+# =============================================================================
+
+@router.get("/{session_id}/comments", response_model=List[ModerationCommentRead])
+async def list_moderation_comments(
+    session_id: UUID,
+    current_user: User = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    List moderation comments for a session (#30).
+
+    Returns the dialogue thread between proposer and moderators.
+
+    Can be viewed by: session creator, organizers, or zone managers.
+    """
+    service = GameSessionService(db)
+    return await service.list_moderation_comments(session_id, current_user)
+
+
+@router.post("/{session_id}/comments", response_model=ModerationCommentRead, status_code=status.HTTP_201_CREATED)
+async def create_moderation_comment(
+    session_id: UUID,
+    comment: ModerationCommentCreate,
+    current_user: User = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Add a comment to the moderation dialogue (#30).
+
+    Enables two-way communication during the moderation process.
+    Only allowed on sessions in PENDING_MODERATION or CHANGES_REQUESTED status.
+
+    Can be posted by: session creator, organizers, or zone managers.
+    """
+    service = GameSessionService(db)
+    return await service.create_moderation_comment(session_id, comment, current_user)
 
 
 @router.post("/{session_id}/cancel", response_model=SessionCancellationResult)

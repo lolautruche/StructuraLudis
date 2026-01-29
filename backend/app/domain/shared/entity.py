@@ -112,9 +112,10 @@ class SafetyTool(str, Enum):
 
 
 class SessionStatus(str, Enum):
-    """Workflow status for game sessions (Issue #4)."""
+    """Workflow status for game sessions (Issue #4, #30)."""
     DRAFT = "DRAFT"
     PENDING_MODERATION = "PENDING_MODERATION"
+    CHANGES_REQUESTED = "CHANGES_REQUESTED"  # Moderator requested changes (#30)
     VALIDATED = "VALIDATED"
     REJECTED = "REJECTED"
     IN_PROGRESS = "IN_PROGRESS"

@@ -153,6 +153,34 @@ class GameSession(Base, TimestampMixin):
     bookings: Mapped[List["Booking"]] = relationship(
         back_populates="game_session", cascade="all, delete-orphan"
     )
+    moderation_comments: Mapped[List["ModerationComment"]] = relationship(
+        back_populates="game_session", cascade="all, delete-orphan"
+    )
+
+
+class ModerationComment(Base, TimestampMixin):
+    """
+    A comment in the moderation dialogue for a game session (#30).
+
+    Enables two-way communication between session proposer and moderators
+    during the approval process.
+    """
+    __tablename__ = "moderation_comments"
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
+    game_session_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("game_sessions.id", ondelete="CASCADE")
+    )
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE")
+    )
+    content: Mapped[str] = mapped_column(String(2000))
+
+    # Relationships
+    game_session: Mapped["GameSession"] = relationship(back_populates="moderation_comments")
+    user: Mapped["User"] = relationship()
 
 
 class Booking(Base):

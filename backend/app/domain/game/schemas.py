@@ -150,15 +150,43 @@ class GameSessionSubmit(BaseModel):
 
 
 class GameSessionModerate(BaseModel):
-    """Schema for moderating a session (approve/reject)."""
-    action: str = Field(..., pattern=r"^(approve|reject)$")
+    """Schema for moderating a session (approve/reject/request_changes)."""
+    action: str = Field(..., pattern=r"^(approve|reject|request_changes)$")
     rejection_reason: Optional[str] = Field(None, max_length=1000)
+    comment: Optional[str] = Field(
+        None,
+        max_length=2000,
+        description="Comment explaining the moderation decision or requested changes"
+    )
 
     @model_validator(mode="after")
     def validate_rejection(self):
         if self.action == "reject" and not self.rejection_reason:
             raise ValueError("rejection_reason is required when rejecting")
+        if self.action == "request_changes" and not self.comment:
+            raise ValueError("comment is required when requesting changes")
         return self
+
+
+# =============================================================================
+# Moderation Comment Schemas (#30)
+# =============================================================================
+
+class ModerationCommentCreate(BaseModel):
+    """Schema for creating a moderation comment."""
+    content: str = Field(..., min_length=1, max_length=2000)
+
+
+class ModerationCommentRead(BaseModel):
+    """Schema for reading a moderation comment."""
+    id: UUID
+    game_session_id: UUID
+    user_id: UUID
+    user_full_name: Optional[str] = Field(None, description="Author's name for display")
+    content: str
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
 
 
 # =============================================================================

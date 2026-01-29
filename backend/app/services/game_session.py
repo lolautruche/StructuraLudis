@@ -11,7 +11,7 @@ from fastapi import HTTPException, status
 from sqlalchemy import select, func, and_, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.domain.game.entity import GameSession, Game, GameCategory, Booking
+from app.domain.game.entity import GameSession, Game, GameCategory, Booking, ModerationComment
 from app.domain.game.schemas import (
     GameSessionCreate,
     GameSessionUpdate,
@@ -19,6 +19,8 @@ from app.domain.game.schemas import (
     BookingCreate,
     SessionFilters,
     AffectedUser,
+    ModerationCommentCreate,
+    ModerationCommentRead,
 )
 from app.domain.exhibition.entity import Exhibition, TimeSlot, PhysicalTable, Zone
 from app.domain.organization.entity import UserGroup
@@ -414,9 +416,12 @@ class GameSessionService:
         current_user: User,
     ) -> GameSession:
         """
-        Submit a session for moderation.
+        Submit a session for moderation (#30).
 
-        Transitions: DRAFT -> PENDING_MODERATION
+        Transitions:
+        - DRAFT -> PENDING_MODERATION
+        - REJECTED -> PENDING_MODERATION
+        - CHANGES_REQUESTED -> PENDING_MODERATION (resubmit after making changes)
         """
         session = await self._get_session(session_id)
         if not session:
@@ -431,7 +436,12 @@ class GameSessionService:
                 detail="You cannot submit this session",
             )
 
-        if session.status not in [SessionStatus.DRAFT, SessionStatus.REJECTED]:
+        allowed_statuses = [
+            SessionStatus.DRAFT,
+            SessionStatus.REJECTED,
+            SessionStatus.CHANGES_REQUESTED,
+        ]
+        if session.status not in allowed_statuses:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"Cannot submit a {session.status.value} session",
@@ -451,10 +461,13 @@ class GameSessionService:
         current_user: User,
     ) -> GameSession:
         """
-        Approve or reject a session.
+        Approve, reject, or request changes on a session (#30).
 
-        Requires: Organizer or SUPER_ADMIN.
-        Transitions: PENDING_MODERATION -> VALIDATED or REJECTED
+        Requires: Organizer, SUPER_ADMIN, or partner managing the zone.
+        Transitions:
+        - PENDING_MODERATION -> VALIDATED (approve)
+        - PENDING_MODERATION -> REJECTED (reject)
+        - PENDING_MODERATION -> CHANGES_REQUESTED (request_changes)
         """
         session = await self._get_session(session_id)
         if not session:
@@ -506,9 +519,18 @@ class GameSessionService:
         if data.action == "approve":
             session.status = SessionStatus.VALIDATED
             session.rejection_reason = None
-        else:
+        elif data.action == "reject":
             session.status = SessionStatus.REJECTED
             session.rejection_reason = data.rejection_reason
+        elif data.action == "request_changes":
+            session.status = SessionStatus.CHANGES_REQUESTED
+            # Add the comment to the moderation thread
+            comment = ModerationComment(
+                game_session_id=session.id,
+                user_id=current_user.id,
+                content=data.comment,
+            )
+            self.db.add(comment)
 
         await self.db.flush()
         await self.db.refresh(session)
@@ -1153,3 +1175,158 @@ class GameSessionService:
         await self.db.refresh(session)
 
         return session
+
+    # =========================================================================
+    # Moderation Comments (#30)
+    # =========================================================================
+
+    async def create_moderation_comment(
+        self,
+        session_id: UUID,
+        data: ModerationCommentCreate,
+        current_user: User,
+    ) -> ModerationComment:
+        """
+        Add a comment to the moderation dialogue (#30).
+
+        Can be posted by:
+        - Session creator (proposer)
+        - Organizers / SUPER_ADMIN
+        - Zone managers (if session has a table in their zone)
+        """
+        session = await self._get_session(session_id)
+        if not session:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Game session not found",
+            )
+
+        # Check permission to comment
+        can_comment = (
+            session.created_by_user_id == current_user.id
+            or current_user.global_role in [GlobalRole.SUPER_ADMIN, GlobalRole.ORGANIZER]
+        )
+
+        # Zone managers can also comment
+        if not can_comment and session.physical_table_id:
+            from app.domain.user.entity import UserGroupMembership
+
+            zone_check = await self.db.execute(
+                select(Zone.delegated_to_group_id)
+                .join(PhysicalTable, PhysicalTable.zone_id == Zone.id)
+                .where(PhysicalTable.id == session.physical_table_id)
+            )
+            delegated_group_id = zone_check.scalar_one_or_none()
+
+            if delegated_group_id:
+                membership_check = await self.db.execute(
+                    select(UserGroupMembership.id)
+                    .where(
+                        UserGroupMembership.user_group_id == delegated_group_id,
+                        UserGroupMembership.user_id == current_user.id,
+                    )
+                )
+                if membership_check.scalar_one_or_none():
+                    can_comment = True
+
+        if not can_comment:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You cannot comment on this session",
+            )
+
+        # Only allow comments on sessions in moderation workflow
+        allowed_statuses = [
+            SessionStatus.PENDING_MODERATION,
+            SessionStatus.CHANGES_REQUESTED,
+        ]
+        if session.status not in allowed_statuses:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Cannot comment on a {session.status} session",
+            )
+
+        comment = ModerationComment(
+            game_session_id=session_id,
+            user_id=current_user.id,
+            content=data.content,
+        )
+        self.db.add(comment)
+        await self.db.flush()
+        await self.db.refresh(comment)
+
+        return comment
+
+    async def list_moderation_comments(
+        self,
+        session_id: UUID,
+        current_user: User,
+    ) -> List[ModerationCommentRead]:
+        """
+        List all moderation comments for a session (#30).
+
+        Can be viewed by:
+        - Session creator (proposer)
+        - Organizers / SUPER_ADMIN
+        - Zone managers (if session has a table in their zone)
+        """
+        session = await self._get_session(session_id)
+        if not session:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Game session not found",
+            )
+
+        # Check permission to view comments
+        can_view = (
+            session.created_by_user_id == current_user.id
+            or current_user.global_role in [GlobalRole.SUPER_ADMIN, GlobalRole.ORGANIZER]
+        )
+
+        if not can_view and session.physical_table_id:
+            from app.domain.user.entity import UserGroupMembership
+
+            zone_check = await self.db.execute(
+                select(Zone.delegated_to_group_id)
+                .join(PhysicalTable, PhysicalTable.zone_id == Zone.id)
+                .where(PhysicalTable.id == session.physical_table_id)
+            )
+            delegated_group_id = zone_check.scalar_one_or_none()
+
+            if delegated_group_id:
+                membership_check = await self.db.execute(
+                    select(UserGroupMembership.id)
+                    .where(
+                        UserGroupMembership.user_group_id == delegated_group_id,
+                        UserGroupMembership.user_id == current_user.id,
+                    )
+                )
+                if membership_check.scalar_one_or_none():
+                    can_view = True
+
+        if not can_view:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You cannot view comments on this session",
+            )
+
+        # Fetch comments with user info
+        result = await self.db.execute(
+            select(ModerationComment, User.full_name)
+            .join(User, ModerationComment.user_id == User.id)
+            .where(ModerationComment.game_session_id == session_id)
+            .order_by(ModerationComment.created_at)
+        )
+        rows = result.all()
+
+        return [
+            ModerationCommentRead(
+                id=comment.id,
+                game_session_id=comment.game_session_id,
+                user_id=comment.user_id,
+                user_full_name=full_name,
+                content=comment.content,
+                created_at=comment.created_at,
+            )
+            for comment, full_name in rows
+        ]

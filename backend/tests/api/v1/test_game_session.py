@@ -2446,3 +2446,221 @@ class TestSessionCopy:
             response = await user_client.post(f"/api/v1/sessions/{session_id}/copy")
 
         assert response.status_code == 403
+
+
+class TestModerationDialogue:
+    """Tests for moderation dialogue endpoints (#30)."""
+
+    async def test_request_changes_workflow(
+        self,
+        auth_client: AsyncClient,
+        test_exhibition_with_slot: dict,
+        test_game: dict,
+    ):
+        """Moderator can request changes, which adds a comment."""
+        # Create and submit session
+        payload = {
+            "title": "Needs Changes",
+            "exhibition_id": test_exhibition_with_slot["exhibition_id"],
+            "time_slot_id": test_exhibition_with_slot["time_slot_id"],
+            "game_id": test_game["id"],
+            "max_players_count": 4,
+            "scheduled_start": "2026-07-01T14:00:00Z",
+            "scheduled_end": "2026-07-01T17:00:00Z",
+        }
+        create_resp = await auth_client.post("/api/v1/sessions/", json=payload)
+        session_id = create_resp.json()["id"]
+
+        # Submit for moderation
+        await auth_client.post(f"/api/v1/sessions/{session_id}/submit")
+
+        # Request changes
+        response = await auth_client.post(
+            f"/api/v1/sessions/{session_id}/moderate",
+            json={"action": "request_changes", "comment": "Please add safety tools"},
+        )
+
+        assert response.status_code == 200
+        assert response.json()["status"] == "CHANGES_REQUESTED"
+
+        # Check that comment was created
+        comments_resp = await auth_client.get(f"/api/v1/sessions/{session_id}/comments")
+        assert comments_resp.status_code == 200
+        comments = comments_resp.json()
+        assert len(comments) == 1
+        assert comments[0]["content"] == "Please add safety tools"
+
+    async def test_resubmit_after_changes_requested(
+        self,
+        auth_client: AsyncClient,
+        test_exhibition_with_slot: dict,
+        test_game: dict,
+    ):
+        """Proposer can resubmit after making requested changes."""
+        # Create, submit, and get changes requested
+        payload = {
+            "title": "Will Update",
+            "exhibition_id": test_exhibition_with_slot["exhibition_id"],
+            "time_slot_id": test_exhibition_with_slot["time_slot_id"],
+            "game_id": test_game["id"],
+            "max_players_count": 4,
+            "scheduled_start": "2026-07-01T14:00:00Z",
+            "scheduled_end": "2026-07-01T17:00:00Z",
+        }
+        create_resp = await auth_client.post("/api/v1/sessions/", json=payload)
+        session_id = create_resp.json()["id"]
+
+        await auth_client.post(f"/api/v1/sessions/{session_id}/submit")
+        await auth_client.post(
+            f"/api/v1/sessions/{session_id}/moderate",
+            json={"action": "request_changes", "comment": "Add description"},
+        )
+
+        # Update session
+        await auth_client.put(
+            f"/api/v1/sessions/{session_id}",
+            json={"description": "Added description as requested"},
+        )
+
+        # Resubmit
+        response = await auth_client.post(f"/api/v1/sessions/{session_id}/submit")
+
+        assert response.status_code == 200
+        assert response.json()["status"] == "PENDING_MODERATION"
+
+    async def test_add_comment_to_moderation_thread(
+        self,
+        auth_client: AsyncClient,
+        test_exhibition_with_slot: dict,
+        test_game: dict,
+    ):
+        """Users can add comments during moderation."""
+        # Create and submit session
+        payload = {
+            "title": "Discussion Session",
+            "exhibition_id": test_exhibition_with_slot["exhibition_id"],
+            "time_slot_id": test_exhibition_with_slot["time_slot_id"],
+            "game_id": test_game["id"],
+            "max_players_count": 4,
+            "scheduled_start": "2026-07-01T14:00:00Z",
+            "scheduled_end": "2026-07-01T17:00:00Z",
+        }
+        create_resp = await auth_client.post("/api/v1/sessions/", json=payload)
+        session_id = create_resp.json()["id"]
+
+        await auth_client.post(f"/api/v1/sessions/{session_id}/submit")
+
+        # Add comment
+        response = await auth_client.post(
+            f"/api/v1/sessions/{session_id}/comments",
+            json={"content": "I'd like to clarify the format"},
+        )
+
+        assert response.status_code == 201
+        assert response.json()["content"] == "I'd like to clarify the format"
+        assert "user_full_name" in response.json()
+
+    async def test_list_comments_chronological(
+        self,
+        auth_client: AsyncClient,
+        test_exhibition_with_slot: dict,
+        test_game: dict,
+    ):
+        """Comments are listed in chronological order."""
+        # Create and submit session
+        payload = {
+            "title": "Multi Comment Session",
+            "exhibition_id": test_exhibition_with_slot["exhibition_id"],
+            "time_slot_id": test_exhibition_with_slot["time_slot_id"],
+            "game_id": test_game["id"],
+            "max_players_count": 4,
+            "scheduled_start": "2026-07-01T14:00:00Z",
+            "scheduled_end": "2026-07-01T17:00:00Z",
+        }
+        create_resp = await auth_client.post("/api/v1/sessions/", json=payload)
+        session_id = create_resp.json()["id"]
+
+        await auth_client.post(f"/api/v1/sessions/{session_id}/submit")
+
+        # Add multiple comments
+        await auth_client.post(
+            f"/api/v1/sessions/{session_id}/comments",
+            json={"content": "First comment"},
+        )
+        await auth_client.post(
+            f"/api/v1/sessions/{session_id}/comments",
+            json={"content": "Second comment"},
+        )
+
+        # List comments
+        response = await auth_client.get(f"/api/v1/sessions/{session_id}/comments")
+
+        assert response.status_code == 200
+        comments = response.json()
+        assert len(comments) == 2
+        assert comments[0]["content"] == "First comment"
+        assert comments[1]["content"] == "Second comment"
+
+    async def test_cannot_comment_on_validated_session(
+        self,
+        auth_client: AsyncClient,
+        test_exhibition_with_slot: dict,
+        test_game: dict,
+    ):
+        """Cannot add comments after session is validated."""
+        # Create, submit, and approve session
+        payload = {
+            "title": "Approved Session",
+            "exhibition_id": test_exhibition_with_slot["exhibition_id"],
+            "time_slot_id": test_exhibition_with_slot["time_slot_id"],
+            "game_id": test_game["id"],
+            "max_players_count": 4,
+            "scheduled_start": "2026-07-01T14:00:00Z",
+            "scheduled_end": "2026-07-01T17:00:00Z",
+        }
+        create_resp = await auth_client.post("/api/v1/sessions/", json=payload)
+        session_id = create_resp.json()["id"]
+
+        await auth_client.post(f"/api/v1/sessions/{session_id}/submit")
+        await auth_client.post(
+            f"/api/v1/sessions/{session_id}/moderate",
+            json={"action": "approve"},
+        )
+
+        # Try to add comment
+        response = await auth_client.post(
+            f"/api/v1/sessions/{session_id}/comments",
+            json={"content": "Too late!"},
+        )
+
+        assert response.status_code == 400
+
+    async def test_request_changes_requires_comment(
+        self,
+        auth_client: AsyncClient,
+        test_exhibition_with_slot: dict,
+        test_game: dict,
+    ):
+        """request_changes action requires a comment."""
+        # Create and submit session
+        payload = {
+            "title": "Missing Comment",
+            "exhibition_id": test_exhibition_with_slot["exhibition_id"],
+            "time_slot_id": test_exhibition_with_slot["time_slot_id"],
+            "game_id": test_game["id"],
+            "max_players_count": 4,
+            "scheduled_start": "2026-07-01T14:00:00Z",
+            "scheduled_end": "2026-07-01T17:00:00Z",
+        }
+        create_resp = await auth_client.post("/api/v1/sessions/", json=payload)
+        session_id = create_resp.json()["id"]
+
+        await auth_client.post(f"/api/v1/sessions/{session_id}/submit")
+
+        # Try request_changes without comment
+        response = await auth_client.post(
+            f"/api/v1/sessions/{session_id}/moderate",
+            json={"action": "request_changes"},
+        )
+
+        assert response.status_code == 422
