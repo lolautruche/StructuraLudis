@@ -269,3 +269,37 @@ class SessionSearchResult(GameSessionRead):
     game_title: Optional[str] = Field(
         None, description="Game title for display"
     )
+
+
+# =============================================================================
+# Session Cancellation Schemas (JS.B4)
+# =============================================================================
+
+class SessionCancelRequest(BaseModel):
+    """Schema for cancelling a session."""
+    reason: str = Field(
+        ...,
+        min_length=1,
+        max_length=1000,
+        description="Reason for cancellation (will be sent to registered players)"
+    )
+
+
+class AffectedUser(BaseModel):
+    """User affected by a cancellation."""
+    user_id: UUID
+    email: str
+    full_name: Optional[str] = None
+    booking_status: BookingStatus
+
+
+class SessionCancellationResult(BaseModel):
+    """Result of a session cancellation."""
+    session: GameSessionRead
+    affected_users: List[AffectedUser] = Field(
+        default_factory=list,
+        description="Users who were notified of the cancellation"
+    )
+    notifications_sent: int = Field(
+        0, description="Number of notifications sent"
+    )

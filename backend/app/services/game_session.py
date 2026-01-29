@@ -18,6 +18,7 @@ from app.domain.game.schemas import (
     GameSessionModerate,
     BookingCreate,
     SessionFilters,
+    AffectedUser,
 )
 from app.domain.exhibition.entity import Exhibition, TimeSlot, PhysicalTable, Zone
 from app.domain.user.entity import User
@@ -481,6 +482,88 @@ class GameSessionService:
         await self.db.refresh(session)
 
         return session
+
+    async def cancel_session(
+        self,
+        session_id: UUID,
+        reason: str,
+        current_user: User,
+    ) -> tuple[GameSession, list[AffectedUser]]:
+        """
+        Cancel a session and notify registered players (JS.B4).
+
+        Cancels the session and all associated bookings.
+        Returns the session and list of affected users for notification.
+
+        Can be done by: session creator (GM), organizers, or super admin.
+        """
+        session = await self._get_session(session_id)
+        if not session:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Game session not found",
+            )
+
+        # Check permission - GM, organizers, or super admin
+        can_cancel = (
+            session.created_by_user_id == current_user.id
+            or current_user.global_role in [GlobalRole.SUPER_ADMIN, GlobalRole.ORGANIZER]
+        )
+        if not can_cancel:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You cannot cancel this session",
+            )
+
+        # Cannot cancel already cancelled sessions
+        if session.status == SessionStatus.CANCELLED:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Session is already cancelled",
+            )
+
+        # Cannot cancel finished sessions
+        if session.status == SessionStatus.FINISHED:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Cannot cancel a finished session",
+            )
+
+        # Get all active bookings for this session
+        bookings_result = await self.db.execute(
+            select(Booking, User)
+            .join(User, Booking.user_id == User.id)
+            .where(
+                Booking.game_session_id == session_id,
+                Booking.status.in_([
+                    BookingStatus.CONFIRMED,
+                    BookingStatus.CHECKED_IN,
+                    BookingStatus.WAITING_LIST,
+                ]),
+            )
+        )
+        booking_rows = bookings_result.all()
+
+        # Build list of affected users
+        affected_users = []
+        for booking, user in booking_rows:
+            affected_users.append(AffectedUser(
+                user_id=user.id,
+                email=user.email,
+                full_name=user.full_name,
+                booking_status=booking.status,
+            ))
+            # Cancel the booking
+            booking.status = BookingStatus.CANCELLED
+
+        # Cancel the session
+        session.status = SessionStatus.CANCELLED
+        session.rejection_reason = reason
+
+        await self.db.flush()
+        await self.db.refresh(session)
+
+        return session, affected_users
 
     # =========================================================================
     # Booking Operations

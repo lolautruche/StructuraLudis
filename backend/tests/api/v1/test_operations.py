@@ -218,8 +218,11 @@ class TestAutoCancel:
         assert response.status_code == 200
         cancelled = response.json()
         assert len(cancelled) == 1
-        assert cancelled[0]["id"] == session_id
-        assert cancelled[0]["status"] == "CANCELLED"
+        # Response is now SessionCancellationResult with nested session
+        assert cancelled[0]["session"]["id"] == session_id
+        assert cancelled[0]["session"]["status"] == "CANCELLED"
+        assert "affected_users" in cancelled[0]
+        assert "notifications_sent" in cancelled[0]
 
     async def test_auto_cancel_does_not_affect_checked_in_sessions(
         self,
