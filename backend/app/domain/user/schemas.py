@@ -3,13 +3,13 @@ User domain schemas (DTOs).
 
 Pydantic models for User management.
 """
-from datetime import datetime
-from typing import Optional
+from datetime import date, datetime
+from typing import List, Optional
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
-from app.domain.shared.entity import GlobalRole
+from app.domain.shared.entity import GlobalRole, SessionStatus, BookingStatus
 
 
 class UserBase(BaseModel):
@@ -52,3 +52,77 @@ class UserRoleUpdate(BaseModel):
 class UserStatusUpdate(BaseModel):
     """Schema for activating/deactivating a user (Super Admin only)."""
     is_active: bool
+
+
+class UserProfileUpdate(BaseModel):
+    """Schema for updating user profile including birth_date."""
+    full_name: Optional[str] = Field(None, max_length=255)
+    timezone: Optional[str] = Field(None, max_length=50)
+    locale: Optional[str] = Field(None, max_length=10)
+    birth_date: Optional[date] = None
+
+
+# =============================================================================
+# User Dashboard Schemas (JS.B6)
+# =============================================================================
+
+class MySessionSummary(BaseModel):
+    """Summary of a session created by the user (as GM)."""
+    id: UUID
+    title: str
+    exhibition_id: UUID
+    exhibition_title: str
+    status: SessionStatus
+    scheduled_start: datetime
+    scheduled_end: datetime
+    zone_name: Optional[str] = None
+    table_label: Optional[str] = None
+    max_players_count: int
+    confirmed_players: int
+    waitlist_count: int
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class MyBookingSummary(BaseModel):
+    """Summary of a booking for the user (as player)."""
+    id: UUID
+    game_session_id: UUID
+    session_title: str
+    exhibition_id: UUID
+    exhibition_title: str
+    status: BookingStatus
+    role: str
+    scheduled_start: datetime
+    scheduled_end: datetime
+    zone_name: Optional[str] = None
+    table_label: Optional[str] = None
+    gm_name: Optional[str] = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class UserAgenda(BaseModel):
+    """
+    Combined agenda for a user (JS.B6).
+
+    Shows both sessions they're running (as GM) and sessions
+    they're registered for (as player).
+    """
+    user_id: UUID
+    exhibition_id: UUID
+    exhibition_title: str
+    my_sessions: List[MySessionSummary] = Field(
+        default_factory=list,
+        description="Sessions I'm running as GM"
+    )
+    my_bookings: List[MyBookingSummary] = Field(
+        default_factory=list,
+        description="Sessions I'm registered for as player"
+    )
+    conflicts: List[str] = Field(
+        default_factory=list,
+        description="Warning messages for scheduling conflicts"
+    )
+
+    model_config = ConfigDict(from_attributes=True)
