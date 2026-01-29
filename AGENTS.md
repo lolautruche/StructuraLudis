@@ -32,6 +32,7 @@
 - If a domain logic involves dates (TimeSlots), always remind me to handle Timezone-aware objects (UTC).
 - For every new feature, propose a brief test plan (Unit or Integration).
 - For every new feature, open a dedicated branch from the main branch, commit and open a pull-request. Tests must pass in order for the pull-request to be merged.
+- Each time the database schema is updated, update the Mermaid schema located at `backend/doc/database-schema.mmd`.
 
 ## Business Logic Invariants
 - **Consistency**: A User's schedule must be conflict-free within a single Exhibition.
