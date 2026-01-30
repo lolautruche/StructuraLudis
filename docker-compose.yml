@@ -59,6 +59,22 @@ services:
     # On force le rechargement pour le dev
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 
+  sl-frontend:
+    build: ./frontend
+    container_name: sl_frontend
+    depends_on:
+      - sl-api
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules  # Exclude node_modules from bind mount
+      - /app/.next         # Exclude .next from bind mount
+    environment:
+      - NEXT_PUBLIC_API_URL=http://sl-api:8000
+    ports:
+      - "3000:3000"
+    networks:
+      - sl-network
+
 networks:
   sl-network:
     driver: bridge
