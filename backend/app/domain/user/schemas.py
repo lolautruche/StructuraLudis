@@ -31,6 +31,7 @@ class UserRead(UserBase):
     global_role: str  # String from DB, matches GlobalRole values
     is_active: bool
     last_login: Optional[datetime] = None
+    privacy_accepted_at: Optional[datetime] = None  # GDPR consent timestamp
     created_at: datetime
     updated_at: Optional[datetime] = None
 

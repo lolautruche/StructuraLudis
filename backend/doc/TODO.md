@@ -7,10 +7,10 @@
 
 | Status | Count | Coverage |
 |--------|-------|----------|
-| Implemented | 27 features | 73% |
+| Implemented | 28 features | 76% |
 | Partial | 1 feature | 3% |
-| Not implemented | 10 features | 24% |
-| **Total PRD coverage** | | **~76%** |
+| Not implemented | 9 features | 21% |
+| **Total PRD coverage** | | **~79%** |
 
 ---
 
@@ -27,7 +27,7 @@
 
 | Feature | PRD Ref | Issue | Complexity | Effort |
 |---------|---------|-------|------------|--------|
-| Privacy Policy Consent | JS.E1 | #47 | Low | 1-2 days |
+| ~~Privacy Policy Consent~~ | JS.E1 | #47 | ✅ Done | - |
 | Data Access (Right of Access) | JS.E2 | #48 | Medium | 2-3 days |
 | Account Deletion (Right to Erasure) | JS.E3 | #49 | High | 3-5 days |
 | Data Portability | JS.E4 | #50 | Low | 1 day |
@@ -188,15 +188,14 @@ Added to Exhibition entity:
 
 ---
 
-### Privacy Policy Consent (JS.E1) - #47
+### ~~Privacy Policy Consent (JS.E1) - #47~~ ✅ DONE
 
-**Current state:** Not implemented
-
-**Required:**
-- [ ] Add `privacy_accepted_at: datetime` field to User entity
-- [ ] Require consent checkbox during registration
-- [ ] `POST /auth/register` validates consent
-- [ ] Privacy policy page (frontend)
+GDPR consent requirement at registration:
+- `privacy_accepted_at` field added to User entity
+- `accept_privacy_policy: bool` required in RegisterRequest
+- Registration blocked if consent not given (400 error)
+- Consent timestamp stored for audit purposes
+- Frontend: Privacy policy page to be implemented separately
 
 ---
 
@@ -344,7 +343,7 @@ Added to Exhibition entity:
 11. #41 - Multi-language email templates
 
 ### Phase 4: GDPR Compliance (3-4 weeks)
-12. #47 - Privacy Policy Consent (JS.E1)
+12. ~~#47 - Privacy Policy Consent (JS.E1)~~ ✅
 13. #51 - Consent Management (JS.E5)
 14. #48 - Data Access / Export (JS.E2)
 15. #50 - Data Portability (JS.E4)

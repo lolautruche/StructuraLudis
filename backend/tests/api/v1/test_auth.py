@@ -20,6 +20,7 @@ class TestRegister:
             "email": "newuser@example.com",
             "password": "securepassword123",
             "full_name": "New User",
+            "accept_privacy_policy": True,
         }
 
         response = await client.post("/api/v1/auth/register", json=payload)
@@ -31,9 +32,38 @@ class TestRegister:
         assert data["global_role"] == "USER"
         assert data["is_active"] is True
         assert "id" in data
+        # Privacy policy consent timestamp should be set
+        assert data["privacy_accepted_at"] is not None
         # Password should not be returned
         assert "password" not in data
         assert "hashed_password" not in data
+
+    async def test_register_without_privacy_consent_field(self, client: AsyncClient):
+        """Register without accept_privacy_policy field returns 422."""
+        payload = {
+            "email": "noprivacy@example.com",
+            "password": "securepassword123",
+            "full_name": "No Privacy User",
+            # Missing accept_privacy_policy
+        }
+
+        response = await client.post("/api/v1/auth/register", json=payload)
+
+        assert response.status_code == 422
+
+    async def test_register_privacy_policy_rejected(self, client: AsyncClient):
+        """Register with accept_privacy_policy=false returns 400."""
+        payload = {
+            "email": "rejected@example.com",
+            "password": "securepassword123",
+            "full_name": "Rejected User",
+            "accept_privacy_policy": False,
+        }
+
+        response = await client.post("/api/v1/auth/register", json=payload)
+
+        assert response.status_code == 400
+        assert "privacy policy" in response.json()["detail"].lower()
 
     async def test_register_duplicate_email(
         self, client: AsyncClient, db_session: AsyncSession
@@ -54,6 +84,7 @@ class TestRegister:
         payload = {
             "email": "existing@example.com",
             "password": "newpassword123",
+            "accept_privacy_policy": True,
         }
 
         response = await client.post("/api/v1/auth/register", json=payload)
@@ -66,6 +97,7 @@ class TestRegister:
         payload = {
             "email": "not-an-email",
             "password": "securepassword123",
+            "accept_privacy_policy": True,
         }
 
         response = await client.post("/api/v1/auth/register", json=payload)
@@ -77,6 +109,7 @@ class TestRegister:
         payload = {
             "email": "user@example.com",
             "password": "short",
+            "accept_privacy_policy": True,
         }
 
         response = await client.post("/api/v1/auth/register", json=payload)
@@ -240,6 +273,7 @@ class TestJWTAuthentication:
             "email": "flow@example.com",
             "password": "securepassword123",
             "full_name": "Flow User",
+            "accept_privacy_policy": True,
         }
         register_resp = await client.post("/api/v1/auth/register", json=register_payload)
         assert register_resp.status_code == 201

@@ -34,8 +34,9 @@ async def db_session(test_engine) -> AsyncGenerator[AsyncSession, None]:
 
     Each test runs in isolation with a clean state.
     """
-    # Create tables
+    # Drop and recreate tables to ensure schema is up to date
     async with test_engine.begin() as conn:
+        await conn.run_sync(Base.metadata.drop_all)
         await conn.run_sync(Base.metadata.create_all)
 
     # Create session

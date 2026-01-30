@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_db
 from app.domain.auth.schemas import LoginRequest, RegisterRequest, Token
 from app.domain.user.schemas import UserRead
-from app.services.auth import AuthService
+from app.services.auth import AuthService, PrivacyPolicyNotAcceptedError
 
 router = APIRouter()
 
@@ -45,10 +45,18 @@ async def register(
     """
     Register a new user account.
 
+    Requires acceptance of the privacy policy.
     Returns the created user on success.
     """
     service = AuthService(db)
-    user = await service.register(data)
+
+    try:
+        user = await service.register(data)
+    except PrivacyPolicyNotAcceptedError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="You must accept the privacy policy to register",
+        )
 
     if not user:
         raise HTTPException(

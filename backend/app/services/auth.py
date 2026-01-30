@@ -3,6 +3,7 @@ Authentication service layer.
 
 Handles user authentication and registration.
 """
+from datetime import datetime, timezone
 from typing import Optional
 from uuid import uuid4
 
@@ -13,6 +14,11 @@ from app.core.security import verify_password, get_password_hash, create_access_
 from app.domain.user.entity import User
 from app.domain.auth.schemas import LoginRequest, RegisterRequest, Token
 from app.domain.shared.entity import GlobalRole
+
+
+class PrivacyPolicyNotAcceptedError(Exception):
+    """Raised when user tries to register without accepting privacy policy."""
+    pass
 
 
 class AuthService:
@@ -63,7 +69,12 @@ class AuthService:
         Register a new user.
 
         Returns the created user, or None if email already exists.
+        Raises PrivacyPolicyNotAcceptedError if privacy policy not accepted.
         """
+        # GDPR: Privacy policy must be accepted
+        if not data.accept_privacy_policy:
+            raise PrivacyPolicyNotAcceptedError()
+
         # Check if email already exists
         result = await self.db.execute(
             select(User).where(User.email == data.email)
@@ -78,6 +89,7 @@ class AuthService:
             full_name=data.full_name,
             global_role=GlobalRole.USER,
             is_active=True,
+            privacy_accepted_at=datetime.now(timezone.utc),
         )
 
         self.db.add(user)
