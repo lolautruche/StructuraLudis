@@ -3,7 +3,7 @@
  */
 
 import { api } from '../client';
-import { ApiResponse, Booking, GameSession } from '../types';
+import { ApiResponse, Booking, GameSession, SessionCreateRequest, SessionUpdateRequest } from '../types';
 
 export interface SessionSearchParams {
   q?: string;
@@ -16,21 +16,14 @@ export interface SessionSearchParams {
   offset?: number;
 }
 
-export interface SessionSearchResult {
-  items: GameSession[];
-  total: number;
-  page: number;
-  size: number;
-  pages: number;
-}
-
 export const sessionsApi = {
   /**
    * Search sessions globally or within an exhibition.
+   * Returns an array of sessions with availability info.
    */
   search: async (
     params: SessionSearchParams & { exhibition_id?: string } = {}
-  ): Promise<ApiResponse<SessionSearchResult>> => {
+  ): Promise<ApiResponse<GameSession[]>> => {
     const searchParams = new URLSearchParams();
     Object.entries(params).forEach(([key, value]) => {
       if (value !== undefined && value !== null && value !== '') {
@@ -38,18 +31,19 @@ export const sessionsApi = {
       }
     });
     const query = searchParams.toString();
-    return api.get<SessionSearchResult>(
+    return api.get<GameSession[]>(
       `/api/v1/sessions/search${query ? `?${query}` : ''}`
     );
   },
 
   /**
    * Search sessions within an exhibition.
+   * Returns an array of sessions with availability info.
    */
   searchInExhibition: async (
     exhibitionId: string,
     params: SessionSearchParams = {}
-  ): Promise<ApiResponse<SessionSearchResult>> => {
+  ): Promise<ApiResponse<GameSession[]>> => {
     const searchParams = new URLSearchParams();
     Object.entries(params).forEach(([key, value]) => {
       if (value !== undefined && value !== null && value !== '') {
@@ -57,7 +51,7 @@ export const sessionsApi = {
       }
     });
     const query = searchParams.toString();
-    return api.get<SessionSearchResult>(
+    return api.get<GameSession[]>(
       `/api/v1/exhibitions/${exhibitionId}/sessions/search${query ? `?${query}` : ''}`
     );
   },
@@ -95,5 +89,26 @@ export const sessionsApi = {
    */
   checkIn: async (bookingId: string): Promise<ApiResponse<Booking>> => {
     return api.post<Booking>(`/api/v1/bookings/${bookingId}/check-in`);
+  },
+
+  /**
+   * Create a new session.
+   */
+  create: async (session: SessionCreateRequest): Promise<ApiResponse<GameSession>> => {
+    return api.post<GameSession>('/api/v1/sessions', session);
+  },
+
+  /**
+   * Update a session.
+   */
+  update: async (sessionId: string, session: SessionUpdateRequest): Promise<ApiResponse<GameSession>> => {
+    return api.put<GameSession>(`/api/v1/sessions/${sessionId}`, session);
+  },
+
+  /**
+   * Submit a session for moderation.
+   */
+  submit: async (sessionId: string): Promise<ApiResponse<GameSession>> => {
+    return api.post<GameSession>(`/api/v1/sessions/${sessionId}/submit`);
   },
 };

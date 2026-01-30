@@ -209,3 +209,103 @@ export interface UserAgenda {
   my_bookings: MyBookingSummary[];
   conflicts: string[];
 }
+
+/**
+ * Game types.
+ */
+export type GameComplexity = 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED' | 'EXPERT';
+
+export interface GameCategory {
+  id: string;
+  name: string;
+  slug: string;
+  name_i18n: Record<string, string> | null;
+}
+
+export interface Game {
+  id: string;
+  category_id: string;
+  title: string;
+  publisher: string | null;
+  description: string | null;
+  complexity: GameComplexity;
+  min_players: number;
+  max_players: number;
+  external_provider_id: string | null;
+  created_at: string;
+  updated_at: string | null;
+}
+
+export interface GameCreateRequest {
+  category_id: string;
+  title: string;
+  publisher?: string;
+  description?: string;
+  complexity?: GameComplexity;
+  min_players: number;
+  max_players: number;
+}
+
+/**
+ * Time slot types.
+ */
+export interface TimeSlot {
+  id: string;
+  exhibition_id: string;
+  name: string;
+  start_time: string;
+  end_time: string;
+  max_duration_minutes: number;
+  buffer_time_minutes: number;
+  created_at: string;
+  updated_at: string | null;
+}
+
+/**
+ * Safety tool types.
+ */
+export interface SafetyTool {
+  id: string;
+  exhibition_id: string;
+  name: string;
+  slug: string;
+  description: string | null;
+  url: string | null;
+  is_required: boolean;
+  display_order: number;
+  name_i18n: Record<string, string> | null;
+  description_i18n: Record<string, string> | null;
+  created_at: string;
+  updated_at: string | null;
+}
+
+/**
+ * Session creation types.
+ */
+export interface SessionCreateRequest {
+  exhibition_id: string;
+  time_slot_id: string;
+  game_id: string;
+  title: string;
+  description?: string;
+  language: string;
+  min_age?: number;
+  max_players_count: number;
+  safety_tools?: string[];
+  is_accessible_disability?: boolean;
+  scheduled_start: string;
+  scheduled_end: string;
+  provided_by_group_id?: string;
+}
+
+export interface SessionUpdateRequest {
+  title?: string;
+  description?: string;
+  language?: string;
+  min_age?: number;
+  max_players_count?: number;
+  safety_tools?: string[];
+  is_accessible_disability?: boolean;
+  scheduled_start?: string;
+  scheduled_end?: string;
+}

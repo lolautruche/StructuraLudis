@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { useRouter } from '@/i18n/routing';
 import { AgendaTimeline } from '@/components/agenda';
-import { userApi, sessionsApi } from '@/lib/api';
+import { userApi, exhibitionsApi, sessionsApi } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
 import type { UserAgenda } from '@/lib/api/types';
 
@@ -22,11 +22,13 @@ export default function DashboardPage() {
   // Fetch exhibitions to get the first one (for now)
   useEffect(() => {
     async function fetchExhibition() {
-      // For now, we'll get the exhibition from the first session
-      // In a real app, this would come from URL params or user context
-      const response = await sessionsApi.search({ limit: 1 });
-      if (response.data?.items?.[0]) {
-        setExhibitionId(response.data.items[0].exhibition_id);
+      // Get first available exhibition
+      const response = await exhibitionsApi.list();
+      if (response.data?.[0]) {
+        setExhibitionId(response.data[0].id);
+      } else {
+        // No exhibition found, stop loading
+        setIsLoading(false);
       }
     }
 
