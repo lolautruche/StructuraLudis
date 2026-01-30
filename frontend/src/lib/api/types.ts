@@ -167,3 +167,45 @@ export interface PaginatedResponse<T> {
   size: number;
   pages: number;
 }
+
+/**
+ * Agenda types (JS.B6).
+ */
+export interface MySessionSummary {
+  id: string;
+  title: string;
+  exhibition_id: string;
+  exhibition_title: string;
+  status: SessionStatus;
+  scheduled_start: string;
+  scheduled_end: string;
+  zone_name: string | null;
+  table_label: string | null;
+  max_players_count: number;
+  confirmed_players: number;
+  waitlist_count: number;
+}
+
+export interface MyBookingSummary {
+  id: string;
+  game_session_id: string;
+  session_title: string;
+  exhibition_id: string;
+  exhibition_title: string;
+  status: BookingStatus;
+  role: 'GM' | 'PLAYER' | 'ASSISTANT' | 'SPECTATOR';
+  scheduled_start: string;
+  scheduled_end: string;
+  zone_name: string | null;
+  table_label: string | null;
+  gm_name: string | null;
+}
+
+export interface UserAgenda {
+  user_id: string;
+  exhibition_id: string;
+  exhibition_title: string;
+  my_sessions: MySessionSummary[];
+  my_bookings: MyBookingSummary[];
+  conflicts: string[];
+}
