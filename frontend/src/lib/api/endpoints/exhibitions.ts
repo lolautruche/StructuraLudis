@@ -17,7 +17,7 @@ export const exhibitionsApi = {
    * List all exhibitions.
    */
   list: async (): Promise<ApiResponse<Exhibition[]>> => {
-    return api.get<Exhibition[]>('/api/v1/exhibitions');
+    return api.get<Exhibition[]>('/api/v1/exhibitions/');
   },
 
   /**
