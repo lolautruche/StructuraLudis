@@ -193,6 +193,51 @@ To provide a universal event management ecosystem for all forms of tabletop gami
 
 ---
 
+### EPIC E: Data Privacy & GDPR Compliance
+*Objective: Ensure the platform complies with GDPR requirements and respects user privacy rights.*
+
+* **JS.E1 - Privacy Policy Consent**
+    * **When** I register on the platform,
+    * **I want** to read and explicitly accept the privacy policy,
+    * **so that** I understand how my personal data will be processed and stored.
+
+* **JS.E2 - Data Access (Right of Access)**
+    * **When** I want to know what data the platform holds about me,
+    * **I want** to request and download a complete export of my personal data (profile, bookings, notifications, comments),
+    * **so that** I can exercise my GDPR right of access.
+
+* **JS.E3 - Account Deletion (Right to Erasure)**
+    * **When** I decide to leave the platform,
+    * **I want** to request the deletion of my account and all associated personal data,
+    * **so that** I can exercise my GDPR right to be forgotten.
+
+* **JS.E4 - Data Portability**
+    * **When** I export my data,
+    * **I want** to receive it in a standard, machine-readable format (JSON),
+    * **so that** I can transfer it to another service if needed.
+
+* **JS.E5 - Consent Management**
+    * **When** I use the platform,
+    * **I want** to manage my communication preferences (email notifications, marketing),
+    * **so that** I control how my data is used for non-essential purposes.
+
+* **JS.E6 - Data Retention Transparency**
+    * **When** I read the privacy policy,
+    * **I want** to understand how long my data will be retained and when it will be deleted,
+    * **so that** I know the lifecycle of my personal information.
+
+* **JS.E7 - GDPR Request Management (Admin)**
+    * **When** I am a Super Admin and receive a GDPR-related request (access, deletion, rectification),
+    * **I want** to process it through a dedicated interface with audit logging,
+    * **so that** I can demonstrate compliance and respond within the legal 30-day deadline.
+
+* **JS.E8 - Data Anonymization**
+    * **When** a user account is deleted,
+    * **I want** their historical participation data (bookings, session attendance) to be anonymized rather than deleted,
+    * **so that** event statistics remain accurate while respecting privacy.
+
+---
+
 ## 3. Cross-Cutting Concerns
 
 ### 3.1 Notification System
