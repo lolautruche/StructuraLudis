@@ -1,0 +1,73 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    @apply scroll-smooth;
+  }
+
+  body {
+    @apply min-h-screen;
+  }
+
+  /* Focus visible styles for accessibility */
+  :focus-visible {
+    @apply outline-2 outline-offset-2 outline-ludis-primary;
+  }
+}
+
+@layer components {
+  /* Container utility */
+  .container {
+    @apply max-w-7xl;
+  }
+
+  /* Card hover effect */
+  .card-hover {
+    @apply transition-all duration-200 hover:shadow-lg hover:shadow-ludis-primary/10 hover:border-ludis-primary/30;
+  }
+
+  /* Form input focus ring */
+  .input-focus {
+    @apply focus:ring-2 focus:ring-ludis-primary/50 focus:border-ludis-primary;
+  }
+
+  /* Session status badges */
+  .status-open {
+    @apply bg-emerald-500/20 text-emerald-400 border-emerald-500/30;
+  }
+
+  .status-full {
+    @apply bg-amber-500/20 text-amber-400 border-amber-500/30;
+  }
+
+  .status-in-progress {
+    @apply bg-blue-500/20 text-blue-400 border-blue-500/30;
+  }
+
+  .status-finished {
+    @apply bg-slate-500/20 text-slate-400 border-slate-500/30;
+  }
+
+  .status-cancelled {
+    @apply bg-red-500/20 text-red-400 border-red-500/30;
+  }
+}
+
+@layer utilities {
+  /* Hide scrollbar but keep functionality */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Gradient text utility */
+  .text-gradient {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-ludis-primary to-ludis-accent;
+  }
+}

@@ -1,0 +1,92 @@
+{
+  "Common": {
+    "login": "Connexion",
+    "register": "Inscription",
+    "logout": "Déconnexion",
+    "sessions": "Sessions",
+    "dashboard": "Tableau de bord",
+    "settings": "Paramètres",
+    "save": "Enregistrer",
+    "cancel": "Annuler",
+    "delete": "Supprimer",
+    "edit": "Modifier",
+    "loading": "Chargement...",
+    "error": "Erreur",
+    "success": "Succès"
+  },
+  "Auth": {
+    "loginTitle": "Connexion",
+    "loginSubtitle": "Connectez-vous à votre compte",
+    "registerTitle": "Inscription",
+    "registerSubtitle": "Créez votre compte",
+    "email": "Adresse email",
+    "password": "Mot de passe",
+    "confirmPassword": "Confirmer le mot de passe",
+    "fullName": "Nom complet",
+    "rememberMe": "Se souvenir de moi",
+    "forgotPassword": "Mot de passe oublié ?",
+    "noAccount": "Pas encore de compte ?",
+    "hasAccount": "Déjà un compte ?",
+    "privacyConsent": "J'accepte la <link>politique de confidentialité</link>",
+    "privacyRequired": "Vous devez accepter la politique de confidentialité",
+    "loginButton": "Se connecter",
+    "registerButton": "S'inscrire",
+    "invalidCredentials": "Email ou mot de passe invalide",
+    "emailExists": "Cette adresse email est déjà utilisée",
+    "passwordTooShort": "Le mot de passe doit contenir au moins 8 caractères",
+    "passwordMismatch": "Les mots de passe ne correspondent pas"
+  },
+  "Discovery": {
+    "title": "Trouver une partie",
+    "searchPlaceholder": "Rechercher par titre, jeu, MJ...",
+    "filters": "Filtres",
+    "availableNow": "Disponibles maintenant",
+    "hasSeats": "Places disponibles",
+    "allSessions": "Toutes les sessions",
+    "noResults": "Aucune session trouvée",
+    "noResultsDescription": "Essayez de modifier vos filtres ou revenez plus tard."
+  },
+  "Session": {
+    "book": "Réserver",
+    "joinWaitlist": "Liste d'attente",
+    "cancelBooking": "Annuler ma réservation",
+    "checkIn": "Confirmer ma présence",
+    "seats": "{available}/{total} places",
+    "waitlistPosition": "Position {position} sur la liste",
+    "startingSoon": "Commence bientôt",
+    "inProgress": "En cours",
+    "finished": "Terminée",
+    "cancelled": "Annulée"
+  },
+  "GameTable": {
+    "complexity": "Complexité",
+    "safetyTools": "Outils de sécurité",
+    "language": "Langue de la table",
+    "minAge": "{age} ans minimum",
+    "gm": "MJ",
+    "organizedBy": "Organisé par {name}"
+  },
+  "Notifications": {
+    "title": "Notifications",
+    "markAllRead": "Tout marquer comme lu",
+    "noNotifications": "Aucune notification",
+    "sessionCancelled": "Session annulée",
+    "bookingConfirmed": "Réservation confirmée",
+    "waitlistPromoted": "Place disponible !",
+    "sessionReminder": "Rappel de session"
+  },
+  "Settings": {
+    "title": "Paramètres",
+    "profile": "Profil",
+    "preferences": "Préférences",
+    "privacy": "Confidentialité",
+    "downloadData": "Télécharger mes données",
+    "deleteAccount": "Supprimer mon compte"
+  },
+  "Errors": {
+    "generic": "Une erreur est survenue",
+    "networkError": "Erreur de connexion au serveur",
+    "unauthorized": "Vous devez être connecté",
+    "forbidden": "Accès non autorisé"
+  }
+}
