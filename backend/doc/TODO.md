@@ -7,10 +7,19 @@
 
 | Status | Count | Coverage |
 |--------|-------|----------|
-| Implemented | 27 features | 77% |
+| Implemented | 27 features | 73% |
 | Partial | 1 feature | 3% |
-| Not implemented | 8 features (GDPR) | 20% |
-| **Total PRD coverage** | | **~80%** |
+| Not implemented | 10 features | 24% |
+| **Total PRD coverage** | | **~76%** |
+
+---
+
+## Not Implemented - Game Reference Sync
+
+| Feature | PRD Ref | Issue | Complexity | Effort |
+|---------|---------|-------|------------|--------|
+| External Game Database Sync | JS.05 | #55 | High | 1-2 weeks |
+| Game Autocomplete & Metadata | JS.B3, JS.B9 | #56 | Medium | 3-5 days |
 
 ---
 
@@ -281,6 +290,40 @@ Added to Exhibition entity:
 
 ---
 
+### External Game Database Sync (JS.05) - #55
+
+**Current state:** Not implemented
+
+**Required:**
+- [ ] GROG scraper for initial RPG catalog import
+- [ ] RSS feed worker for updates (daily sync)
+- [ ] Game entity fields: external_provider, external_id, external_url, themes, cover_image_url
+- [ ] Management command: `import_grog`
+- [ ] Future: BGG XML API for board games
+
+**Technical notes:**
+- GROG has no API, scraping required (respect rate limits)
+- Use RSS feed for staying up to date
+- BGG has public XML API
+
+---
+
+### Game Autocomplete & Metadata (JS.B3, JS.B9) - #56
+
+**Current state:** Not implemented
+
+**Required:**
+- [ ] `GET /api/v1/games/search?q=` - Autocomplete endpoint
+- [ ] `GET /api/v1/games/{id}` - Full game details
+- [ ] `POST /api/v1/games` - Manual game entry
+- [ ] Frontend: autocomplete input, game card with cover/themes
+- [ ] "Can't find your game?" → manual entry fallback
+
+**Dependencies:**
+- #55 - External Game Database Sync
+
+---
+
 ## Priority Recommendations
 
 ### ~~Phase 1: Quick Wins~~ ✅ COMPLETED
@@ -309,6 +352,10 @@ Added to Exhibition entity:
 17. #49 - Account Deletion (JS.E3) - depends on #54
 18. #53 - GDPR Request Management Admin (JS.E7)
 19. #52 - Data Retention Policy (JS.E6)
+
+### Phase 5: Game Reference Sync (1-2 weeks)
+20. #55 - External Game Database Sync (GROG import + RSS)
+21. #56 - Game Autocomplete & Metadata Display (JS.B3, JS.B9)
 
 ---
 
