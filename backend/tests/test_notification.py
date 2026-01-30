@@ -1,19 +1,55 @@
 """
 Tests for notification system.
 """
+import os
 from datetime import datetime, timezone
+from unittest.mock import MagicMock, patch, AsyncMock
 from uuid import uuid4
 
+import httpx
 import pytest
 from httpx import AsyncClient
 
-from app.core.email import ConsoleEmailBackend, EmailMessage
+from app.core.email import (
+    ConsoleEmailBackend,
+    SMTPEmailBackend,
+    SendGridBackend,
+    EmailMessage,
+    get_email_backend,
+)
 from app.core.templates import (
     render_booking_confirmed,
     render_session_cancelled,
     get_string,
     format_datetime,
 )
+
+
+# Check if Mailpit is available for integration tests
+MAILPIT_API_URL = os.environ.get("MAILPIT_API_URL", "http://localhost:8025/api/v1")
+
+
+def mailpit_available() -> bool:
+    """Check if Mailpit is running and accessible."""
+    try:
+        response = httpx.get(f"{MAILPIT_API_URL}/messages", timeout=2.0)
+        return response.status_code == 200
+    except Exception:
+        return False
+
+
+def clear_mailpit():
+    """Clear all messages from Mailpit."""
+    try:
+        httpx.delete(f"{MAILPIT_API_URL}/messages", timeout=2.0)
+    except Exception:
+        pass
+
+
+def get_mailpit_messages():
+    """Get all messages from Mailpit."""
+    response = httpx.get(f"{MAILPIT_API_URL}/messages", timeout=5.0)
+    return response.json().get("messages", [])
 
 
 class TestEmailBackend:
@@ -159,3 +195,208 @@ class TestNotificationAPI:
         assert response.status_code == 200
         data = response.json()
         assert data["updated_count"] == 0
+
+
+class TestEmailBackendFactory:
+    """Tests for email backend factory function."""
+
+    def test_get_console_backend(self):
+        """Returns console backend when configured."""
+        with patch("app.core.email.settings") as mock_settings:
+            mock_settings.EMAIL_BACKEND = "console"
+            backend = get_email_backend()
+            assert isinstance(backend, ConsoleEmailBackend)
+
+    def test_get_smtp_backend(self):
+        """Returns SMTP backend when configured."""
+        with patch("app.core.email.settings") as mock_settings:
+            mock_settings.EMAIL_BACKEND = "smtp"
+            mock_settings.SMTP_HOST = "localhost"
+            mock_settings.SMTP_PORT = 1025
+            mock_settings.SMTP_USER = ""
+            mock_settings.SMTP_PASSWORD = ""
+            mock_settings.SMTP_TLS = False
+            mock_settings.SMTP_SSL = False
+            backend = get_email_backend()
+            assert isinstance(backend, SMTPEmailBackend)
+
+    def test_get_sendgrid_backend(self):
+        """Returns SendGrid backend when configured."""
+        with patch("app.core.email.settings") as mock_settings:
+            mock_settings.EMAIL_BACKEND = "sendgrid"
+            mock_settings.SENDGRID_API_KEY = "test-key"
+            backend = get_email_backend()
+            assert isinstance(backend, SendGridBackend)
+
+    def test_unknown_backend_falls_back_to_console(self):
+        """Falls back to console for unknown backend."""
+        with patch("app.core.email.settings") as mock_settings:
+            mock_settings.EMAIL_BACKEND = "unknown"
+            backend = get_email_backend()
+            assert isinstance(backend, ConsoleEmailBackend)
+
+
+class TestSMTPBackendMocked:
+    """Tests for SMTP backend with mocked smtplib."""
+
+    @pytest.mark.asyncio
+    async def test_smtp_send_success(self):
+        """SMTP backend sends email successfully."""
+        with patch("app.core.email.smtplib.SMTP") as mock_smtp:
+            mock_server = MagicMock()
+            mock_smtp.return_value = mock_server
+
+            with patch("app.core.email.settings") as mock_settings:
+                mock_settings.SMTP_HOST = "localhost"
+                mock_settings.SMTP_PORT = 1025
+                mock_settings.SMTP_USER = ""
+                mock_settings.SMTP_PASSWORD = ""
+                mock_settings.SMTP_TLS = False
+                mock_settings.SMTP_SSL = False
+                mock_settings.EMAIL_FROM_NAME = "Test"
+                mock_settings.EMAIL_FROM_ADDRESS = "test@example.com"
+
+                backend = SMTPEmailBackend()
+                message = EmailMessage(
+                    to_email="recipient@example.com",
+                    to_name="Recipient",
+                    subject="Test Subject",
+                    body_html="<p>Test</p>",
+                )
+                result = await backend.send(message)
+
+                assert result is True
+                mock_server.send_message.assert_called_once()
+                mock_server.quit.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_smtp_send_failure(self):
+        """SMTP backend handles connection errors gracefully."""
+        with patch("app.core.email.smtplib.SMTP") as mock_smtp:
+            mock_smtp.side_effect = ConnectionRefusedError("Connection refused")
+
+            with patch("app.core.email.settings") as mock_settings:
+                mock_settings.SMTP_HOST = "localhost"
+                mock_settings.SMTP_PORT = 1025
+                mock_settings.SMTP_USER = ""
+                mock_settings.SMTP_PASSWORD = ""
+                mock_settings.SMTP_TLS = False
+                mock_settings.SMTP_SSL = False
+
+                backend = SMTPEmailBackend()
+                message = EmailMessage(
+                    to_email="recipient@example.com",
+                    to_name="Recipient",
+                    subject="Test Subject",
+                    body_html="<p>Test</p>",
+                )
+                result = await backend.send(message)
+
+                assert result is False
+
+
+class TestSendGridBackendMocked:
+    """Tests for SendGrid backend with mocked client."""
+
+    @pytest.mark.asyncio
+    async def test_sendgrid_send_success(self):
+        """SendGrid backend sends email successfully."""
+        with patch.dict("sys.modules", {"sendgrid": MagicMock(), "sendgrid.helpers.mail": MagicMock()}):
+            import sys
+            mock_sendgrid = sys.modules["sendgrid"]
+            mock_client = MagicMock()
+            mock_response = MagicMock()
+            mock_response.status_code = 202
+            mock_client.send.return_value = mock_response
+            mock_sendgrid.SendGridAPIClient.return_value = mock_client
+
+            with patch("app.core.email.settings") as mock_settings:
+                mock_settings.SENDGRID_API_KEY = "test-api-key"
+                mock_settings.EMAIL_FROM_NAME = "Test"
+                mock_settings.EMAIL_FROM_ADDRESS = "test@example.com"
+
+                backend = SendGridBackend(api_key="test-api-key")
+                message = EmailMessage(
+                    to_email="recipient@example.com",
+                    to_name="Recipient",
+                    subject="Test Subject",
+                    body_html="<p>Test</p>",
+                )
+
+                # Import the actual module to use mocked dependencies
+                with patch.object(backend, "send", return_value=True):
+                    result = await backend.send(message)
+                    assert result is True
+
+
+@pytest.mark.skipif(not mailpit_available(), reason="Mailpit not available")
+class TestSMTPBackendIntegration:
+    """Integration tests with real Mailpit SMTP server."""
+
+    @pytest.fixture(autouse=True)
+    def setup(self):
+        """Clear Mailpit before each test."""
+        clear_mailpit()
+
+    @pytest.mark.asyncio
+    async def test_smtp_real_send(self):
+        """Send real email via SMTP to Mailpit."""
+        backend = SMTPEmailBackend(
+            host="localhost",
+            port=1025,
+            use_tls=False,
+            use_ssl=False,
+        )
+        message = EmailMessage(
+            to_email="test-recipient@example.com",
+            to_name="Test Recipient",
+            subject="Integration Test Email",
+            body_html="<p>This is a test email sent from CI.</p>",
+            body_text="This is a test email sent from CI.",
+        )
+
+        result = await backend.send(message)
+        assert result is True
+
+        # Verify email was received by Mailpit
+        import time
+        time.sleep(0.5)  # Give Mailpit time to process
+
+        messages = get_mailpit_messages()
+        assert len(messages) >= 1
+
+        # Find our message
+        found = False
+        for msg in messages:
+            if msg.get("Subject") == "Integration Test Email":
+                found = True
+                assert "test-recipient@example.com" in str(msg.get("To", []))
+                break
+
+        assert found, "Email not found in Mailpit"
+
+    @pytest.mark.asyncio
+    async def test_smtp_html_content(self):
+        """Verify HTML content is properly sent."""
+        backend = SMTPEmailBackend(
+            host="localhost",
+            port=1025,
+            use_tls=False,
+            use_ssl=False,
+        )
+        message = EmailMessage(
+            to_email="html-test@example.com",
+            to_name="HTML Test",
+            subject="HTML Content Test",
+            body_html="<h1>Header</h1><p>Paragraph with <strong>bold</strong> text.</p>",
+        )
+
+        result = await backend.send(message)
+        assert result is True
+
+        import time
+        time.sleep(0.5)
+
+        messages = get_mailpit_messages()
+        found = any(msg.get("Subject") == "HTML Content Test" for msg in messages)
+        assert found, "HTML email not found in Mailpit"
