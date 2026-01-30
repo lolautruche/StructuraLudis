@@ -88,5 +88,29 @@
     "networkError": "Erreur de connexion au serveur",
     "unauthorized": "Vous devez être connecté",
     "forbidden": "Accès non autorisé"
+  },
+  "Privacy": {
+    "title": "Politique de confidentialité",
+    "lastUpdated": "Dernière mise à jour : Janvier 2026",
+    "section1Title": "1. Introduction",
+    "section1Content": "Structura Ludis s'engage à protéger la vie privée de ses utilisateurs. Cette politique décrit comment nous collectons, utilisons et protégeons vos données personnelles conformément au RGPD.",
+    "section2Title": "2. Données collectées",
+    "section2Content": "Nous collectons uniquement les données nécessaires au fonctionnement du service :",
+    "dataCollected1": "Adresse email (pour l'authentification et les notifications)",
+    "dataCollected2": "Nom complet (optionnel, pour l'affichage)",
+    "dataCollected3": "Historique des réservations (pour la gestion des sessions)",
+    "dataCollected4": "Préférences de notification",
+    "section3Title": "3. Utilisation des données",
+    "section3Content": "Vos données sont utilisées exclusivement pour vous permettre de réserver des sessions de jeu, recevoir des notifications relatives à vos réservations, et améliorer votre expérience utilisateur. Nous ne vendons jamais vos données à des tiers.",
+    "section4Title": "4. Vos droits",
+    "section4Content": "Conformément au RGPD, vous disposez des droits suivants :",
+    "rights1": "Droit d'accès : consulter vos données personnelles",
+    "rights2": "Droit de rectification : corriger vos données",
+    "rights3": "Droit à l'effacement : supprimer votre compte et vos données",
+    "rights4": "Droit à la portabilité : exporter vos données",
+    "section5Title": "5. Contact",
+    "section5Content": "Pour toute question concernant vos données personnelles, vous pouvez nous contacter via les paramètres de votre compte ou à l'adresse privacy@structuraludis.com.",
+    "back": "Retour",
+    "print": "Imprimer"
   }
 }

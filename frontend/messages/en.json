@@ -88,5 +88,29 @@
     "networkError": "Failed to connect to server",
     "unauthorized": "You must be logged in",
     "forbidden": "Access denied"
+  },
+  "Privacy": {
+    "title": "Privacy Policy",
+    "lastUpdated": "Last updated: January 2026",
+    "section1Title": "1. Introduction",
+    "section1Content": "Structura Ludis is committed to protecting the privacy of its users. This policy describes how we collect, use, and protect your personal data in compliance with GDPR.",
+    "section2Title": "2. Data Collected",
+    "section2Content": "We only collect data necessary for the service to function:",
+    "dataCollected1": "Email address (for authentication and notifications)",
+    "dataCollected2": "Full name (optional, for display)",
+    "dataCollected3": "Booking history (for session management)",
+    "dataCollected4": "Notification preferences",
+    "section3Title": "3. Use of Data",
+    "section3Content": "Your data is used exclusively to allow you to book game sessions, receive notifications about your bookings, and improve your user experience. We never sell your data to third parties.",
+    "section4Title": "4. Your Rights",
+    "section4Content": "Under GDPR, you have the following rights:",
+    "rights1": "Right of access: view your personal data",
+    "rights2": "Right to rectification: correct your data",
+    "rights3": "Right to erasure: delete your account and data",
+    "rights4": "Right to portability: export your data",
+    "section5Title": "5. Contact",
+    "section5Content": "For any questions about your personal data, you can contact us through your account settings or at privacy@structuraludis.com.",
+    "back": "Back",
+    "print": "Print"
   }
 }

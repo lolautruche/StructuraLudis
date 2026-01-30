@@ -14,36 +14,38 @@ const Checkbox = forwardRef<HTMLInputElement, CheckboxProps>(
     const inputId = id || props.name;
 
     return (
-      <div className="flex items-start">
-        <div className="flex items-center h-5">
-          <input
-            ref={ref}
-            id={inputId}
-            type="checkbox"
-            className={cn(
-              'h-4 w-4 rounded border-slate-600 bg-ludis-card text-ludis-primary',
-              'focus:ring-2 focus:ring-ludis-primary focus:ring-offset-2 focus:ring-offset-ludis-dark',
-              'disabled:opacity-50 disabled:cursor-not-allowed',
-              error && 'border-red-500',
-              className
-            )}
-            aria-invalid={error ? 'true' : 'false'}
-            aria-describedby={error ? `${inputId}-error` : undefined}
-            {...props}
-          />
-        </div>
-        {label && (
-          <div className="ml-3">
-            <label
-              htmlFor={inputId}
-              className="text-sm text-slate-300 cursor-pointer"
-            >
-              {label}
-            </label>
+      <div className="space-y-1">
+        <div className="flex items-start">
+          <div className="flex items-center h-5">
+            <input
+              ref={ref}
+              id={inputId}
+              type="checkbox"
+              className={cn(
+                'h-4 w-4 rounded border-slate-600 bg-ludis-card text-ludis-primary',
+                'focus:ring-2 focus:ring-ludis-primary focus:ring-offset-2 focus:ring-offset-ludis-dark',
+                'disabled:opacity-50 disabled:cursor-not-allowed',
+                error && 'border-red-500',
+                className
+              )}
+              aria-invalid={error ? 'true' : 'false'}
+              aria-describedby={error ? `${inputId}-error` : undefined}
+              {...props}
+            />
           </div>
-        )}
+          {label && (
+            <div className="ml-3">
+              <label
+                htmlFor={inputId}
+                className="text-sm text-slate-300 cursor-pointer"
+              >
+                {label}
+              </label>
+            </div>
+          )}
+        </div>
         {error && (
-          <p id={`${inputId}-error`} className="ml-3 text-sm text-red-500">
+          <p id={`${inputId}-error`} className="text-sm text-red-500">
             {error}
           </p>
         )}

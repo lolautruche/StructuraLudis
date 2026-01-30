@@ -1,7 +1,9 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
+import { Link } from '@/i18n/routing';
 import { Card } from '@/components/ui';
+import { RegisterForm } from '@/components/auth';
 
 export default function RegisterPage() {
   const t = useTranslations('Auth');
@@ -14,10 +16,19 @@ export default function RegisterPage() {
           <Card.Description>{t('registerSubtitle')}</Card.Description>
         </Card.Header>
         <Card.Content>
-          <p className="text-slate-400 text-center py-8">
-            Register form coming soon (Issue #59)
-          </p>
+          <RegisterForm />
         </Card.Content>
+        <Card.Footer className="text-center">
+          <p className="text-sm text-slate-400">
+            {t('hasAccount')}{' '}
+            <Link
+              href="/auth/login"
+              className="text-ludis-primary hover:underline"
+            >
+              {t('loginButton')}
+            </Link>
+          </p>
+        </Card.Footer>
       </Card>
     </div>
   );
