@@ -42,6 +42,11 @@ To provide a universal event management ecosystem for all forms of tabletop gami
     * **I want** to see an overview of all active and past events,
     * **so that** I can monitor the platform's global usage and performance.
 
+* **JS.05 - External Game Database Sync**
+    * **When** I configure the platform,
+    * **I want** to import and synchronize game references from external databases (GROG for RPGs, BGG for board games),
+    * **so that** users benefit from autocomplete and pre-filled metadata when creating sessions.
+
 ### EPIC A: The Organizer's Setup
 
 * **JS.A0 - Simplified Topology (Zones)**
@@ -105,8 +110,13 @@ To provide a universal event management ecosystem for all forms of tabletop gami
 
 * **JS.B3 - Game Identity (Game Reference)**
     * **When** identifying the game for my session,
-    * **I want** to link it to an external reference (e.g., GROG) if available, or enter information manually for prototypes,
-    * **so that** players are clearly informed while I retain the freedom to propose new games.
+    * **I want** to search from a pre-populated catalog (synced from GROG/BGG) with autocomplete, or enter information manually for prototypes,
+    * **so that** I can quickly find existing games with pre-filled metadata while retaining the freedom to propose new games.
+
+* **JS.B9 - Game Metadata Display**
+    * **When** I select a game from the catalog,
+    * **I want** to see its cover image, themes, and a link to its reference page (GROG/BGG),
+    * **so that** I can verify it's the correct game and players get accurate information.
 
 * **JS.B4 - Safety Tools Commitment**
     * **When** configuring my session,
