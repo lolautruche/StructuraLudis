@@ -37,8 +37,7 @@ from app.services.game_session import GameSessionService
 from app.services.notification import (
     NotificationService,
     NotificationRecipient,
-    NotificationPayload,
-    NotificationType,
+    SessionNotificationContext,
 )
 
 router = APIRouter()
@@ -356,7 +355,7 @@ async def cancel_session(
     # Send notifications
     notifications_sent = 0
     if affected_users:
-        notification_service = NotificationService()
+        notification_service = NotificationService(db)
         recipients = [
             NotificationRecipient(
                 user_id=user.user_id,
@@ -365,17 +364,17 @@ async def cancel_session(
             )
             for user in affected_users
         ]
-        payload = NotificationPayload(
-            notification_type=NotificationType.SESSION_CANCELLED,
+        context = SessionNotificationContext(
             session_id=session.id,
             session_title=session.title,
+            exhibition_id=exhibition.id,
             exhibition_title=exhibition.title,
             scheduled_start=session.scheduled_start,
             scheduled_end=session.scheduled_end,
             cancellation_reason=cancel_request.reason,
         )
         notifications_sent = await notification_service.notify_session_cancelled(
-            recipients, payload
+            recipients, context
         )
 
     return SessionCancellationResult(

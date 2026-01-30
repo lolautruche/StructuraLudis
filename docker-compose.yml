@@ -28,6 +28,20 @@ services:
     networks:
       - sl-network
 
+  # Email server for development (#37)
+  sl-mail:
+    image: axllent/mailpit:latest
+    container_name: sl_mailpit
+    restart: unless-stopped
+    ports:
+      - "1025:1025"   # SMTP
+      - "8025:8025"   # Web UI
+    environment:
+      MP_SMTP_AUTH_ACCEPT_ANY: 1
+      MP_SMTP_AUTH_ALLOW_INSECURE: 1
+    networks:
+      - sl-network
+
   sl-api:
     build: ./backend
     container_name: sl_api

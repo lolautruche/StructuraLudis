@@ -220,6 +220,23 @@ erDiagram
         datetime created_at
     }
 
+    %% ===== NOTIFICATION DOMAIN =====
+    Notification {
+        uuid id PK
+        uuid user_id FK
+        enum notification_type "SESSION_CANCELLED|BOOKING_CONFIRMED|WAITLIST_PROMOTED|SESSION_REMINDER|MODERATION_COMMENT|SESSION_APPROVED|SESSION_REJECTED|CHANGES_REQUESTED"
+        enum channel "EMAIL|PUSH|IN_APP"
+        string subject
+        text body
+        jsonb context "Contextual data for templates"
+        boolean is_read
+        datetime read_at
+        boolean email_sent
+        datetime email_sent_at
+        string email_error
+        datetime created_at
+    }
+
     %% ===== RELATIONSHIPS =====
     Organization ||--o{ UserGroup : "has"
     Organization ||--o{ Exhibition : "organizes"
@@ -234,6 +251,7 @@ erDiagram
     User ||--o{ Booking : "books"
     User ||--o{ Media : "uploads"
     User ||--o{ ModerationComment : "writes"
+    User ||--o{ Notification : "receives"
 
     Exhibition ||--o{ TimeSlot : "has"
     Exhibition ||--o{ Zone : "contains"

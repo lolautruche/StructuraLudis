@@ -22,8 +22,7 @@ from app.services.operations import OperationsService
 from app.services.notification import (
     NotificationService,
     NotificationRecipient,
-    NotificationPayload,
-    NotificationType,
+    SessionNotificationContext,
 )
 
 router = APIRouter()
@@ -79,7 +78,7 @@ async def auto_cancel_sessions(
     cancelled_results = await service.auto_cancel_sessions(exhibition_id)
 
     # Send notifications for each cancelled session
-    notification_service = NotificationService()
+    notification_service = NotificationService(db)
     results = []
 
     for session, affected_users in cancelled_results:
@@ -93,17 +92,17 @@ async def auto_cancel_sessions(
                 )
                 for user in affected_users
             ]
-            payload = NotificationPayload(
-                notification_type=NotificationType.SESSION_CANCELLED,
+            context = SessionNotificationContext(
                 session_id=session.id,
                 session_title=session.title,
+                exhibition_id=exhibition.id,
                 exhibition_title=exhibition.title,
                 scheduled_start=session.scheduled_start,
                 scheduled_end=session.scheduled_end,
                 cancellation_reason="GM did not check in within the grace period",
             )
             notifications_sent = await notification_service.notify_session_cancelled(
-                recipients, payload
+                recipients, context
             )
 
         results.append(SessionCancellationResult(

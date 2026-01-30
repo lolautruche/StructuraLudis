@@ -1,26 +1,29 @@
 """
 Notification service layer.
 
-Handles sending notifications to users (email, push, etc.).
-This is a stub implementation that logs notifications for now.
+Handles sending notifications to users via multiple channels (email, push, in-app).
 """
 import logging
 from dataclasses import dataclass
-from datetime import datetime
-from enum import Enum
+from datetime import datetime, timezone
 from typing import List, Optional
 from uuid import UUID
 
+from sqlalchemy import select, func, update
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.core.config import settings
+from app.core.email import EmailMessage, get_email_backend
+from app.core.templates import (
+    render_booking_confirmed,
+    render_session_cancelled,
+    render_waitlist_promoted,
+    render_session_reminder,
+)
+from app.domain.notification.entity import Notification
+from app.domain.notification.schemas import NotificationType, NotificationChannel
+
 logger = logging.getLogger(__name__)
-
-
-class NotificationType(str, Enum):
-    """Types of notifications."""
-    SESSION_CANCELLED = "session_cancelled"
-    SESSION_REMINDER = "session_reminder"
-    BOOKING_CONFIRMED = "booking_confirmed"
-    BOOKING_CANCELLED = "booking_cancelled"
-    WAITLIST_PROMOTED = "waitlist_promoted"
 
 
 @dataclass
@@ -29,117 +32,391 @@ class NotificationRecipient:
     user_id: UUID
     email: str
     full_name: Optional[str] = None
+    locale: str = "en"
 
 
 @dataclass
-class NotificationPayload:
-    """Payload for a notification."""
-    notification_type: NotificationType
+class SessionNotificationContext:
+    """Context data for session-related notifications."""
     session_id: UUID
     session_title: str
+    exhibition_id: UUID
     exhibition_title: str
     scheduled_start: datetime
     scheduled_end: datetime
-    cancellation_reason: Optional[str] = None
+    location: Optional[str] = None
+    table_number: Optional[str] = None
     gm_name: Optional[str] = None
+    cancellation_reason: Optional[str] = None
 
 
 class NotificationService:
     """
     Service for sending notifications to users.
 
-    This is a stub implementation that logs notifications.
-    In production, this would integrate with:
-    - Email service (SendGrid, AWS SES, etc.)
-    - Push notifications (Firebase, etc.)
-    - In-app notifications (WebSocket/SSE)
+    Supports multiple channels:
+    - Email (via configurable backend)
+    - Push (via Firebase Cloud Messaging)
+    - In-App (stored in database)
     """
 
-    async def notify_session_cancelled(
+    def __init__(self, db: AsyncSession):
+        self.db = db
+        self._email_backend = None
+
+    @property
+    def email_backend(self):
+        """Lazy-load email backend."""
+        if self._email_backend is None:
+            self._email_backend = get_email_backend()
+        return self._email_backend
+
+    async def _create_notification_record(
         self,
-        recipients: List[NotificationRecipient],
-        payload: NotificationPayload,
-    ) -> int:
-        """
-        Notify users that a session has been cancelled.
+        user_id: UUID,
+        notification_type: NotificationType,
+        channel: NotificationChannel,
+        subject: str,
+        body: Optional[str] = None,
+        context: Optional[dict] = None,
+    ) -> Notification:
+        """Create a notification record in the database."""
+        notification = Notification(
+            user_id=user_id,
+            notification_type=notification_type.value,
+            channel=channel.value,
+            subject=subject,
+            body=body,
+            context=context,
+        )
+        self.db.add(notification)
+        await self.db.flush()
+        return notification
 
-        Args:
-            recipients: List of users to notify
-            payload: Notification details
-
-        Returns:
-            Number of notifications sent
-        """
-        for recipient in recipients:
-            logger.info(
-                "NOTIFICATION [%s] to %s <%s>: Session '%s' scheduled for %s has been cancelled. Reason: %s",
-                payload.notification_type.value,
-                recipient.full_name or "User",
-                recipient.email,
-                payload.session_title,
-                payload.scheduled_start.isoformat(),
-                payload.cancellation_reason or "Not specified",
-            )
-
-        # TODO: Implement actual notification sending
-        # - Queue emails for batch sending
-        # - Send push notifications
-        # - Create in-app notification records
-
-        return len(recipients)
-
-    async def notify_waitlist_promoted(
+    async def _send_email(
         self,
         recipient: NotificationRecipient,
-        payload: NotificationPayload,
+        subject: str,
+        html_body: str,
+        notification: Optional[Notification] = None,
     ) -> bool:
-        """
-        Notify a user that they've been promoted from waitlist.
+        """Send an email and update notification record."""
+        if not settings.EMAIL_ENABLED:
+            logger.info(f"Email disabled, would send to {recipient.email}: {subject}")
+            return True
 
-        Args:
-            recipient: User to notify
-            payload: Notification details
-
-        Returns:
-            True if notification was sent
-        """
-        logger.info(
-            "NOTIFICATION [%s] to %s <%s>: You've been promoted from waitlist for session '%s' on %s!",
-            NotificationType.WAITLIST_PROMOTED.value,
-            recipient.full_name or "User",
-            recipient.email,
-            payload.session_title,
-            payload.scheduled_start.isoformat(),
+        message = EmailMessage(
+            to_email=recipient.email,
+            to_name=recipient.full_name,
+            subject=subject,
+            body_html=html_body,
         )
 
-        # TODO: Implement actual notification sending
+        success = await self.email_backend.send(message)
 
-        return True
+        if notification:
+            notification.email_sent = success
+            notification.email_sent_at = datetime.now(timezone.utc) if success else None
+            if not success:
+                notification.email_error = "Failed to send"
+            await self.db.flush()
+
+        return success
+
+    async def _send_push(
+        self,
+        recipient: NotificationRecipient,
+        title: str,
+        body: str,
+        data: Optional[dict] = None,
+    ) -> bool:
+        """Send a push notification via Firebase Cloud Messaging."""
+        if not settings.PUSH_NOTIFICATIONS_ENABLED:
+            logger.info(f"Push disabled, would send to {recipient.user_id}: {title}")
+            return True
+
+        # TODO: Implement Firebase push notifications
+        # This requires:
+        # 1. Firebase service account credentials
+        # 2. User device tokens stored in DB
+        # 3. firebase-admin SDK
+        logger.warning("Push notifications not yet implemented")
+        return False
 
     async def notify_booking_confirmed(
         self,
         recipient: NotificationRecipient,
-        payload: NotificationPayload,
+        context: SessionNotificationContext,
+        action_url: Optional[str] = None,
     ) -> bool:
         """
         Notify a user that their booking is confirmed.
 
-        Args:
-            recipient: User to notify
-            payload: Notification details
-
-        Returns:
-            True if notification was sent
+        Channels: Email, In-App
         """
-        logger.info(
-            "NOTIFICATION [%s] to %s <%s>: Booking confirmed for session '%s' on %s",
-            NotificationType.BOOKING_CONFIRMED.value,
-            recipient.full_name or "User",
-            recipient.email,
-            payload.session_title,
-            payload.scheduled_start.isoformat(),
+        subject, html_body = render_booking_confirmed(
+            locale=recipient.locale,
+            session_title=context.session_title,
+            exhibition_title=context.exhibition_title,
+            scheduled_start=context.scheduled_start,
+            gm_name=context.gm_name,
+            location=context.location,
+            action_url=action_url,
         )
 
-        # TODO: Implement actual notification sending
+        # Create in-app notification
+        notification = await self._create_notification_record(
+            user_id=recipient.user_id,
+            notification_type=NotificationType.BOOKING_CONFIRMED,
+            channel=NotificationChannel.EMAIL,
+            subject=subject,
+            body=f"Your booking for {context.session_title} is confirmed.",
+            context={
+                "session_id": str(context.session_id),
+                "exhibition_id": str(context.exhibition_id),
+            },
+        )
 
-        return True
+        # Send email
+        return await self._send_email(recipient, subject, html_body, notification)
+
+    async def notify_session_cancelled(
+        self,
+        recipients: List[NotificationRecipient],
+        context: SessionNotificationContext,
+        action_url: Optional[str] = None,
+    ) -> int:
+        """
+        Notify users that a session has been cancelled.
+
+        Channels: Email, In-App, Push (high priority)
+
+        Returns:
+            Number of notifications sent
+        """
+        sent_count = 0
+
+        for recipient in recipients:
+            subject, html_body = render_session_cancelled(
+                locale=recipient.locale,
+                session_title=context.session_title,
+                exhibition_title=context.exhibition_title,
+                scheduled_start=context.scheduled_start,
+                cancellation_reason=context.cancellation_reason,
+                action_url=action_url,
+            )
+
+            # Create in-app notification
+            notification = await self._create_notification_record(
+                user_id=recipient.user_id,
+                notification_type=NotificationType.SESSION_CANCELLED,
+                channel=NotificationChannel.EMAIL,
+                subject=subject,
+                body=f"Session '{context.session_title}' has been cancelled.",
+                context={
+                    "session_id": str(context.session_id),
+                    "reason": context.cancellation_reason,
+                },
+            )
+
+            # Send email
+            if await self._send_email(recipient, subject, html_body, notification):
+                sent_count += 1
+
+            # Also send push notification (high priority)
+            await self._send_push(
+                recipient,
+                title="Session Cancelled",
+                body=f"{context.session_title} has been cancelled",
+                data={"session_id": str(context.session_id)},
+            )
+
+        return sent_count
+
+    async def notify_waitlist_promoted(
+        self,
+        recipient: NotificationRecipient,
+        context: SessionNotificationContext,
+        action_url: Optional[str] = None,
+    ) -> bool:
+        """
+        Notify a user that they've been promoted from waitlist.
+
+        Channels: Email, In-App, Push (high priority)
+        """
+        subject, html_body = render_waitlist_promoted(
+            locale=recipient.locale,
+            session_title=context.session_title,
+            exhibition_title=context.exhibition_title,
+            scheduled_start=context.scheduled_start,
+            location=context.location,
+            action_url=action_url,
+        )
+
+        # Create in-app notification
+        notification = await self._create_notification_record(
+            user_id=recipient.user_id,
+            notification_type=NotificationType.WAITLIST_PROMOTED,
+            channel=NotificationChannel.EMAIL,
+            subject=subject,
+            body=f"You've been promoted from waitlist for {context.session_title}!",
+            context={
+                "session_id": str(context.session_id),
+                "exhibition_id": str(context.exhibition_id),
+            },
+        )
+
+        # Send email
+        email_sent = await self._send_email(recipient, subject, html_body, notification)
+
+        # Also send push notification (high priority)
+        await self._send_push(
+            recipient,
+            title="You're in!",
+            body=f"A spot opened up for {context.session_title}",
+            data={"session_id": str(context.session_id)},
+        )
+
+        return email_sent
+
+    async def notify_session_reminder(
+        self,
+        recipient: NotificationRecipient,
+        context: SessionNotificationContext,
+        action_url: Optional[str] = None,
+    ) -> bool:
+        """
+        Send a session reminder notification.
+
+        Channels: Email, Push
+        """
+        subject, html_body = render_session_reminder(
+            locale=recipient.locale,
+            session_title=context.session_title,
+            exhibition_title=context.exhibition_title,
+            scheduled_start=context.scheduled_start,
+            location=context.location,
+            table_number=context.table_number,
+            action_url=action_url,
+        )
+
+        # Create in-app notification
+        notification = await self._create_notification_record(
+            user_id=recipient.user_id,
+            notification_type=NotificationType.SESSION_REMINDER,
+            channel=NotificationChannel.EMAIL,
+            subject=subject,
+            body=f"Reminder: {context.session_title} starts soon!",
+            context={
+                "session_id": str(context.session_id),
+            },
+        )
+
+        # Send email
+        email_sent = await self._send_email(recipient, subject, html_body, notification)
+
+        # Also send push notification
+        await self._send_push(
+            recipient,
+            title="Session Starting Soon",
+            body=f"{context.session_title} starts soon!",
+            data={"session_id": str(context.session_id)},
+        )
+
+        return email_sent
+
+    # =========================================================================
+    # In-App Notification Management
+    # =========================================================================
+
+    async def get_user_notifications(
+        self,
+        user_id: UUID,
+        unread_only: bool = False,
+        limit: int = 50,
+        offset: int = 0,
+    ) -> tuple[List[Notification], int, int]:
+        """
+        Get notifications for a user.
+
+        Returns:
+            Tuple of (notifications, total_count, unread_count)
+        """
+        # Base query
+        query = select(Notification).where(Notification.user_id == user_id)
+
+        if unread_only:
+            query = query.where(Notification.is_read == False)
+
+        # Get total count
+        count_query = select(func.count()).select_from(
+            select(Notification).where(Notification.user_id == user_id).subquery()
+        )
+        total_result = await self.db.execute(count_query)
+        total_count = total_result.scalar() or 0
+
+        # Get unread count
+        unread_query = select(func.count()).select_from(
+            select(Notification).where(
+                Notification.user_id == user_id,
+                Notification.is_read == False
+            ).subquery()
+        )
+        unread_result = await self.db.execute(unread_query)
+        unread_count = unread_result.scalar() or 0
+
+        # Get paginated results
+        query = query.order_by(Notification.created_at.desc())
+        query = query.offset(offset).limit(limit)
+
+        result = await self.db.execute(query)
+        notifications = list(result.scalars().all())
+
+        return notifications, total_count, unread_count
+
+    async def mark_notifications_read(
+        self,
+        user_id: UUID,
+        notification_ids: List[UUID],
+    ) -> int:
+        """
+        Mark notifications as read.
+
+        Returns:
+            Number of notifications updated
+        """
+        now = datetime.now(timezone.utc)
+
+        stmt = (
+            update(Notification)
+            .where(
+                Notification.user_id == user_id,
+                Notification.id.in_(notification_ids),
+                Notification.is_read == False,
+            )
+            .values(is_read=True, read_at=now)
+        )
+
+        result = await self.db.execute(stmt)
+        return result.rowcount
+
+    async def mark_all_read(self, user_id: UUID) -> int:
+        """
+        Mark all notifications as read for a user.
+
+        Returns:
+            Number of notifications updated
+        """
+        now = datetime.now(timezone.utc)
+
+        stmt = (
+            update(Notification)
+            .where(
+                Notification.user_id == user_id,
+                Notification.is_read == False,
+            )
+            .values(is_read=True, read_at=now)
+        )
+
+        result = await self.db.execute(stmt)
+        return result.rowcount

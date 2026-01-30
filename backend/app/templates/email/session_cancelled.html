@@ -1,0 +1,30 @@
+{% extends "email/base.html" %}
+
+{% block content %}
+<h2>{{ greeting }}</h2>
+
+<div class="warning-box">
+    <strong>{{ alert_text }}</strong>
+</div>
+
+<p>{{ intro_text }}</p>
+
+<div class="info-box">
+    <strong>{{ session_label }}:</strong> {{ session_title }}<br>
+    <strong>{{ event_label }}:</strong> {{ exhibition_title }}<br>
+    <strong>{{ date_label }}:</strong> {{ scheduled_date }}<br>
+    <strong>{{ time_label }}:</strong> {{ scheduled_time }}
+</div>
+
+{% if cancellation_reason %}
+<p><strong>{{ reason_label }}:</strong> {{ cancellation_reason }}</p>
+{% endif %}
+
+<p>{{ apology_text }}</p>
+
+{% if action_url %}
+<p style="text-align: center;">
+    <a href="{{ action_url }}" class="button">{{ action_button_text }}</a>
+</p>
+{% endif %}
+{% endblock %}
