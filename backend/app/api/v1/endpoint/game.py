@@ -100,7 +100,7 @@ async def create_category(
 # Game Endpoints
 # =============================================================================
 
-@router.get("", response_model=List[GameRead])
+@router.get("/", response_model=List[GameRead])
 async def list_games(
     q: Optional[str] = Query(None, min_length=1, description="Search query (title, publisher)"),
     category_id: Optional[UUID] = Query(None, description="Filter by category"),
@@ -160,7 +160,7 @@ async def get_game(
     return game
 
 
-@router.post("", response_model=GameRead, status_code=status.HTTP_201_CREATED)
+@router.post("/", response_model=GameRead, status_code=status.HTTP_201_CREATED)
 async def create_game(
     game_in: GameCreate,
     current_user: User = Depends(get_current_active_user),

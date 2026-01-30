@@ -37,7 +37,7 @@ router = APIRouter()
 # Exhibition CRUD
 # =============================================================================
 
-@router.get("", response_model=List[ExhibitionRead])
+@router.get("/", response_model=List[ExhibitionRead])
 async def list_exhibitions(
     db: AsyncSession = Depends(get_db),
     skip: int = 0,
@@ -49,7 +49,7 @@ async def list_exhibitions(
     return result.scalars().all()
 
 
-@router.post("", response_model=ExhibitionRead, status_code=status.HTTP_201_CREATED)
+@router.post("/", response_model=ExhibitionRead, status_code=status.HTTP_201_CREATED)
 async def create_exhibition(
     exhibition_in: ExhibitionCreate,
     current_user: User = Depends(get_current_active_user),
