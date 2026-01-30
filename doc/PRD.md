@@ -177,6 +177,21 @@ To provide a universal event management ecosystem for all forms of tabletop gami
     * **I want** to filter tables by the language spoken at the table (e.g., FR, EN, or Bilingual),
     * **so that** I am sure I can participate fully in the session.
 
+* **JS.C7 - Event Discovery**
+    * **When** I hear about a gaming convention using Structura Ludis,
+    * **I want** to access its dedicated page with schedule overview, zones, and registration status,
+    * **so that** I can decide if I want to attend and start exploring available sessions.
+
+* **JS.C8 - Booking Cancellation**
+    * **When** I can no longer attend a session I registered for,
+    * **I want** to cancel my booking easily from my dashboard,
+    * **so that** my seat is released for other players or the waitlist.
+
+* **JS.C9 - Waitlist Visibility**
+    * **When** I join a waitlist for a full session,
+    * **I want** to see my position in the queue,
+    * **so that** I can estimate my chances of getting a seat and plan accordingly.
+
 ---
 
 ### EPIC D: Partner Management (Exhibitors & Clubs)
@@ -250,7 +265,19 @@ To provide a universal event management ecosystem for all forms of tabletop gami
 
 ## 3. Cross-Cutting Concerns
 
-### 3.1 Notification System
+### 3.1 Authentication & Account
+
+* **JS.X1 - Password Recovery**
+    * **When** I forget my password,
+    * **I want** to receive a reset link via email,
+    * **so that** I can regain access to my account securely.
+
+* **JS.X2 - Profile Management**
+    * **When** I want to update my personal information,
+    * **I want** to edit my name, timezone, and language preference from my settings,
+    * **so that** my experience is personalized and my information stays current.
+
+### 3.2 Notification System
 
 The platform sends notifications to users via multiple channels (Email, Push, In-App) for key events:
 - Booking confirmations
