@@ -130,17 +130,35 @@ async def create_session(
     return await service.create_session(session_in, current_user)
 
 
-@router.get("/{session_id}", response_model=GameSessionRead)
+@router.get("/{session_id}", response_model=SessionSearchResult)
 async def get_session(
     session_id: UUID,
     db: AsyncSession = Depends(get_db),
 ):
-    """Get a single game session by ID."""
+    """Get a single game session by ID with computed fields."""
+    from sqlalchemy import func
     from app.domain.organization.entity import UserGroup
+    from app.domain.exhibition.entity import PhysicalTable, Zone
+    from app.domain.game.entity import Game, GameCategory
+    from app.domain.user.entity import User
+    from app.domain.shared.entity import BookingStatus
 
     result = await db.execute(
-        select(GameSession, UserGroup.name.label("group_name"))
+        select(
+            GameSession,
+            UserGroup.name.label("group_name"),
+            Game.title.label("game_title"),
+            GameCategory.slug.label("category_slug"),
+            Zone.name.label("zone_name"),
+            PhysicalTable.label.label("table_label"),
+            User.full_name.label("gm_name"),
+        )
         .outerjoin(UserGroup, GameSession.provided_by_group_id == UserGroup.id)
+        .outerjoin(Game, GameSession.game_id == Game.id)
+        .outerjoin(GameCategory, Game.category_id == GameCategory.id)
+        .outerjoin(PhysicalTable, GameSession.physical_table_id == PhysicalTable.id)
+        .outerjoin(Zone, PhysicalTable.zone_id == Zone.id)
+        .outerjoin(User, GameSession.created_by_user_id == User.id)
         .where(GameSession.id == session_id)
     )
     row = result.one_or_none()
@@ -153,9 +171,33 @@ async def get_session(
 
     session = row[0]
     group_name = row[1]
+    game_title = row[2]
+    category_slug = row[3]
+    zone_name = row[4]
+    table_label = row[5]
+    gm_name = row[6]
 
-    # Build response with group name
-    return GameSessionRead(
+    # Count confirmed bookings
+    confirmed_result = await db.execute(
+        select(func.count(Booking.id)).where(
+            Booking.game_session_id == session.id,
+            Booking.status.in_([BookingStatus.CONFIRMED, BookingStatus.CHECKED_IN]),
+        )
+    )
+    confirmed_count = confirmed_result.scalar() or 0
+
+    # Count waitlist
+    waitlist_result = await db.execute(
+        select(func.count(Booking.id)).where(
+            Booking.game_session_id == session.id,
+            Booking.status == BookingStatus.WAITING_LIST,
+        )
+    )
+    waitlist_count = waitlist_result.scalar() or 0
+
+    available_seats = max(0, session.max_players_count - confirmed_count)
+
+    return SessionSearchResult(
         id=session.id,
         exhibition_id=session.exhibition_id,
         time_slot_id=session.time_slot_id,
@@ -180,6 +222,16 @@ async def get_session(
         actual_end=session.actual_end,
         created_at=session.created_at,
         updated_at=session.updated_at,
+        # Computed fields
+        available_seats=available_seats,
+        confirmed_players_count=confirmed_count,
+        waitlist_count=waitlist_count,
+        has_available_seats=available_seats > 0,
+        category_slug=category_slug,
+        zone_name=zone_name,
+        table_label=table_label,
+        game_title=game_title,
+        gm_name=gm_name,
     )
 
 
