@@ -189,7 +189,7 @@ Added to Exhibition entity:
 7. ~~#35 - End-of-session reporting (JS.B8)~~ ✅
 
 ### Phase 3: Infrastructure (2-3 weeks)
-8. #34 - i18n infrastructure
+8. ~~#34 - i18n infrastructure~~ ✅
 9. #37 - Notification system complete
 10. #38 - Smart check-in reminders (JS.C3)
 11. #41 - Multi-language email templates
