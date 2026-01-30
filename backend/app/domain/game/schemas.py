@@ -318,14 +318,29 @@ class SessionSearchResult(GameSessionRead):
     available_seats: int = Field(
         ..., description="Number of available seats"
     )
+    confirmed_players_count: int = Field(
+        ..., description="Number of confirmed players"
+    )
+    waitlist_count: int = Field(
+        0, description="Number of players on the waitlist"
+    )
+    has_available_seats: bool = Field(
+        ..., description="Whether the session has available seats"
+    )
     category_slug: Optional[str] = Field(
         None, description="Game category slug for display"
     )
     zone_name: Optional[str] = Field(
         None, description="Zone name for display"
     )
+    table_label: Optional[str] = Field(
+        None, description="Table label for display"
+    )
     game_title: Optional[str] = Field(
         None, description="Game title for display"
+    )
+    gm_name: Optional[str] = Field(
+        None, description="Game Master name for display"
     )
 
 

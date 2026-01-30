@@ -139,6 +139,31 @@ class GameSessionService:
             confirmed_count = booking_count.scalar() or 0
             available_seats = max(0, session.max_players_count - confirmed_count)
 
+            # Count waitlist
+            waitlist_result = await self.db.execute(
+                select(func.count(Booking.id)).where(
+                    Booking.game_session_id == session.id,
+                    Booking.status == BookingStatus.WAITING_LIST,
+                )
+            )
+            waitlist_count = waitlist_result.scalar() or 0
+
+            # Get GM name
+            gm_result = await self.db.execute(
+                select(User.full_name).where(User.id == session.created_by_user_id)
+            )
+            gm_name = gm_result.scalar_one_or_none()
+
+            # Get table label if assigned
+            table_label = None
+            if session.physical_table_id:
+                table_result = await self.db.execute(
+                    select(PhysicalTable.label).where(
+                        PhysicalTable.id == session.physical_table_id
+                    )
+                )
+                table_label = table_result.scalar_one_or_none()
+
             # Apply availability filter
             if filters.has_available_seats is True and available_seats == 0:
                 continue
@@ -172,9 +197,14 @@ class GameSessionService:
                 "updated_at": session.updated_at,
                 # Computed fields
                 "available_seats": available_seats,
+                "confirmed_players_count": confirmed_count,
+                "waitlist_count": waitlist_count,
+                "has_available_seats": available_seats > 0,
                 "category_slug": category_slug,
                 "zone_name": zone_name,
+                "table_label": table_label,
                 "game_title": game_title,
+                "gm_name": gm_name,
             })
 
         return sessions_with_availability
