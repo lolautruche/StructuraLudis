@@ -17,6 +17,10 @@ class RegisterRequest(BaseModel):
     email: EmailStr
     password: str = Field(..., min_length=8)
     full_name: str = Field(None, max_length=255)
+    accept_privacy_policy: bool = Field(
+        ...,
+        description="User must accept the privacy policy to register"
+    )
 
 
 class Token(BaseModel):

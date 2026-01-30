@@ -40,6 +40,11 @@ class User(Base, TimestampMixin):
     birth_date: Mapped[Optional[date]] = mapped_column(Date, nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
 
+    # GDPR: Privacy policy consent (Issue #47)
+    privacy_accepted_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+
     def get_age(self) -> Optional[int]:
         """Calculate age from birth_date."""
         if not self.birth_date:
