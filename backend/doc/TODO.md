@@ -7,10 +7,10 @@
 
 | Status | Count | Coverage |
 |--------|-------|----------|
-| Implemented | 26 features | 93% |
-| Partial | 2 features | 7% |
+| Implemented | 27 features | 96% |
+| Partial | 1 feature | 4% |
 | Not implemented | 0 features | 0% |
-| **Total PRD coverage** | | **~96%** |
+| **Total PRD coverage** | | **~98%** |
 
 ---
 
@@ -25,7 +25,6 @@
 | Feature | PRD Ref | Issue | Current % | What's Missing | Complexity | Effort |
 |---------|---------|-------|-----------|----------------|------------|--------|
 | Smart check-in | JS.C3 | #38 | 60% | Automatic reminders before session, check-in window enforcement | Medium | 3-5 days |
-| Notifications | Cross-cutting | #37 | 10% | Email integration (SendGrid/SES), push notifications, in-app persistence | High | 1-2 weeks |
 
 ---
 
@@ -42,6 +41,7 @@
 | End-of-session reporting | JS.B8 | #35 | ✅ Done |
 | Delegated autonomy | JS.A4 | #40 | ✅ Done (via #31) |
 | i18n infrastructure | 1.1 | #34 | ✅ Done |
+| Notification system | Cross-cutting | #37 | ✅ Done |
 
 ---
 
@@ -113,23 +113,18 @@ Session lifecycle management with reporting:
 
 ---
 
-### Notification System (Cross-cutting) - #37
+### ~~Notification System (Cross-cutting) - #37~~ ✅ DONE
 
-**Current state:** Stub that logs to console
-
-**Required:**
-- [ ] Email provider integration (SendGrid, AWS SES, or SMTP)
-- [ ] Email templates (session cancelled, booking confirmed, waitlist promoted, reminder)
-- [ ] Template localization (FR/EN)
-- [ ] Queue system for async sending (optional: Redis + worker)
-- [ ] In-app notification persistence (Notification entity)
-- [ ] `GET /users/me/notifications` endpoint
-
-**Files to modify:**
-- `app/services/notification.py` - Full implementation
-- `app/core/config.py` - Email provider settings
-- New templates directory
-- Optional: `app/domain/notification/entity.py`
+Multi-channel notification system with email backends and i18n support:
+- `Notification` entity for in-app persistence (user_id, type, channel, subject, body, is_read)
+- Email backends: Console (dev), SMTP (Mailpit), SendGrid (prod), Gmail API
+- Jinja2 email templates with FR/EN localization
+- `GET /notifications/` - List user notifications
+- `POST /notifications/mark-read` - Mark specific as read
+- `POST /notifications/mark-all-read` - Mark all as read
+- `GET /notifications/unread-count` - Unread count
+- Firebase Cloud Messaging support for push notifications (configurable)
+- See `doc/PROJECT-CONTEXT.md` for configuration details
 
 ---
 
@@ -190,7 +185,7 @@ Added to Exhibition entity:
 
 ### Phase 3: Infrastructure (2-3 weeks)
 8. ~~#34 - i18n infrastructure~~ ✅
-9. #37 - Notification system complete
+9. ~~#37 - Notification system complete~~ ✅
 10. #38 - Smart check-in reminders (JS.C3)
 11. #41 - Multi-language email templates
 

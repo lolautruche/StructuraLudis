@@ -25,6 +25,12 @@ jobs:
           --health-timeout 5s
           --health-retries 5
 
+      mailpit:
+        image: axllent/mailpit:latest
+        ports:
+          - 1025:1025
+          - 8025:8025
+
     defaults:
       run:
         working-directory: backend
@@ -59,4 +65,12 @@ jobs:
         env:
           DATABASE_URL: postgresql+asyncpg://structuraludis:structuraludis@localhost:5432/structuraludis_test
           PYTHONPATH: .
+          # Email testing with Mailpit
+          EMAIL_BACKEND: smtp
+          EMAIL_ENABLED: "true"
+          SMTP_HOST: localhost
+          SMTP_PORT: "1025"
+          SMTP_TLS: "false"
+          SMTP_SSL: "false"
+          MAILPIT_API_URL: http://localhost:8025/api/v1
         run: poetry run pytest --tb=short -v

@@ -81,7 +81,7 @@ To provide a universal event management ecosystem for all forms of tabletop gami
 
 * **JS.A7 - Moderation Dialogue (Organizer)**
     * **When** a session is submitted for review,
-    * **I want** to communicate directly with the proposer on their session sheet,
+    * **I want** to communicate directly with the proposer on their session sheet (with email/in-app notifications for new comments),
     * **so that** I can support them in adjusting their table logistics before final validation.
 
 * **JS.A8 - Multi-language Event Presence**
@@ -115,7 +115,7 @@ To provide a universal event management ecosystem for all forms of tabletop gami
 
 * **JS.B5 - Moderation Workflow (Proposer)**
     * **When** my session is under review,
-    * **I want** to communicate directly with moderators,
+    * **I want** to communicate directly with moderators and receive notifications (email/in-app) when my session is approved, rejected, or changes are requested,
     * **so that** we can adjust logistics without a flat rejection.
 
 * **JS.B6 - Agenda Management**
@@ -144,17 +144,17 @@ To provide a universal event management ecosystem for all forms of tabletop gami
 
 * **JS.C2 - Safe Booking**
     * **When** joining a session,
-    * **I want** to see the required age and safety tools,
-    * **so that** I ensure the experience matches my personal boundaries.
+    * **I want** to see the required age and safety tools, and receive a confirmation notification (email/in-app) upon successful registration,
+    * **so that** I ensure the experience matches my personal boundaries and have a record of my booking.
 
 * **JS.C3 - Smart Check-in**
     * **When** registered,
-    * **I want** to receive reminders and confirm my presence within a specific window beforehand,
+    * **I want** to receive reminders (email/push notification) and confirm my presence within a specific window beforehand,
     * **so that** I secure my seat or allow someone else to play if I can't make it.
 
 * **JS.C4 - Virtual Waitlist**
     * **When** a table is full,
-    * **I want** to join a digital queue and be notified of openings,
+    * **I want** to join a digital queue and be notified of openings (email/push notification),
     * **so that** I can explore the convention instead of standing in line.
 
 * **JS.C5 - Pop-up Games**
@@ -190,3 +190,18 @@ To provide a universal event management ecosystem for all forms of tabletop gami
     * **When** I schedule a session,
     * **I want** it clearly identified as "Organized by [Partner Name]",
     * **so that** I promote my brand or club identity to visitors.
+
+---
+
+## 3. Cross-Cutting Concerns
+
+### 3.1 Notification System
+
+The platform sends notifications to users via multiple channels (Email, Push, In-App) for key events:
+- Booking confirmations
+- Session cancellations
+- Waitlist promotions
+- Session reminders
+- Moderation updates
+
+**Technical details**: See `PROJECT-CONTEXT.md` (Notification System section) for backend configuration, email providers, and i18n support.
