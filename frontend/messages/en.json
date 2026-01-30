@@ -1,0 +1,92 @@
+{
+  "Common": {
+    "login": "Login",
+    "register": "Sign up",
+    "logout": "Logout",
+    "sessions": "Sessions",
+    "dashboard": "Dashboard",
+    "settings": "Settings",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "loading": "Loading...",
+    "error": "Error",
+    "success": "Success"
+  },
+  "Auth": {
+    "loginTitle": "Login",
+    "loginSubtitle": "Sign in to your account",
+    "registerTitle": "Sign up",
+    "registerSubtitle": "Create your account",
+    "email": "Email address",
+    "password": "Password",
+    "confirmPassword": "Confirm password",
+    "fullName": "Full name",
+    "rememberMe": "Remember me",
+    "forgotPassword": "Forgot password?",
+    "noAccount": "Don't have an account?",
+    "hasAccount": "Already have an account?",
+    "privacyConsent": "I accept the <link>privacy policy</link>",
+    "privacyRequired": "You must accept the privacy policy",
+    "loginButton": "Sign in",
+    "registerButton": "Sign up",
+    "invalidCredentials": "Invalid email or password",
+    "emailExists": "This email address is already registered",
+    "passwordTooShort": "Password must be at least 8 characters",
+    "passwordMismatch": "Passwords do not match"
+  },
+  "Discovery": {
+    "title": "Find a game",
+    "searchPlaceholder": "Search by title, game, GM...",
+    "filters": "Filters",
+    "availableNow": "Available now",
+    "hasSeats": "Has seats",
+    "allSessions": "All sessions",
+    "noResults": "No sessions found",
+    "noResultsDescription": "Try adjusting your filters or check back later."
+  },
+  "Session": {
+    "book": "Book",
+    "joinWaitlist": "Join waitlist",
+    "cancelBooking": "Cancel booking",
+    "checkIn": "Check in",
+    "seats": "{available}/{total} seats",
+    "waitlistPosition": "Position {position} on waitlist",
+    "startingSoon": "Starting soon",
+    "inProgress": "In progress",
+    "finished": "Finished",
+    "cancelled": "Cancelled"
+  },
+  "GameTable": {
+    "complexity": "Complexity",
+    "safetyTools": "Safety tools",
+    "language": "Table language",
+    "minAge": "{age}+ years",
+    "gm": "GM",
+    "organizedBy": "Organized by {name}"
+  },
+  "Notifications": {
+    "title": "Notifications",
+    "markAllRead": "Mark all as read",
+    "noNotifications": "No notifications",
+    "sessionCancelled": "Session cancelled",
+    "bookingConfirmed": "Booking confirmed",
+    "waitlistPromoted": "Seat available!",
+    "sessionReminder": "Session reminder"
+  },
+  "Settings": {
+    "title": "Settings",
+    "profile": "Profile",
+    "preferences": "Preferences",
+    "privacy": "Privacy",
+    "downloadData": "Download my data",
+    "deleteAccount": "Delete my account"
+  },
+  "Errors": {
+    "generic": "An error occurred",
+    "networkError": "Failed to connect to server",
+    "unauthorized": "You must be logged in",
+    "forbidden": "Access denied"
+  }
+}
