@@ -7,16 +7,25 @@
 
 | Status | Count | Coverage |
 |--------|-------|----------|
-| Implemented | 27 features | 96% |
-| Partial | 1 feature | 4% |
-| Not implemented | 0 features | 0% |
-| **Total PRD coverage** | | **~98%** |
+| Implemented | 27 features | 77% |
+| Partial | 1 feature | 3% |
+| Not implemented | 8 features (GDPR) | 20% |
+| **Total PRD coverage** | | **~80%** |
 
 ---
 
-## Not Implemented (0%)
+## Not Implemented - EPIC E: GDPR Compliance
 
-*All core features implemented!*
+| Feature | PRD Ref | Issue | Complexity | Effort |
+|---------|---------|-------|------------|--------|
+| Privacy Policy Consent | JS.E1 | #47 | Low | 1-2 days |
+| Data Access (Right of Access) | JS.E2 | #48 | Medium | 2-3 days |
+| Account Deletion (Right to Erasure) | JS.E3 | #49 | High | 3-5 days |
+| Data Portability | JS.E4 | #50 | Low | 1 day |
+| Consent Management | JS.E5 | #51 | Medium | 2-3 days |
+| Data Retention Transparency | JS.E6 | #52 | Low | 1-2 days |
+| GDPR Request Management (Admin) | JS.E7 | #53 | High | 5-7 days |
+| Data Anonymization | JS.E8 | #54 | High | 3-5 days |
 
 ---
 
@@ -170,6 +179,108 @@ Added to Exhibition entity:
 
 ---
 
+### Privacy Policy Consent (JS.E1) - #47
+
+**Current state:** Not implemented
+
+**Required:**
+- [ ] Add `privacy_accepted_at: datetime` field to User entity
+- [ ] Require consent checkbox during registration
+- [ ] `POST /auth/register` validates consent
+- [ ] Privacy policy page (frontend)
+
+---
+
+### Data Access / Export (JS.E2) - #48
+
+**Current state:** Not implemented
+
+**Required:**
+- [ ] `GET /api/v1/users/me/data-export` endpoint
+- [ ] Export user profile, bookings, notifications, comments
+- [ ] Generate downloadable JSON file
+- [ ] Audit log for export requests
+
+---
+
+### Account Deletion (JS.E3) - #49
+
+**Current state:** Not implemented
+
+**Required:**
+- [ ] `POST /api/v1/users/me/delete-request` endpoint
+- [ ] Confirmation with password verification
+- [ ] Grace period (7 days) before actual deletion
+- [ ] Anonymize historical data (see #54)
+- [ ] Confirmation emails before/after deletion
+
+**Dependencies:**
+- #54 - Data Anonymization
+
+---
+
+### Data Portability (JS.E4) - #50
+
+**Current state:** Not implemented
+
+**Required:**
+- [ ] JSON export format (machine-readable)
+- [ ] Document data schema
+- [ ] Optional CSV export
+
+**Notes:** Largely covered by #48 (Data Access)
+
+---
+
+### Consent Management (JS.E5) - #51
+
+**Current state:** Not implemented
+
+**Required:**
+- [ ] Add preferences to User: `email_notifications`, `marketing_emails`
+- [ ] `PATCH /api/v1/users/me/preferences` endpoint
+- [ ] Respect preferences in notification service
+- [ ] Unsubscribe links in emails
+
+---
+
+### Data Retention Transparency (JS.E6) - #52
+
+**Current state:** Not implemented
+
+**Required:**
+- [ ] Define retention policy (inactive accounts, audit logs, anonymized data)
+- [ ] Document in privacy policy
+- [ ] Automated cleanup job for expired data
+
+---
+
+### GDPR Request Management Admin (JS.E7) - #53
+
+**Current state:** Not implemented
+
+**Required:**
+- [ ] `GdprRequest` entity (user_id, type, status, requested_at, processed_at)
+- [ ] Admin endpoints for request management
+- [ ] 30-day deadline tracking and reminders
+- [ ] Audit trail for all GDPR actions
+- [ ] Compliance report export
+
+---
+
+### Data Anonymization (JS.E8) - #54
+
+**Current state:** Not implemented
+
+**Required:**
+- [ ] Anonymization strategy for deleted users
+- [ ] Replace user_id with anonymous reference in Bookings
+- [ ] Anonymize ModerationComments (keep content, remove author)
+- [ ] Delete Notifications
+- [ ] Preserve aggregate statistics
+
+---
+
 ## Priority Recommendations
 
 ### ~~Phase 1: Quick Wins~~ ✅ COMPLETED
@@ -188,6 +299,16 @@ Added to Exhibition entity:
 9. ~~#37 - Notification system complete~~ ✅
 10. #38 - Smart check-in reminders (JS.C3)
 11. #41 - Multi-language email templates
+
+### Phase 4: GDPR Compliance (3-4 weeks)
+12. #47 - Privacy Policy Consent (JS.E1)
+13. #51 - Consent Management (JS.E5)
+14. #48 - Data Access / Export (JS.E2)
+15. #50 - Data Portability (JS.E4)
+16. #54 - Data Anonymization (JS.E8)
+17. #49 - Account Deletion (JS.E3) - depends on #54
+18. #53 - GDPR Request Management Admin (JS.E7)
+19. #52 - Data Retention Policy (JS.E6)
 
 ---
 
