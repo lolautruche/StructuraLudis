@@ -18,6 +18,10 @@
 ## Coding Standards
 - **Language**: All code, documentation, and comments MUST be in English.
 - **Naming**: Use snake_case for Python, camelCase for TypeScript.
+- **Frontend Responsive Strategy**: Hybrid approach
+    - **Share**: Atomic components (Button, Card, Input, Badge) use Tailwind breakpoints.
+    - **Separate**: Complex layouts where mobile UX differs significantly (e.g., bottom sheets, swipe interactions, different navigation patterns).
+    - Start responsive with CSS breakpoints. Extract to separate `*Mobile.tsx` only when file becomes unreadable or UX fundamentally diverges.
 - **Database**:
     - Always use UUIDs for Primary Keys.
     - Every table must have `created_at` and `updated_at` (UTC).
@@ -26,6 +30,12 @@
     - Use Repository pattern for DB access.
     - Separate Domain Models (Pydantic) from DB Models (SQLAlchemy).
     - Logic must reside in Domain Services, not in API routes.
+
+## Testing Requirements
+- **Backend**: Every new feature must have unit or integration tests (pytest).
+- **Frontend**: Every new component must have tests (Jest + Testing Library).
+- Tests must pass before merging any PR.
+- Test files location: `__tests__/` folder next to the components or `tests/` at project root.
 
 ## Validation Protocol
 - Before suggesting code, analyze potential side effects on the database schema.

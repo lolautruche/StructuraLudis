@@ -17,15 +17,36 @@ export interface SessionSearchParams {
 }
 
 export interface SessionSearchResult {
-  sessions: GameSession[];
+  items: GameSession[];
   total: number;
+  page: number;
+  size: number;
+  pages: number;
 }
 
 export const sessionsApi = {
   /**
-   * Search sessions within an exhibition.
+   * Search sessions globally or within an exhibition.
    */
   search: async (
+    params: SessionSearchParams & { exhibition_id?: string } = {}
+  ): Promise<ApiResponse<SessionSearchResult>> => {
+    const searchParams = new URLSearchParams();
+    Object.entries(params).forEach(([key, value]) => {
+      if (value !== undefined && value !== null && value !== '') {
+        searchParams.append(key, String(value));
+      }
+    });
+    const query = searchParams.toString();
+    return api.get<SessionSearchResult>(
+      `/api/v1/sessions/search${query ? `?${query}` : ''}`
+    );
+  },
+
+  /**
+   * Search sessions within an exhibition.
+   */
+  searchInExhibition: async (
     exhibitionId: string,
     params: SessionSearchParams = {}
   ): Promise<ApiResponse<SessionSearchResult>> => {
