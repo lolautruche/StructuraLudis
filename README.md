@@ -152,3 +152,13 @@ StructuraLudis/
 - [Project Context](doc/PROJECT-CONTEXT.md)
 - [API Documentation](http://localhost:8000/docs) (when running)
 
+---
+
+## License
+
+This project is licensed under the **GNU Affero General Public License v3.0** (AGPL-3.0).
+
+This means you are free to use, modify, and distribute this software, but if you run a modified version on a server that users interact with, you must make the source code available to them.
+
+See [LICENSE](LICENSE) for details.
+
