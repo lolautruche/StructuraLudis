@@ -7,12 +7,14 @@ const nextConfig = {
   // Enable strict mode for better development experience
   reactStrictMode: true,
 
-  // API proxy to backend (development)
+  // API proxy to backend
+  // Uses server-side API_URL (not NEXT_PUBLIC_*) so the browser doesn't try to resolve Docker hostnames
   async rewrites() {
+    const apiUrl = process.env.API_URL || 'http://localhost:8000';
     return [
       {
         source: '/api/:path*',
-        destination: `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/:path*`,
+        destination: `${apiUrl}/api/:path*`,
       },
     ];
   },

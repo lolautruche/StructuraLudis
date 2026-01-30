@@ -9,7 +9,9 @@
 
 import { ApiResponse } from './types';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '';
+// Client-side API calls use relative URLs (/api/*)
+// Next.js rewrites proxy them to the backend (configured via API_URL env var)
+const API_BASE_URL = '';
 
 // Token storage (in-memory for SSR compatibility, localStorage for client)
 let accessToken: string | null = null;
