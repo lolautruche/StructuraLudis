@@ -16,21 +16,14 @@ export interface SessionSearchParams {
   offset?: number;
 }
 
-export interface SessionSearchResult {
-  items: GameSession[];
-  total: number;
-  page: number;
-  size: number;
-  pages: number;
-}
-
 export const sessionsApi = {
   /**
    * Search sessions globally or within an exhibition.
+   * Returns an array of sessions with availability info.
    */
   search: async (
     params: SessionSearchParams & { exhibition_id?: string } = {}
-  ): Promise<ApiResponse<SessionSearchResult>> => {
+  ): Promise<ApiResponse<GameSession[]>> => {
     const searchParams = new URLSearchParams();
     Object.entries(params).forEach(([key, value]) => {
       if (value !== undefined && value !== null && value !== '') {
@@ -38,18 +31,19 @@ export const sessionsApi = {
       }
     });
     const query = searchParams.toString();
-    return api.get<SessionSearchResult>(
+    return api.get<GameSession[]>(
       `/api/v1/sessions/search${query ? `?${query}` : ''}`
     );
   },
 
   /**
    * Search sessions within an exhibition.
+   * Returns an array of sessions with availability info.
    */
   searchInExhibition: async (
     exhibitionId: string,
     params: SessionSearchParams = {}
-  ): Promise<ApiResponse<SessionSearchResult>> => {
+  ): Promise<ApiResponse<GameSession[]>> => {
     const searchParams = new URLSearchParams();
     Object.entries(params).forEach(([key, value]) => {
       if (value !== undefined && value !== null && value !== '') {
@@ -57,7 +51,7 @@ export const sessionsApi = {
       }
     });
     const query = searchParams.toString();
-    return api.get<SessionSearchResult>(
+    return api.get<GameSession[]>(
       `/api/v1/exhibitions/${exhibitionId}/sessions/search${query ? `?${query}` : ''}`
     );
   },

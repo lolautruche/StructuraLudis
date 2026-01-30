@@ -10,7 +10,7 @@ import {
   defaultFilters,
   type SessionFiltersState,
 } from '@/components/sessions';
-import { sessionsApi } from '@/lib/api';
+import { sessionsApi, exhibitionsApi } from '@/lib/api';
 import type { GameSession } from '@/lib/api/types';
 
 export default function SessionsPage() {
@@ -22,6 +22,7 @@ export default function SessionsPage() {
 
   const [sessions, setSessions] = useState<GameSession[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [exhibitionId, setExhibitionId] = useState<string | null>(null);
 
   // Initialize filters from URL
   const [filters, setFilters] = useState<SessionFiltersState>(() => ({
@@ -29,6 +30,19 @@ export default function SessionsPage() {
     hasSeats: searchParams.get('hasSeats') === 'true',
     language: searchParams.get('lang') || '',
   }));
+
+  // Fetch exhibition ID first
+  useEffect(() => {
+    async function fetchExhibition() {
+      const response = await exhibitionsApi.list();
+      if (response.data?.[0]) {
+        setExhibitionId(response.data[0].id);
+      } else {
+        setIsLoading(false);
+      }
+    }
+    fetchExhibition();
+  }, []);
 
   // Sync filters to URL
   const updateUrl = useCallback(
@@ -61,22 +75,25 @@ export default function SessionsPage() {
 
   // Fetch sessions
   useEffect(() => {
+    if (!exhibitionId) return;
+
     async function fetchSessions() {
       setIsLoading(true);
       const response = await sessionsApi.search({
+        exhibition_id: exhibitionId as string,
         status: 'VALIDATED',
         has_available_seats: filters.hasSeats || undefined,
         language: filters.language || undefined,
       });
 
       if (response.data) {
-        setSessions(response.data.items || []);
+        setSessions(response.data || []);
       }
       setIsLoading(false);
     }
 
     fetchSessions();
-  }, [filters.hasSeats, filters.language]);
+  }, [exhibitionId, filters.hasSeats, filters.language]);
 
   // Client-side filtering for text search (instant feedback)
   const filteredSessions = useMemo(() => {

@@ -9,6 +9,7 @@ app = FastAPI(
     title="Structura Ludis API",
     version="0.1.0",
     description="Backend for RPG Convention Management",
+    redirect_slashes=False,
 )
 
 # Include routers

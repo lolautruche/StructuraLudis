@@ -67,13 +67,13 @@ services:
     volumes:
       - ./frontend:/app
       - /app/node_modules  # Exclude node_modules from bind mount
-      - /app/.next         # Exclude .next from bind mount
     environment:
       - API_URL=http://sl-api:8000
     ports:
       - "3000:3000"
     networks:
       - sl-network
+    command: sh -c "rm -rf .next && npm run dev"
 
 networks:
   sl-network:
