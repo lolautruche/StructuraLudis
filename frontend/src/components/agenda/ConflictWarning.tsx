@@ -14,10 +14,10 @@ export function ConflictWarning({ conflicts }: ConflictWarningProps) {
   }
 
   return (
-    <div className="bg-amber-900/30 border border-amber-700 rounded-lg p-4">
+    <div className="bg-amber-50 dark:bg-amber-900/30 border border-amber-300 dark:border-amber-700 rounded-lg p-4">
       <div className="flex items-start gap-3">
         <svg
-          className="w-5 h-5 text-amber-400 flex-shrink-0 mt-0.5"
+          className="w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5"
           fill="currentColor"
           viewBox="0 0 20 20"
         >
@@ -28,10 +28,10 @@ export function ConflictWarning({ conflicts }: ConflictWarningProps) {
           />
         </svg>
         <div className="flex-1">
-          <h4 className="text-amber-400 font-medium">{t('conflicts')}</h4>
+          <h4 className="text-amber-700 dark:text-amber-400 font-medium">{t('conflicts')}</h4>
           <ul className="mt-2 space-y-1">
             {conflicts.map((conflict, index) => (
-              <li key={index} className="text-sm text-amber-300/80">
+              <li key={index} className="text-sm text-amber-600 dark:text-amber-300/80">
                 {conflict}
               </li>
             ))}
