@@ -15,6 +15,22 @@
 - `/frontend`: Next.js application.
 - Monorepo orchestrated by Docker Compose at root.
 
+## Development Environment
+- **Always use Docker**: Both frontend and backend must be run via Docker Compose. Never run `npm run dev` or `uvicorn` directly on the host.
+- **Use Makefile commands**: Run `make help` to see all available commands.
+- **Start services**: `make up`
+- **Rebuild after code changes**: `make build`, then `make up`
+- **Run migrations**: `make db-migrate`
+- **Seed database**: `make db-seed` (keeps existing data) or `make db-fixtures` (reset and reload)
+- **Always seed after schema changes**: After modifying the database schema or resetting the DB, always run `make db-fixtures` to ensure test data is available.
+- **View logs**: `make logs` (all), `make frontend-logs`, `make backend-logs`
+- **Services**:
+  - `sl-api`: Backend API (port 8000)
+  - `sl-frontend`: Frontend Next.js (port 3000)
+  - `sl-db`: PostgreSQL database
+  - `sl-mail`: Mailpit for email testing (port 8025)
+  - `sl-mq`: RabbitMQ message queue
+
 ## Coding Standards
 - **Language**: All code, documentation, and comments MUST be in English.
 - **Naming**: Use snake_case for Python, camelCase for TypeScript.

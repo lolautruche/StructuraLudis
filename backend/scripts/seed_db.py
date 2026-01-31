@@ -31,7 +31,7 @@ Test accounts (password: password123):
 """
 import asyncio
 import sys
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 from uuid import uuid4
 
 from sqlalchemy import select, delete
@@ -118,6 +118,7 @@ async def seed(force: bool = False):
             full_name="Admin Structura",
             global_role=GlobalRole.SUPER_ADMIN,
             locale="fr",
+            birth_date=date(1985, 3, 15),
             privacy_accepted_at=datetime.now(timezone.utc),
             email_verified=True,
         )
@@ -130,6 +131,7 @@ async def seed(force: bool = False):
             full_name="Marie Dupont",
             global_role=GlobalRole.ORGANIZER,
             locale="fr",
+            birth_date=date(1988, 7, 22),
             privacy_accepted_at=datetime.now(timezone.utc),
             email_verified=True,
         )
@@ -142,6 +144,7 @@ async def seed(force: bool = False):
             full_name="Laurent Bernasconi",
             global_role=GlobalRole.PARTNER,
             locale="fr",
+            birth_date=date(1975, 11, 8),
             privacy_accepted_at=datetime.now(timezone.utc),
             email_verified=True,
         )
@@ -153,6 +156,7 @@ async def seed(force: bool = False):
             full_name="Julien Collas",
             global_role=GlobalRole.PARTNER,
             locale="fr",
+            birth_date=date(1979, 4, 30),
             privacy_accepted_at=datetime.now(timezone.utc),
             email_verified=True,
         )
@@ -165,6 +169,7 @@ async def seed(force: bool = False):
             full_name="Jean-Pierre Martin",
             global_role=GlobalRole.USER,
             locale="fr",
+            birth_date=date(1982, 9, 12),
             privacy_accepted_at=datetime.now(timezone.utc),
             email_verified=True,
         )
@@ -176,6 +181,7 @@ async def seed(force: bool = False):
             full_name="Sophie Leclerc",
             global_role=GlobalRole.USER,
             locale="fr",
+            birth_date=date(1990, 1, 25),
             privacy_accepted_at=datetime.now(timezone.utc),
             email_verified=True,
         )
@@ -187,16 +193,26 @@ async def seed(force: bool = False):
             full_name="Nicolas Flamel",
             global_role=GlobalRole.USER,
             locale="fr",
+            birth_date=date(1978, 6, 3),
             privacy_accepted_at=datetime.now(timezone.utc),
             email_verified=True,
         )
 
         # Players (12 players for realistic session filling)
-        player_names = [
-            "Alice Moreau", "Bob Petit", "Claire Dubois",
-            "David Bernard", "Emma Leroy", "François Thomas",
-            "Géraldine Roux", "Hugo Martinez", "Isabelle Chen",
-            "Julien Nguyen", "Karine Schmitt", "Lucas Weber"
+        # Varied ages: adults and some teenagers for testing age restrictions
+        player_data = [
+            ("Alice Moreau", date(1995, 5, 10)),      # 30 ans
+            ("Bob Petit", date(2000, 8, 22)),         # 25 ans
+            ("Claire Dubois", date(1988, 12, 3)),    # 37 ans
+            ("David Bernard", date(2008, 3, 15)),    # 17 ans (mineur)
+            ("Emma Leroy", date(2010, 7, 8)),        # 15 ans (mineur)
+            ("François Thomas", date(1992, 11, 28)), # 33 ans
+            ("Géraldine Roux", date(2007, 2, 14)),   # 18 ans
+            ("Hugo Martinez", date(2009, 9, 5)),    # 16 ans (mineur)
+            ("Isabelle Chen", date(1985, 4, 19)),   # 40 ans
+            ("Julien Nguyen", date(1998, 6, 30)),   # 27 ans
+            ("Karine Schmitt", date(2011, 1, 12)),  # 14 ans (mineur)
+            ("Lucas Weber", date(1993, 10, 7)),     # 32 ans
         ]
         players = [
             User(
@@ -206,10 +222,11 @@ async def seed(force: bool = False):
                 full_name=name,
                 global_role=GlobalRole.USER,
                 locale="fr",
+                birth_date=birth_date,
                 privacy_accepted_at=datetime.now(timezone.utc),
                 email_verified=True,
             )
-            for i, name in enumerate(player_names, 1)
+            for i, (name, birth_date) in enumerate(player_data, 1)
         ]
 
         all_users = [admin, organizer, partner_12singes, partner_arkhane, gm1, gm2, gm3] + players

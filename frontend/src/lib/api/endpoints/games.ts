@@ -24,7 +24,7 @@ export const gamesApi = {
       }
     });
     const query = searchParams.toString();
-    return api.get<Game[]>(`/api/v1/games${query ? `?${query}` : ''}`);
+    return api.get<Game[]>(`/api/v1/games/${query ? `?${query}` : ''}`);
   },
 
   /**
@@ -38,7 +38,7 @@ export const gamesApi = {
    * Create a new game.
    */
   create: async (game: GameCreateRequest): Promise<ApiResponse<Game>> => {
-    return api.post<Game>('/api/v1/games', game);
+    return api.post<Game>('/api/v1/games/', game);
   },
 
   /**

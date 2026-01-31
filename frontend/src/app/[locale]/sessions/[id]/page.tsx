@@ -4,10 +4,11 @@ import { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import { useTranslations, useLocale } from 'next-intl';
 import { Link } from '@/i18n/routing';
-import { Button } from '@/components/ui';
+import { Button, ConfirmDialog } from '@/components/ui';
 import { SessionDetail } from '@/components/sessions';
 import { sessionsApi } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/contexts/ToastContext';
 import type { GameSession, Booking } from '@/lib/api/types';
 
 export default function SessionDetailPage() {
@@ -16,46 +17,86 @@ export default function SessionDetailPage() {
   const t = useTranslations('Session');
   const locale = useLocale();
   const { isAuthenticated } = useAuth();
+  const { showSuccess } = useToast();
 
   const [session, setSession] = useState<GameSession | null>(null);
   const [userBooking, setUserBooking] = useState<Booking | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isBooking, setIsBooking] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [bookingError, setBookingError] = useState<string | null>(null);
+  const [showCancelDialog, setShowCancelDialog] = useState(false);
+  const [showBookingConfirmDialog, setShowBookingConfirmDialog] = useState(false);
 
-  // Fetch session details
+  // Fetch session details and user booking in parallel
   const fetchSession = useCallback(async () => {
     setIsLoading(true);
     setError(null);
 
-    const response = await sessionsApi.getById(sessionId);
-    if (response.data) {
-      setSession(response.data);
+    // Fetch session and booking in parallel
+    const [sessionResponse, bookingResponse] = await Promise.all([
+      sessionsApi.getById(sessionId),
+      isAuthenticated ? sessionsApi.getMyBooking(sessionId) : Promise.resolve({ data: null }),
+    ]);
+
+    if (sessionResponse.data) {
+      setSession(sessionResponse.data);
     } else {
-      setError(response.error?.message || 'Session not found');
+      setError(sessionResponse.error?.message || 'Session not found');
+    }
+
+    if (bookingResponse.data) {
+      setUserBooking(bookingResponse.data);
     }
 
     setIsLoading(false);
-  }, [sessionId]);
+  }, [sessionId, isAuthenticated]);
 
   useEffect(() => {
     fetchSession();
   }, [fetchSession]);
 
-  // Handle booking
+  // Map backend error messages to translated ones
+  const translateBookingError = useCallback((errorMessage: string): string => {
+    // Check for age restriction error
+    const ageMatch = errorMessage.match(/minimum age of (\d+)/);
+    if (ageMatch) {
+      return t('errorAgeRestriction', { age: ageMatch[1] });
+    }
+    if (errorMessage.includes('full') || errorMessage.includes('no available seats')) {
+      return t('errorSessionFull');
+    }
+    if (errorMessage.includes('already booked') || errorMessage.includes('already registered')) {
+      return t('errorAlreadyBooked');
+    }
+    // Return original message if no match (fallback)
+    return errorMessage;
+  }, [t]);
+
+  // Show booking confirmation dialog
   const handleBook = useCallback(async () => {
+    setShowBookingConfirmDialog(true);
+  }, []);
+
+  // Actually book after confirmation
+  const handleConfirmBook = useCallback(async () => {
     if (!session) return;
     setIsBooking(true);
+    setBookingError(null);
 
     const response = await sessionsApi.book(session.id);
     if (response.data) {
       setUserBooking(response.data);
       // Refresh session to get updated counts
       await fetchSession();
+      showSuccess(t('bookingSuccess'));
+    } else if (response.error) {
+      setBookingError(translateBookingError(response.error.message));
     }
 
     setIsBooking(false);
-  }, [session, fetchSession]);
+    setShowBookingConfirmDialog(false);
+  }, [session, fetchSession, translateBookingError, showSuccess, t]);
 
   // Handle join waitlist
   const handleJoinWaitlist = useCallback(async () => {
@@ -66,13 +107,19 @@ export default function SessionDetailPage() {
     if (response.data) {
       setUserBooking(response.data);
       await fetchSession();
+      showSuccess(t('waitlistSuccess'));
     }
 
     setIsBooking(false);
-  }, [session, fetchSession]);
+  }, [session, fetchSession, showSuccess, t]);
 
-  // Handle cancel booking
+  // Show cancel confirmation dialog
   const handleCancelBooking = useCallback(async () => {
+    setShowCancelDialog(true);
+  }, []);
+
+  // Actually cancel the booking after confirmation
+  const handleConfirmCancel = useCallback(async () => {
     if (!userBooking) return;
     setIsBooking(true);
 
@@ -80,10 +127,25 @@ export default function SessionDetailPage() {
     if (!response.error) {
       setUserBooking(null);
       await fetchSession();
+      showSuccess(t('cancelSuccess'));
     }
 
     setIsBooking(false);
-  }, [userBooking, fetchSession]);
+    setShowCancelDialog(false);
+  }, [userBooking, fetchSession, showSuccess, t]);
+
+  // Handle check-in
+  const handleCheckIn = useCallback(async () => {
+    if (!userBooking) return;
+    setIsBooking(true);
+
+    const response = await sessionsApi.checkIn(userBooking.id);
+    if (response.data) {
+      setUserBooking(response.data);
+    }
+
+    setIsBooking(false);
+  }, [userBooking]);
 
   // Loading state
   if (isLoading) {
@@ -137,6 +199,23 @@ export default function SessionDetailPage() {
         {t('backToSessions')}
       </Link>
 
+      {/* Booking error message */}
+      {bookingError && (
+        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
+          <div className="flex items-start gap-3">
+            <span className="text-red-500 dark:text-red-400 text-xl">⚠️</span>
+            <p className="text-red-700 dark:text-red-300 flex-1">{bookingError}</p>
+            <button
+              onClick={() => setBookingError(null)}
+              className="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-200"
+              aria-label="Dismiss"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Session detail */}
       <SessionDetail
         session={session}
@@ -146,6 +225,33 @@ export default function SessionDetailPage() {
         onBook={handleBook}
         onJoinWaitlist={handleJoinWaitlist}
         onCancelBooking={handleCancelBooking}
+        onCheckIn={handleCheckIn}
+        isLoading={isBooking}
+      />
+
+      {/* Cancel confirmation dialog */}
+      <ConfirmDialog
+        isOpen={showCancelDialog}
+        onClose={() => setShowCancelDialog(false)}
+        onConfirm={handleConfirmCancel}
+        title={t('cancelConfirmTitle')}
+        message={t('cancelConfirmMessage')}
+        confirmLabel={t('confirmCancel')}
+        cancelLabel={t('keepBooking')}
+        variant="danger"
+        isLoading={isBooking}
+      />
+
+      {/* Booking confirmation dialog */}
+      <ConfirmDialog
+        isOpen={showBookingConfirmDialog}
+        onClose={() => setShowBookingConfirmDialog(false)}
+        onConfirm={handleConfirmBook}
+        title={t('bookingConfirmTitle')}
+        message={t('bookingConfirmMessage')}
+        confirmLabel={t('confirmBooking')}
+        cancelLabel={t('cancelBookingAction')}
+        variant="default"
         isLoading={isBooking}
       />
     </div>

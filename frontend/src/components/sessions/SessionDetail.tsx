@@ -16,6 +16,7 @@ interface SessionDetailProps {
   onBook?: () => Promise<void>;
   onJoinWaitlist?: () => Promise<void>;
   onCancelBooking?: () => Promise<void>;
+  onCheckIn?: () => Promise<void>;
   isLoading?: boolean;
 }
 
@@ -27,6 +28,7 @@ export function SessionDetail({
   onBook,
   onJoinWaitlist,
   onCancelBooking,
+  onCheckIn,
   isLoading = false,
 }: SessionDetailProps) {
   const t = useTranslations('Session');
@@ -77,6 +79,7 @@ export function SessionDetail({
               onBook={onBook}
               onJoinWaitlist={onJoinWaitlist}
               onCancelBooking={onCancelBooking}
+              onCheckIn={onCheckIn}
               isLoading={isLoading}
             />
           </div>

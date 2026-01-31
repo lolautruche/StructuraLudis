@@ -80,7 +80,7 @@ export function AgendaSessionCard({ session, locale = 'fr' }: AgendaSessionCardP
           )}
           {session.waitlist_count > 0 && (
             <span className="text-amber-600 dark:text-amber-400">
-              (+{session.waitlist_count} {t('waitlisted').toLowerCase()})
+              (+{tSession('waitlistInfo', { count: session.waitlist_count })})
             </span>
           )}
         </div>
