@@ -106,8 +106,8 @@ async def register(
     # Use configured frontend URL for verification links
     frontend_base_url = settings.FRONTEND_URL
 
-    # Get locale from Accept-Language header or user preference
-    locale = user.locale or _parse_locale_from_header(accept_language)
+    # Get locale from Accept-Language header (user hasn't set preference yet at registration)
+    locale = _parse_locale_from_header(accept_language)
 
     await verification_service.generate_and_send_verification(
         user=user,
@@ -178,8 +178,8 @@ async def resend_verification(
     # Use configured frontend URL for verification links
     frontend_base_url = settings.FRONTEND_URL
 
-    # Get locale from Accept-Language header or user preference
-    locale = current_user.locale or _parse_locale_from_header(accept_language)
+    # Get locale from Accept-Language header (reflects current UI language)
+    locale = _parse_locale_from_header(accept_language)
 
     success = await verification_service.generate_and_send_verification(
         user=current_user,
