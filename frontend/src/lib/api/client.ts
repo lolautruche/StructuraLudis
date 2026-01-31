@@ -34,6 +34,16 @@ export function getAccessToken(): string | null {
 }
 
 /**
+ * Get current locale from URL path (e.g., /fr/... -> fr)
+ */
+function getCurrentLocale(): string {
+  if (typeof window === 'undefined') return 'en';
+  const path = window.location.pathname;
+  const match = path.match(/^\/([a-z]{2})(\/|$)/);
+  return match ? match[1] : 'en';
+}
+
+/**
  * Base fetch wrapper with auth and error handling.
  */
 async function fetchApi<T>(
@@ -42,8 +52,10 @@ async function fetchApi<T>(
 ): Promise<ApiResponse<T>> {
   const url = `${API_BASE_URL}${endpoint}`;
 
+  const locale = getCurrentLocale();
   const headers: HeadersInit = {
     'Content-Type': 'application/json',
+    'Accept-Language': locale,
     ...options.headers,
   };
 
