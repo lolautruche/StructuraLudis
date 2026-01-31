@@ -571,66 +571,72 @@ async def create_booking(
     booking = await service.create_booking(booking_data, current_user)
 
     # Send notifications if booking is confirmed (not waitlisted)
+    # Notifications are non-blocking - if they fail, the booking still succeeds
     if booking.status == BookingStatus.CONFIRMED:
-        # Get session and exhibition info
-        session_result = await db.execute(
-            select(GameSession).where(GameSession.id == session_id)
-        )
-        session = session_result.scalar_one()
-
-        exhibition_result = await db.execute(
-            select(Exhibition).where(Exhibition.id == session.exhibition_id)
-        )
-        exhibition = exhibition_result.scalar_one()
-
-        # Get GM info
-        gm_result = await db.execute(
-            select(User).where(User.id == session.created_by_user_id)
-        )
-        gm = gm_result.scalar_one()
-
-        # Count current confirmed bookings
-        confirmed_result = await db.execute(
-            select(func.count(Booking.id)).where(
-                Booking.game_session_id == session_id,
-                Booking.status.in_([BookingStatus.CONFIRMED, BookingStatus.CHECKED_IN]),
+        try:
+            # Get session and exhibition info
+            session_result = await db.execute(
+                select(GameSession).where(GameSession.id == session_id)
             )
-        )
-        confirmed_count = confirmed_result.scalar() or 0
+            session = session_result.scalar_one()
 
-        notification_service = NotificationService(db)
+            exhibition_result = await db.execute(
+                select(Exhibition).where(Exhibition.id == session.exhibition_id)
+            )
+            exhibition = exhibition_result.scalar_one()
 
-        # Build context
-        context = SessionNotificationContext(
-            session_id=session.id,
-            session_title=session.title,
-            exhibition_id=exhibition.id,
-            exhibition_title=exhibition.title,
-            scheduled_start=session.scheduled_start,
-            scheduled_end=session.scheduled_end,
-            gm_name=gm.full_name,
-            player_name=current_user.full_name or current_user.email,
-            players_registered=confirmed_count,
-            max_players=session.max_players_count,
-        )
+            # Get GM info
+            gm_result = await db.execute(
+                select(User).where(User.id == session.created_by_user_id)
+            )
+            gm = gm_result.scalar_one()
 
-        # Notify player
-        player_recipient = NotificationRecipient(
-            user_id=current_user.id,
-            email=current_user.email,
-            full_name=current_user.full_name,
-            locale=current_user.locale or "en",
-        )
-        await notification_service.notify_booking_confirmed(player_recipient, context)
+            # Count current confirmed bookings
+            confirmed_result = await db.execute(
+                select(func.count(Booking.id)).where(
+                    Booking.game_session_id == session_id,
+                    Booking.status.in_([BookingStatus.CONFIRMED, BookingStatus.CHECKED_IN]),
+                )
+            )
+            confirmed_count = confirmed_result.scalar() or 0
 
-        # Notify GM
-        gm_recipient = NotificationRecipient(
-            user_id=gm.id,
-            email=gm.email,
-            full_name=gm.full_name,
-            locale=gm.locale or "en",
-        )
-        await notification_service.notify_gm_new_player(gm_recipient, context)
+            notification_service = NotificationService(db)
+
+            # Build context
+            context = SessionNotificationContext(
+                session_id=session.id,
+                session_title=session.title,
+                exhibition_id=exhibition.id,
+                exhibition_title=exhibition.title,
+                scheduled_start=session.scheduled_start,
+                scheduled_end=session.scheduled_end,
+                gm_name=gm.full_name,
+                player_name=current_user.full_name or current_user.email,
+                players_registered=confirmed_count,
+                max_players=session.max_players_count,
+            )
+
+            # Notify player
+            player_recipient = NotificationRecipient(
+                user_id=current_user.id,
+                email=current_user.email,
+                full_name=current_user.full_name,
+                locale=current_user.locale or "en",
+            )
+            await notification_service.notify_booking_confirmed(player_recipient, context)
+
+            # Notify GM
+            gm_recipient = NotificationRecipient(
+                user_id=gm.id,
+                email=gm.email,
+                full_name=gm.full_name,
+                locale=gm.locale or "en",
+            )
+            await notification_service.notify_gm_new_player(gm_recipient, context)
+        except Exception as e:
+            # Log error but don't fail the booking
+            import logging
+            logging.getLogger(__name__).error(f"Failed to send booking notifications: {e}")
 
     return booking
 
@@ -690,49 +696,55 @@ async def cancel_booking(
     booking = await service.cancel_booking(booking_id, current_user)
 
     # Send notifications only if the booking was confirmed (not waitlisted)
+    # Notifications are non-blocking - if they fail, the cancellation still succeeds
     if was_confirmed:
-        # Count remaining confirmed bookings
-        confirmed_result = await db.execute(
-            select(func.count(Booking.id)).where(
-                Booking.game_session_id == session_id,
-                Booking.status.in_([BookingStatus.CONFIRMED, BookingStatus.CHECKED_IN]),
+        try:
+            # Count remaining confirmed bookings
+            confirmed_result = await db.execute(
+                select(func.count(Booking.id)).where(
+                    Booking.game_session_id == session_id,
+                    Booking.status.in_([BookingStatus.CONFIRMED, BookingStatus.CHECKED_IN]),
+                )
             )
-        )
-        confirmed_count = confirmed_result.scalar() or 0
+            confirmed_count = confirmed_result.scalar() or 0
 
-        notification_service = NotificationService(db)
+            notification_service = NotificationService(db)
 
-        # Build context
-        context = SessionNotificationContext(
-            session_id=session.id,
-            session_title=session.title,
-            exhibition_id=exhibition.id,
-            exhibition_title=exhibition.title,
-            scheduled_start=session.scheduled_start,
-            scheduled_end=session.scheduled_end,
-            gm_name=gm.full_name,
-            player_name=player.full_name or player.email,
-            players_registered=confirmed_count,
-            max_players=session.max_players_count,
-        )
+            # Build context
+            context = SessionNotificationContext(
+                session_id=session.id,
+                session_title=session.title,
+                exhibition_id=exhibition.id,
+                exhibition_title=exhibition.title,
+                scheduled_start=session.scheduled_start,
+                scheduled_end=session.scheduled_end,
+                gm_name=gm.full_name,
+                player_name=player.full_name or player.email,
+                players_registered=confirmed_count,
+                max_players=session.max_players_count,
+            )
 
-        # Notify player
-        player_recipient = NotificationRecipient(
-            user_id=player.id,
-            email=player.email,
-            full_name=player.full_name,
-            locale=player.locale or "en",
-        )
-        await notification_service.notify_booking_cancelled_to_player(player_recipient, context)
+            # Notify player
+            player_recipient = NotificationRecipient(
+                user_id=player.id,
+                email=player.email,
+                full_name=player.full_name,
+                locale=player.locale or "en",
+            )
+            await notification_service.notify_booking_cancelled_to_player(player_recipient, context)
 
-        # Notify GM
-        gm_recipient = NotificationRecipient(
-            user_id=gm.id,
-            email=gm.email,
-            full_name=gm.full_name,
-            locale=gm.locale or "en",
-        )
-        await notification_service.notify_gm_player_cancelled(gm_recipient, context)
+            # Notify GM
+            gm_recipient = NotificationRecipient(
+                user_id=gm.id,
+                email=gm.email,
+                full_name=gm.full_name,
+                locale=gm.locale or "en",
+            )
+            await notification_service.notify_gm_player_cancelled(gm_recipient, context)
+        except Exception as e:
+            # Log error but don't fail the cancellation
+            import logging
+            logging.getLogger(__name__).error(f"Failed to send cancellation notifications: {e}")
 
     return booking
 
