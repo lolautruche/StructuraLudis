@@ -24,6 +24,7 @@ export default function SessionDetailPage() {
   const [error, setError] = useState<string | null>(null);
   const [bookingError, setBookingError] = useState<string | null>(null);
   const [showCancelDialog, setShowCancelDialog] = useState(false);
+  const [showBookingConfirmDialog, setShowBookingConfirmDialog] = useState(false);
 
   // Fetch session details and user booking in parallel
   const fetchSession = useCallback(async () => {
@@ -70,8 +71,13 @@ export default function SessionDetailPage() {
     return errorMessage;
   }, [t]);
 
-  // Handle booking
+  // Show booking confirmation dialog
   const handleBook = useCallback(async () => {
+    setShowBookingConfirmDialog(true);
+  }, []);
+
+  // Actually book after confirmation
+  const handleConfirmBook = useCallback(async () => {
     if (!session) return;
     setIsBooking(true);
     setBookingError(null);
@@ -86,6 +92,7 @@ export default function SessionDetailPage() {
     }
 
     setIsBooking(false);
+    setShowBookingConfirmDialog(false);
   }, [session, fetchSession, translateBookingError]);
 
   // Handle join waitlist
@@ -227,6 +234,19 @@ export default function SessionDetailPage() {
         confirmLabel={t('confirmCancel')}
         cancelLabel={t('keepBooking')}
         variant="danger"
+        isLoading={isBooking}
+      />
+
+      {/* Booking confirmation dialog */}
+      <ConfirmDialog
+        isOpen={showBookingConfirmDialog}
+        onClose={() => setShowBookingConfirmDialog(false)}
+        onConfirm={handleConfirmBook}
+        title={t('bookingConfirmTitle')}
+        message={t('bookingConfirmMessage')}
+        confirmLabel={t('confirmBooking')}
+        cancelLabel={t('cancelBookingAction')}
+        variant="default"
         isLoading={isBooking}
       />
     </div>
