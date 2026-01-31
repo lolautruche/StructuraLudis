@@ -1,4 +1,4 @@
-import { render, screen, waitFor, fireEvent, act } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import { SessionSubmissionForm } from '../SessionSubmissionForm';
 import { exhibitionsApi, gamesApi, sessionsApi } from '@/lib/api';
 
