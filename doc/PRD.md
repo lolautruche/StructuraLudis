@@ -94,6 +94,11 @@ To provide a universal event management ecosystem for all forms of tabletop gami
     * **I want** to define a primary language and support secondary languages for the event description and automated communications,
     * **so that** I can attract an international audience while maintaining local relevance.
 
+* **JS.A9 - Waitlist Configuration**
+    * **When** configuring an event,
+    * **I want** to enable or disable the waitlist feature, and set a maximum number of waitlists a single player can join simultaneously,
+    * **so that** I can control player behavior and prevent them from blocking spots on too many sessions while still allowing flexibility for popular games.
+
 ---
 
 ### EPIC B: The Proposer's Journey
