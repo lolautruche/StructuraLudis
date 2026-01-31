@@ -11,9 +11,11 @@ const CardRoot = forwardRef<HTMLDivElement, CardProps>(
       <div
         ref={ref}
         className={cn(
-          'bg-ludis-card rounded-lg border border-slate-700',
+          'rounded-lg border transition-colors',
+          'bg-white dark:bg-ludis-card',
+          'border-slate-200 dark:border-slate-700',
           variant === 'interactive' &&
-            'hover:border-slate-600 hover:bg-slate-800/50 transition-colors cursor-pointer',
+            'hover:border-slate-300 dark:hover:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-800/50 cursor-pointer',
           className
         )}
         {...props}
@@ -30,7 +32,7 @@ const CardHeader = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement>>(
   ({ className, ...props }, ref) => (
     <div
       ref={ref}
-      className={cn('p-4 border-b border-slate-700', className)}
+      className={cn('p-4 border-b border-slate-200 dark:border-slate-700', className)}
       {...props}
     />
   )
@@ -42,7 +44,7 @@ const CardTitle = forwardRef<HTMLHeadingElement, HTMLAttributes<HTMLHeadingEleme
   ({ className, ...props }, ref) => (
     <h3
       ref={ref}
-      className={cn('text-lg font-semibold text-white', className)}
+      className={cn('text-lg font-semibold text-slate-900 dark:text-white', className)}
       {...props}
     />
   )
@@ -54,7 +56,7 @@ const CardDescription = forwardRef<HTMLParagraphElement, HTMLAttributes<HTMLPara
   ({ className, ...props }, ref) => (
     <p
       ref={ref}
-      className={cn('text-sm text-slate-400 mt-1', className)}
+      className={cn('text-sm text-slate-500 dark:text-slate-400 mt-1', className)}
       {...props}
     />
   )
@@ -74,7 +76,7 @@ const CardFooter = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement>>(
   ({ className, ...props }, ref) => (
     <div
       ref={ref}
-      className={cn('p-4 border-t border-slate-700', className)}
+      className={cn('p-4 border-t border-slate-200 dark:border-slate-700', className)}
       {...props}
     />
   )
