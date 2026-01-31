@@ -62,6 +62,9 @@ export default function SessionDetailPage() {
       setUserBooking(response.data);
       // Refresh session to get updated counts
       await fetchSession();
+    } else if (response.error) {
+      console.error('Booking failed:', response.error);
+      // TODO: Show error toast to user
     }
 
     setIsBooking(false);
