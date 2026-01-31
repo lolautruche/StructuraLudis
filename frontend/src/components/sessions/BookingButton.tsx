@@ -108,14 +108,14 @@ export function BookingButton({
     if (status === 'WAITING_LIST') {
       return (
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
-          <span className="text-amber-400 text-sm">
-            {t('waitlistPosition', { position: session.waitlist_count })}
+          <span className="text-amber-500 dark:text-amber-400 text-sm font-medium">
+            {t('waitlistSuccess')}
           </span>
           <Button
-            variant="danger"
+            variant="ghost"
             onClick={onCancelBooking}
             isLoading={isLoading}
-            className="w-full sm:w-auto"
+            className="w-full sm:w-auto text-red-600 dark:text-red-400"
           >
             {t('cancelBooking')}
           </Button>
