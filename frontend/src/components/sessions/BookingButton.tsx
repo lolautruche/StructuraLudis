@@ -55,7 +55,7 @@ export function BookingButton({
   // Not authenticated - show login prompt
   if (!isAuthenticated) {
     return (
-      <Link href="/login">
+      <Link href="/auth/login">
         <Button variant="primary" className="w-full sm:w-auto">
           {t('loginToBook')}
         </Button>
