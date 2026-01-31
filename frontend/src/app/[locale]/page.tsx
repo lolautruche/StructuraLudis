@@ -5,6 +5,7 @@ import { useTranslations, useLocale } from 'next-intl';
 import { Link } from '@/i18n/routing';
 import { Button, Card } from '@/components/ui';
 import { ExhibitionCard } from '@/components/exhibitions';
+import { useAuth } from '@/contexts/AuthContext';
 import { exhibitionsApi } from '@/lib/api';
 import type { Exhibition } from '@/lib/api/types';
 
@@ -12,6 +13,7 @@ export default function HomePage() {
   const t = useTranslations('Home');
   const tCommon = useTranslations('Common');
   const locale = useLocale();
+  const { isAuthenticated } = useAuth();
 
   const [exhibitions, setExhibitions] = useState<Exhibition[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -41,13 +43,15 @@ export default function HomePage() {
         <p className="text-xl text-slate-600 dark:text-slate-400 max-w-2xl mx-auto mb-8">
           {t('subtitle')}
         </p>
-        <div className="flex items-center justify-center gap-4">
-          <Link href="/auth/register">
-            <Button variant="primary" size="lg">
-              {tCommon('register')}
-            </Button>
-          </Link>
-        </div>
+        {!isAuthenticated && (
+          <div className="flex items-center justify-center gap-4">
+            <Link href="/auth/register">
+              <Button variant="primary" size="lg">
+                {tCommon('register')}
+              </Button>
+            </Link>
+          </div>
+        )}
       </section>
 
       {/* Exhibitions */}
