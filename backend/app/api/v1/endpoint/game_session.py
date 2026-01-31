@@ -633,6 +633,6 @@ async def get_my_booking(
         select(Booking)
         .where(Booking.game_session_id == session_id)
         .where(Booking.user_id == current_user.id)
-        .where(Booking.status.in_([BookingStatus.CONFIRMED, BookingStatus.WAITLISTED]))
+        .where(Booking.status.in_([BookingStatus.CONFIRMED, BookingStatus.WAITING_LIST]))
     )
     return result.scalar_one_or_none()
