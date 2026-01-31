@@ -154,14 +154,14 @@ export function GameSelector({ selectedGame, onGameSelect, error }: GameSelector
   if (selectedGame) {
     return (
       <div className="space-y-2">
-        <label className="block text-sm font-medium text-slate-300">
+        <label className="block text-sm font-medium text-slate-600 dark:text-slate-300">
           {t('game')}
         </label>
         <Card className="p-3">
           <div className="flex items-center justify-between">
             <div>
-              <p className="font-medium text-white">{selectedGame.title}</p>
-              <p className="text-sm text-slate-400">
+              <p className="font-medium text-slate-900 dark:text-white">{selectedGame.title}</p>
+              <p className="text-sm text-slate-600 dark:text-slate-400">
                 {selectedGame.publisher && `${selectedGame.publisher} - `}
                 {selectedGame.min_players}-{selectedGame.max_players} {t('players')}
               </p>
@@ -186,7 +186,7 @@ export function GameSelector({ selectedGame, onGameSelect, error }: GameSelector
     return (
       <div className="space-y-4">
         <div className="flex items-center justify-between">
-          <label className="block text-sm font-medium text-slate-300">
+          <label className="block text-sm font-medium text-slate-600 dark:text-slate-300">
             {t('createNewGame')}
           </label>
           <Button
@@ -266,7 +266,7 @@ export function GameSelector({ selectedGame, onGameSelect, error }: GameSelector
   // Search mode
   return (
     <div className="space-y-2" ref={searchRef}>
-      <label className="block text-sm font-medium text-slate-300">
+      <label className="block text-sm font-medium text-slate-600 dark:text-slate-300">
         {t('game')}
       </label>
 
@@ -296,9 +296,9 @@ export function GameSelector({ selectedGame, onGameSelect, error }: GameSelector
 
         {/* Search results dropdown */}
         {showResults && searchQuery.length >= 2 && (
-          <div className="absolute z-10 w-full mt-1 bg-ludis-card border border-slate-600 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+          <div className="absolute z-10 w-full mt-1 bg-white dark:bg-ludis-card border border-slate-300 dark:border-slate-600 rounded-lg shadow-lg max-h-60 overflow-y-auto">
             {isSearching ? (
-              <div className="p-4 text-center text-slate-400">
+              <div className="p-4 text-center text-slate-600 dark:text-slate-400">
                 {t('searching')}
               </div>
             ) : searchResults.length > 0 ? (
@@ -307,11 +307,11 @@ export function GameSelector({ selectedGame, onGameSelect, error }: GameSelector
                   <li key={game.id}>
                     <button
                       type="button"
-                      className="w-full px-4 py-3 text-left hover:bg-slate-700 focus:bg-slate-700 focus:outline-none min-h-[44px]"
+                      className="w-full px-4 py-3 text-left hover:bg-slate-100 dark:hover:bg-slate-700 focus:bg-slate-100 dark:focus:bg-slate-700 focus:outline-none min-h-[44px]"
                       onClick={() => handleSelectGame(game)}
                     >
-                      <p className="font-medium text-white">{game.title}</p>
-                      <p className="text-sm text-slate-400">
+                      <p className="font-medium text-slate-900 dark:text-white">{game.title}</p>
+                      <p className="text-sm text-slate-600 dark:text-slate-400">
                         {game.publisher && `${game.publisher} - `}
                         {game.min_players}-{game.max_players} {t('players')}
                       </p>
@@ -321,7 +321,7 @@ export function GameSelector({ selectedGame, onGameSelect, error }: GameSelector
               </ul>
             ) : (
               <div className="p-4 text-center">
-                <p className="text-slate-400 mb-2">{t('noGamesFound')}</p>
+                <p className="text-slate-600 dark:text-slate-400 mb-2">{t('noGamesFound')}</p>
                 <Button
                   type="button"
                   variant="secondary"
@@ -341,7 +341,7 @@ export function GameSelector({ selectedGame, onGameSelect, error }: GameSelector
       </div>
 
       {/* Create new game link */}
-      <p className="text-sm text-slate-400">
+      <p className="text-sm text-slate-600 dark:text-slate-400">
         {t('cantFindGame')}{' '}
         <button
           type="button"

@@ -91,7 +91,7 @@ export default function AgendaPage() {
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-ludis-primary mx-auto mb-4" />
-          <p className="text-slate-400">Loading...</p>
+          <p className="text-slate-600 dark:text-slate-400">Loading...</p>
         </div>
       </div>
     );
@@ -106,7 +106,7 @@ export default function AgendaPage() {
   if (error) {
     return (
       <div className="text-center py-12">
-        <p className="text-red-400">{error}</p>
+        <p className="text-red-600 dark:text-red-400">{error}</p>
       </div>
     );
   }
@@ -115,9 +115,9 @@ export default function AgendaPage() {
   if (!exhibitionId) {
     return (
       <div className="space-y-6">
-        <h1 className="text-2xl font-bold text-white">{t('title')}</h1>
+        <h1 className="text-2xl font-bold text-slate-900 dark:text-white">{t('title')}</h1>
         <div className="text-center py-12">
-          <p className="text-slate-400">{t('noSessions')}</p>
+          <p className="text-slate-600 dark:text-slate-400">{t('noSessions')}</p>
         </div>
       </div>
     );
@@ -127,9 +127,9 @@ export default function AgendaPage() {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-white">{t('title')}</h1>
+        <h1 className="text-2xl font-bold text-slate-900 dark:text-white">{t('title')}</h1>
         {agenda && (
-          <span className="text-sm text-slate-400">
+          <span className="text-sm text-slate-600 dark:text-slate-400">
             {agenda.exhibition_title}
           </span>
         )}

@@ -43,7 +43,7 @@ export function CheckInButton({
 
   if (isCheckedIn) {
     return (
-      <span className="inline-flex items-center gap-1 text-sm text-emerald-400">
+      <span className="inline-flex items-center gap-1 text-sm text-emerald-600 dark:text-emerald-400">
         <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
           <path
             fillRule="evenodd"
@@ -58,7 +58,7 @@ export function CheckInButton({
 
   if (showCountdown) {
     return (
-      <span className="text-sm text-slate-400">
+      <span className="text-sm text-slate-600 dark:text-slate-400">
         {t('checkInCountdown', { minutes: minutesUntilCheckIn })}
       </span>
     );

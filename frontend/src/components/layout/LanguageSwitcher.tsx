@@ -14,7 +14,7 @@ export function LanguageSwitcher() {
   };
 
   return (
-    <div className="flex items-center space-x-1 bg-ludis-card rounded-lg p-1">
+    <div className="flex items-center space-x-1 bg-slate-100 dark:bg-ludis-card rounded-lg p-1">
       {routing.locales.map((l) => (
         <button
           key={l}
@@ -22,7 +22,7 @@ export function LanguageSwitcher() {
           className={`px-2 py-1 text-sm font-medium rounded transition-colors ${
             locale === l
               ? 'bg-ludis-primary text-white'
-              : 'text-slate-400 hover:text-white'
+              : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
           }`}
           aria-label={`Switch to ${l === 'fr' ? 'French' : 'English'}`}
         >

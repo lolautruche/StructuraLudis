@@ -22,8 +22,8 @@ const Checkbox = forwardRef<HTMLInputElement, CheckboxProps>(
               id={inputId}
               type="checkbox"
               className={cn(
-                'h-4 w-4 rounded border-slate-600 bg-ludis-card text-ludis-primary',
-                'focus:ring-2 focus:ring-ludis-primary focus:ring-offset-2 focus:ring-offset-ludis-dark',
+                'h-4 w-4 rounded border-slate-300 dark:border-slate-600 bg-white dark:bg-ludis-card text-ludis-primary',
+                'focus:ring-2 focus:ring-ludis-primary focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-ludis-dark',
                 'disabled:opacity-50 disabled:cursor-not-allowed',
                 error && 'border-red-500',
                 className
@@ -37,7 +37,7 @@ const Checkbox = forwardRef<HTMLInputElement, CheckboxProps>(
             <div className="ml-3">
               <label
                 htmlFor={inputId}
-                className="text-sm text-slate-300 cursor-pointer"
+                className="text-sm text-slate-600 dark:text-slate-300 cursor-pointer"
               >
                 {label}
               </label>

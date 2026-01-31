@@ -51,10 +51,10 @@ export function AgendaBookingCard({
         </div>
 
         {/* Title */}
-        <h3 className="font-semibold text-white">{booking.session_title}</h3>
+        <h3 className="font-semibold text-slate-900 dark:text-white">{booking.session_title}</h3>
 
         {/* Time & Location */}
-        <div className="flex flex-col gap-1 text-sm text-slate-400">
+        <div className="flex flex-col gap-1 text-sm text-slate-600 dark:text-slate-400">
           <div className="flex items-center gap-2">
             <span>⏰</span>
             <span>{startTime} - {endTime}</span>
@@ -71,7 +71,7 @@ export function AgendaBookingCard({
 
         {/* GM */}
         {booking.gm_name && (
-          <div className="flex items-center gap-2 text-sm text-slate-400">
+          <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
             <span>👤</span>
             <span>MJ: {booking.gm_name}</span>
           </div>
@@ -81,26 +81,26 @@ export function AgendaBookingCard({
         <div className="flex items-center gap-3 text-sm">
           <div className="flex items-center gap-2">
             <span>👥</span>
-            <span className="text-slate-300">
+            <span className="text-slate-700 dark:text-slate-300">
               {booking.confirmed_players}/{booking.max_players_count}
             </span>
           </div>
           {booking.confirmed_players < booking.max_players_count ? (
-            <span className="text-emerald-400">
+            <span className="text-emerald-600 dark:text-emerald-400">
               {tSession('spotsLeft', { count: booking.max_players_count - booking.confirmed_players })}
             </span>
           ) : (
-            <span className="text-red-400">{tSession('full')}</span>
+            <span className="text-red-600 dark:text-red-400">{tSession('full')}</span>
           )}
           {booking.waitlist_count > 0 && (
-            <span className="text-amber-400">
+            <span className="text-amber-600 dark:text-amber-400">
               (+{booking.waitlist_count} {t('waitlisted').toLowerCase()})
             </span>
           )}
         </div>
 
         {/* Actions */}
-        <div className="flex items-center gap-2 pt-2 border-t border-slate-700">
+        <div className="flex items-center gap-2 pt-2 border-t border-slate-200 dark:border-slate-700">
           <Link href={`/sessions/${booking.game_session_id}`}>
             <Button variant="ghost" size="sm">
               {t('viewDetails')}
@@ -122,7 +122,7 @@ export function AgendaBookingCard({
             <Button
               variant="ghost"
               size="sm"
-              className="text-red-400 hover:text-red-300"
+              className="text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300"
               onClick={() => onCancel(booking.id)}
             >
               {tSession('cancelBooking')}

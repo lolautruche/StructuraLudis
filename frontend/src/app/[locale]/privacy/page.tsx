@@ -16,14 +16,14 @@ export default function PrivacyPolicyPage() {
         </Card.Header>
         <Card.Content className="prose prose-invert prose-slate max-w-none">
           <section className="space-y-4">
-            <h2 className="text-lg font-semibold text-white">{t('section1Title')}</h2>
-            <p className="text-slate-300">{t('section1Content')}</p>
+            <h2 className="text-lg font-semibold text-slate-900 dark:text-white">{t('section1Title')}</h2>
+            <p className="text-slate-600 dark:text-slate-300">{t('section1Content')}</p>
           </section>
 
           <section className="space-y-4 mt-8">
-            <h2 className="text-lg font-semibold text-white">{t('section2Title')}</h2>
-            <p className="text-slate-300">{t('section2Content')}</p>
-            <ul className="list-disc list-inside text-slate-300 space-y-1">
+            <h2 className="text-lg font-semibold text-slate-900 dark:text-white">{t('section2Title')}</h2>
+            <p className="text-slate-600 dark:text-slate-300">{t('section2Content')}</p>
+            <ul className="list-disc list-inside text-slate-600 dark:text-slate-300 space-y-1">
               <li>{t('dataCollected1')}</li>
               <li>{t('dataCollected2')}</li>
               <li>{t('dataCollected3')}</li>
@@ -32,14 +32,14 @@ export default function PrivacyPolicyPage() {
           </section>
 
           <section className="space-y-4 mt-8">
-            <h2 className="text-lg font-semibold text-white">{t('section3Title')}</h2>
-            <p className="text-slate-300">{t('section3Content')}</p>
+            <h2 className="text-lg font-semibold text-slate-900 dark:text-white">{t('section3Title')}</h2>
+            <p className="text-slate-600 dark:text-slate-300">{t('section3Content')}</p>
           </section>
 
           <section className="space-y-4 mt-8">
-            <h2 className="text-lg font-semibold text-white">{t('section4Title')}</h2>
-            <p className="text-slate-300">{t('section4Content')}</p>
-            <ul className="list-disc list-inside text-slate-300 space-y-1">
+            <h2 className="text-lg font-semibold text-slate-900 dark:text-white">{t('section4Title')}</h2>
+            <p className="text-slate-600 dark:text-slate-300">{t('section4Content')}</p>
+            <ul className="list-disc list-inside text-slate-600 dark:text-slate-300 space-y-1">
               <li>{t('rights1')}</li>
               <li>{t('rights2')}</li>
               <li>{t('rights3')}</li>
@@ -48,8 +48,8 @@ export default function PrivacyPolicyPage() {
           </section>
 
           <section className="space-y-4 mt-8">
-            <h2 className="text-lg font-semibold text-white">{t('section5Title')}</h2>
-            <p className="text-slate-300">{t('section5Content')}</p>
+            <h2 className="text-lg font-semibold text-slate-900 dark:text-white">{t('section5Title')}</h2>
+            <p className="text-slate-600 dark:text-slate-300">{t('section5Content')}</p>
           </section>
         </Card.Content>
         <Card.Footer className="flex justify-between items-center print:hidden">

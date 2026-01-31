@@ -33,7 +33,7 @@ export function ExhibitionCard({ exhibition, locale = 'fr' }: ExhibitionCardProp
         <Card.Content className="space-y-4">
           {/* Header: Title + Status */}
           <div className="flex items-start justify-between gap-2">
-            <h3 className="text-xl font-bold text-white line-clamp-2">
+            <h3 className="text-xl font-bold text-slate-900 dark:text-white line-clamp-2">
               {exhibition.title}
             </h3>
             {isPast ? (
@@ -47,13 +47,13 @@ export function ExhibitionCard({ exhibition, locale = 'fr' }: ExhibitionCardProp
 
           {/* Description */}
           {exhibition.description && (
-            <p className="text-slate-400 text-sm line-clamp-2">
+            <p className="text-slate-600 dark:text-slate-400 text-sm line-clamp-2">
               {exhibition.description}
             </p>
           )}
 
           {/* Date & Location */}
-          <div className="flex flex-col gap-2 text-sm text-slate-400">
+          <div className="flex flex-col gap-2 text-sm text-slate-600 dark:text-slate-400">
             <div className="flex items-center gap-2">
               <span>📅</span>
               <span>{formatDateRange(exhibition.start_date, exhibition.end_date, locale)}</span>
@@ -69,7 +69,7 @@ export function ExhibitionCard({ exhibition, locale = 'fr' }: ExhibitionCardProp
           </div>
 
           {/* Footer */}
-          <div className="pt-2 border-t border-slate-700">
+          <div className="pt-2 border-t border-slate-200 dark:border-slate-700">
             <span className="text-sm text-primary-400 font-medium">
               {t('viewSessions')} →
             </span>

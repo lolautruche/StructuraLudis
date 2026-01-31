@@ -69,20 +69,20 @@ export function SafetyToolsSelector({
   if (safetyTools.length === 0) {
     return (
       <div className="space-y-2">
-        <label className="block text-sm font-medium text-slate-300">
+        <label className="block text-sm font-medium text-slate-600 dark:text-slate-300">
           {t('safetyTools')}
         </label>
-        <p className="text-sm text-slate-400">{t('noSafetyToolsAvailable')}</p>
+        <p className="text-sm text-slate-600 dark:text-slate-400">{t('noSafetyToolsAvailable')}</p>
       </div>
     );
   }
 
   return (
     <div className="space-y-4">
-      <label className="block text-sm font-medium text-slate-300">
+      <label className="block text-sm font-medium text-slate-600 dark:text-slate-300">
         {t('safetyTools')}
       </label>
-      <p className="text-sm text-slate-400">{t('safetyToolsDescription')}</p>
+      <p className="text-sm text-slate-600 dark:text-slate-400">{t('safetyToolsDescription')}</p>
 
       <div className="space-y-3">
         {safetyTools.map((tool) => {
@@ -92,7 +92,7 @@ export function SafetyToolsSelector({
           return (
             <div
               key={tool.id}
-              className="flex items-start p-3 rounded-lg border border-slate-600 hover:border-slate-500 transition-colors"
+              className="flex items-start p-3 rounded-lg border border-slate-300 dark:border-slate-600 hover:border-slate-400 dark:hover:border-slate-500 transition-colors"
             >
               <Checkbox
                 id={`safety-tool-${tool.id}`}
@@ -101,7 +101,7 @@ export function SafetyToolsSelector({
                 disabled={tool.is_required && isChecked}
                 label={
                   <div className="ml-1">
-                    <span className="text-white font-medium">
+                    <span className="text-slate-900 dark:text-white font-medium">
                       {getToolName(tool)}
                       {tool.is_required && (
                         <span className="ml-2 text-xs text-ludis-primary">

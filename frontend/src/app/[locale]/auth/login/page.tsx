@@ -19,7 +19,7 @@ export default function LoginPage() {
           <LoginForm />
         </Card.Content>
         <Card.Footer className="text-center">
-          <p className="text-sm text-slate-400">
+          <p className="text-sm text-slate-600 dark:text-slate-400">
             {t('noAccount')}{' '}
             <Link
               href="/auth/register"

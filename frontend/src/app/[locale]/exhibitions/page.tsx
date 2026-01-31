@@ -55,7 +55,7 @@ export default function ExhibitionsPage() {
       {/* Header */}
       <div>
         <h1 className="text-2xl font-bold">{t('title')}</h1>
-        <p className="text-slate-400 mt-1">{t('selectEvent')}</p>
+        <p className="text-slate-600 dark:text-slate-400 mt-1">{t('selectEvent')}</p>
       </div>
 
       {/* Loading state */}
@@ -64,10 +64,10 @@ export default function ExhibitionsPage() {
           {[...Array(3)].map((_, i) => (
             <Card key={i} className="animate-pulse">
               <Card.Content className="space-y-4">
-                <div className="h-6 bg-slate-700 rounded w-3/4" />
-                <div className="h-4 bg-slate-700 rounded w-full" />
-                <div className="h-4 bg-slate-700 rounded w-1/2" />
-                <div className="h-4 bg-slate-700 rounded w-2/3" />
+                <div className="h-6 bg-slate-200 dark:bg-slate-700 rounded w-3/4" />
+                <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-full" />
+                <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-1/2" />
+                <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-2/3" />
               </Card.Content>
             </Card>
           ))}
@@ -76,10 +76,10 @@ export default function ExhibitionsPage() {
         <Card>
           <Card.Content className="text-center py-12">
             <div className="text-4xl mb-4">📅</div>
-            <h3 className="text-lg font-semibold text-white mb-2">
+            <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-2">
               {t('noEvents')}
             </h3>
-            <p className="text-slate-400">
+            <p className="text-slate-600 dark:text-slate-400">
               {t('noEventsDescription')}
             </p>
           </Card.Content>
@@ -105,7 +105,7 @@ export default function ExhibitionsPage() {
           {/* Past Events */}
           {past.length > 0 && (
             <section>
-              <h2 className="text-xl font-semibold mb-4 text-slate-400">{t('pastEvents')}</h2>
+              <h2 className="text-xl font-semibold mb-4 text-slate-500 dark:text-slate-400">{t('pastEvents')}</h2>
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 opacity-75">
                 {past.map((exhibition) => (
                   <ExhibitionCard
