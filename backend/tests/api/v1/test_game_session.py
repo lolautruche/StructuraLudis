@@ -533,6 +533,46 @@ class TestBookings:
 
         assert response.status_code == 400
 
+    async def test_booking_requires_verified_email(
+        self,
+        auth_client: AsyncClient,
+        client: AsyncClient,
+        db_session: AsyncSession,
+        test_exhibition_with_slot: dict,
+        test_game: dict,
+    ):
+        """Booking by unverified user returns 403."""
+        from app.domain.user.entity import User
+        from app.domain.shared.entity import GlobalRole
+        from app.core.security import get_password_hash
+
+        session_id = await self._create_validated_session(
+            auth_client, test_exhibition_with_slot, test_game
+        )
+
+        # Create unverified user
+        unverified_user = User(
+            id=uuid4(),
+            email="unverified_booker@example.com",
+            hashed_password=get_password_hash("password123"),
+            full_name="Unverified Booker",
+            global_role=GlobalRole.USER,
+            is_active=True,
+            email_verified=False,  # NOT verified
+        )
+        db_session.add(unverified_user)
+        await db_session.commit()
+
+        # Try to book - should fail with 403
+        response = await client.post(
+            f"/api/v1/sessions/{session_id}/bookings",
+            json={"role": "PLAYER"},
+            headers={"X-User-ID": str(unverified_user.id)},
+        )
+
+        assert response.status_code == 403
+        assert "email" in response.json()["detail"].lower()
+
 
 class TestDeleteSession:
     """Tests for DELETE /api/v1/sessions/{id}"""
@@ -1167,6 +1207,7 @@ class TestNoShow:
             full_name="Waitlist User",
             global_role=GlobalRole.USER,
             is_active=True,
+            email_verified=True,
         )
         db_session.add(waitlist_user)
         await db_session.commit()
@@ -1510,6 +1551,7 @@ class TestAgeVerification:
             full_name="No Age User",
             global_role=GlobalRole.USER,
             is_active=True,
+            email_verified=True,
             birth_date=None,
         )
         db_session.add(user_no_age)
@@ -1555,6 +1597,7 @@ class TestAgeVerification:
             full_name="Young User",
             global_role=GlobalRole.USER,
             is_active=True,
+            email_verified=True,
             birth_date=date(2010, 1, 1),  # 16 years old in 2026
         )
         db_session.add(user_young)
@@ -1600,6 +1643,7 @@ class TestAgeVerification:
             full_name="Adult User",
             global_role=GlobalRole.USER,
             is_active=True,
+            email_verified=True,
             birth_date=date(2001, 1, 1),  # 25 years old in 2026
         )
         db_session.add(user_adult)
@@ -1644,6 +1688,7 @@ class TestAgeVerification:
             full_name="No Age User 2",
             global_role=GlobalRole.USER,
             is_active=True,
+            email_verified=True,
             birth_date=None,
         )
         db_session.add(user_no_age)
@@ -1916,6 +1961,7 @@ class TestSessionDiscovery:
             full_name="Filler User",
             global_role=GlobalRole.USER,
             is_active=True,
+            email_verified=True,
         )
         db_session.add(filler_user)
         await db_session.commit()

@@ -35,7 +35,21 @@
     "invalidCredentials": "Invalid email or password",
     "emailExists": "This email address is already registered",
     "passwordTooShort": "Password must be at least 8 characters",
-    "passwordMismatch": "Passwords do not match"
+    "passwordMismatch": "Passwords do not match",
+    "registrationSuccess": "Account created successfully!",
+    "checkYourEmail": "Please check your email to verify your account.",
+    "verificationEmailSent": "A verification email has been sent to your inbox.",
+    "emailNotVerified": "Your email is not verified. Please check your inbox or resend the verification email.",
+    "resendVerification": "Resend verification email",
+    "resendingVerification": "Sending...",
+    "resendCooldown": "Wait {seconds}s",
+    "verificationSuccess": "Email verified successfully!",
+    "verificationSuccessMessage": "Your email has been verified. You can now access all features.",
+    "verificationFailed": "Verification failed",
+    "verificationFailedMessage": "The verification link is invalid or has expired.",
+    "verificationExpired": "This verification link has expired. Please request a new one.",
+    "goToLogin": "Go to login",
+    "verifying": "Verifying your email..."
   },
   "Discovery": {
     "title": "Find a game",

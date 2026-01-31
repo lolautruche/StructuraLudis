@@ -32,7 +32,7 @@ from app.domain.game.schemas import (
 )
 from app.domain.user.entity import User
 from app.domain.exhibition.entity import Exhibition
-from app.api.deps import get_current_active_user
+from app.api.deps import get_current_active_user, get_current_verified_user
 from app.services.game_session import GameSessionService
 from app.services.notification import (
     NotificationService,
@@ -550,12 +550,13 @@ async def list_bookings(
 async def create_booking(
     session_id: UUID,
     booking_in: BookingCreateBody,
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(get_current_verified_user),
     db: AsyncSession = Depends(get_db),
 ):
     """
     Register for a game session.
 
+    Requires email verification.
     If session is full, booking goes to waitlist.
     """
     # Build full BookingCreate from path + body

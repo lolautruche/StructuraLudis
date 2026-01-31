@@ -25,10 +25,22 @@ export interface User {
   timezone: string | null;
   locale: string;
   is_active: boolean;
+  email_verified: boolean;
   last_login: string | null;
   privacy_accepted_at: string | null;
   created_at: string;
   updated_at: string | null;
+}
+
+export interface EmailVerificationResponse {
+  success: boolean;
+  message: string;
+}
+
+export interface ResendVerificationResponse {
+  success: boolean;
+  message: string;
+  seconds_remaining: number;
 }
 
 export interface LoginRequest {

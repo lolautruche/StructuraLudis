@@ -6,6 +6,7 @@ import { routing } from '@/i18n/routing';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { ThemeProvider } from '@/contexts/ThemeContext';
 import { Header } from '@/components/layout';
+import { EmailVerificationBanner } from '@/components/auth';
 import '../globals.css';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
@@ -60,6 +61,7 @@ export default async function LocaleLayout({
               <div className="flex flex-col min-h-screen">
                 <Header />
                 <main className="flex-1 container mx-auto px-4 py-8">
+                  <EmailVerificationBanner />
                   {children}
                 </main>
                 <footer

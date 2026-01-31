@@ -1,17 +1,35 @@
 """
 Authentication API endpoints.
 
-Login, registration, and token management.
+Login, registration, token management, and email verification.
 """
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.config import settings
 from app.core.database import get_db
 from app.domain.auth.schemas import LoginRequest, RegisterRequest, Token
+from app.domain.user.entity import User
 from app.domain.user.schemas import UserRead
 from app.services.auth import AuthService, PrivacyPolicyNotAcceptedError
+from app.services.email_verification import EmailVerificationService
+from app.api.deps import get_current_active_user
 
 router = APIRouter()
+
+
+class EmailVerificationResponse(BaseModel):
+    """Response for email verification."""
+    success: bool
+    message: str
+
+
+class ResendVerificationResponse(BaseModel):
+    """Response for resend verification."""
+    success: bool
+    message: str
+    seconds_remaining: int = 0
 
 
 @router.post("/login", response_model=Token)
@@ -23,6 +41,7 @@ async def login(
     Login with email and password.
 
     Returns JWT access token on success.
+    Note: Login is allowed even if email is not verified.
     """
     service = AuthService(db)
     token = await service.login(data)
@@ -47,6 +66,7 @@ async def register(
 
     Requires acceptance of the privacy policy.
     Returns the created user on success.
+    A verification email is sent to the user's email address.
     """
     service = AuthService(db)
 
@@ -64,4 +84,99 @@ async def register(
             detail="Email already registered",
         )
 
+    # Send verification email
+    verification_service = EmailVerificationService(db)
+
+    # Use configured frontend URL for verification links
+    frontend_base_url = settings.FRONTEND_URL
+
+    locale = user.locale or "en"
+
+    await verification_service.generate_and_send_verification(
+        user=user,
+        locale=locale,
+        base_url=frontend_base_url,
+    )
+
+    await db.commit()
+    await db.refresh(user)
     return user
+
+
+@router.get("/verify-email", response_model=EmailVerificationResponse)
+async def verify_email(
+    token: str = Query(..., description="Email verification token"),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Verify a user's email address using the token from the verification email.
+
+    Returns success status and message.
+    """
+    verification_service = EmailVerificationService(db)
+    user = await verification_service.verify_token(token)
+
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid or expired verification token",
+        )
+
+    await db.commit()
+    return EmailVerificationResponse(
+        success=True,
+        message="Email verified successfully. You can now access all features.",
+    )
+
+
+@router.post("/resend-verification", response_model=ResendVerificationResponse)
+async def resend_verification(
+    current_user: User = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Resend the verification email to the current user.
+
+    Rate limited to 1 request per 60 seconds.
+    Requires authentication.
+    """
+    if current_user.email_verified:
+        return ResendVerificationResponse(
+            success=False,
+            message="Email is already verified.",
+            seconds_remaining=0,
+        )
+
+    verification_service = EmailVerificationService(db)
+    can_resend, seconds_remaining = verification_service.can_resend(current_user)
+
+    if not can_resend:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail=f"Please wait {seconds_remaining} seconds before requesting another verification email.",
+            headers={"Retry-After": str(seconds_remaining)},
+        )
+
+    # Use configured frontend URL for verification links
+    frontend_base_url = settings.FRONTEND_URL
+
+    locale = current_user.locale or "en"
+
+    success = await verification_service.generate_and_send_verification(
+        user=current_user,
+        locale=locale,
+        base_url=frontend_base_url,
+    )
+
+    if not success:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to send verification email. Please try again later.",
+        )
+
+    await db.commit()
+    return ResendVerificationResponse(
+        success=True,
+        message="Verification email sent. Please check your inbox.",
+        seconds_remaining=0,
+    )

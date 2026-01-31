@@ -84,3 +84,19 @@ async def get_current_active_user(
             detail="Inactive user",
         )
     return current_user
+
+
+async def get_current_verified_user(
+    current_user: User = Depends(get_current_active_user),
+) -> User:
+    """
+    Ensure the current user has verified their email.
+
+    Used for actions that require email verification (e.g., booking sessions).
+    """
+    if not current_user.email_verified:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Email not verified. Please verify your email to perform this action.",
+        )
+    return current_user

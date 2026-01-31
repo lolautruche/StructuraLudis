@@ -69,6 +69,17 @@ EMAIL_STRINGS = {
         "session_reminder_checkin": "Please arrive early and check in at least 15 minutes before the session begins.",
         "session_reminder_action": "View Session Details",
         "session_reminder_closing": "See you soon!",
+
+        # Email verification
+        "email_verification_subject": "Verify your email address",
+        "email_verification_greeting": "Welcome to Structura Ludis!",
+        "email_verification_hello": "Hello",
+        "email_verification_intro": "Thank you for signing up. Please verify your email address by clicking the button below.",
+        "email_verification_action": "Verify my email",
+        "email_verification_important": "Important",
+        "email_verification_expiration": "This link will expire in 7 days. If you did not create an account, you can safely ignore this email.",
+        "email_verification_link_instruction": "If the button doesn't work, copy and paste this link into your browser:",
+        "email_verification_closing": "Thank you for joining us!",
     },
     "fr": {
         # Common
@@ -115,6 +126,17 @@ EMAIL_STRINGS = {
         "session_reminder_checkin": "Merci d'arriver en avance et de vous présenter au moins 15 minutes avant le début.",
         "session_reminder_action": "Voir les détails",
         "session_reminder_closing": "À très vite !",
+
+        # Email verification
+        "email_verification_subject": "Vérifiez votre adresse email",
+        "email_verification_greeting": "Bienvenue sur Structura Ludis !",
+        "email_verification_hello": "Bonjour",
+        "email_verification_intro": "Merci de vous être inscrit(e). Veuillez vérifier votre adresse email en cliquant sur le bouton ci-dessous.",
+        "email_verification_action": "Vérifier mon email",
+        "email_verification_important": "Important",
+        "email_verification_expiration": "Ce lien expirera dans 7 jours. Si vous n'avez pas créé de compte, vous pouvez ignorer cet email.",
+        "email_verification_link_instruction": "Si le bouton ne fonctionne pas, copiez et collez ce lien dans votre navigateur :",
+        "email_verification_closing": "Merci de nous avoir rejoints !",
     },
 }
 
@@ -315,4 +337,26 @@ def render_session_reminder(
         checkin_reminder_text=get_string("session_reminder_checkin", locale),
         action_button_text=get_string("session_reminder_action", locale),
         closing_text=get_string("session_reminder_closing", locale),
+    )
+
+
+def render_email_verification(
+    locale: str,
+    verification_url: str,
+    user_name: Optional[str] = None,
+) -> tuple[str, str]:
+    """Render email verification email."""
+    return render_email_template(
+        "email_verification",
+        locale=locale,
+        verification_url=verification_url,
+        user_name=user_name,
+        greeting=get_string("email_verification_greeting", locale),
+        hello_text=get_string("email_verification_hello", locale),
+        intro_text=get_string("email_verification_intro", locale),
+        action_button_text=get_string("email_verification_action", locale),
+        important_label=get_string("email_verification_important", locale),
+        expiration_text=get_string("email_verification_expiration", locale),
+        link_instruction=get_string("email_verification_link_instruction", locale),
+        closing_text=get_string("email_verification_closing", locale),
     )
