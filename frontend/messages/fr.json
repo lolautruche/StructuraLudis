@@ -95,7 +95,11 @@
     "bookingSuccess": "Réservation confirmée !",
     "waitlistSuccess": "Vous êtes sur la liste d'attente",
     "alreadyBooked": "Vous avez déjà réservé cette session",
-    "sessionFullWaitlist": "Session complète. Rejoindre la liste d'attente ?"
+    "sessionFullWaitlist": "Session complète. Rejoindre la liste d'attente ?",
+    "cancelConfirmTitle": "Annuler la réservation ?",
+    "cancelConfirmMessage": "Voulez-vous vraiment annuler votre réservation pour cette session ? Votre place sera donnée à une personne en liste d'attente.",
+    "confirmCancel": "Oui, annuler",
+    "keepBooking": "Garder ma réservation"
   },
   "GameTable": {
     "complexity": "Complexité",
@@ -204,7 +208,8 @@
     "upcomingAndCurrent": "En cours et à venir",
     "pastEvents": "Événements passés",
     "noEvents": "Aucun événement",
-    "noEventsDescription": "Il n'y a pas d'événement programmé pour le moment."
+    "noEventsDescription": "Il n'y a pas d'événement programmé pour le moment.",
+    "proposeSession": "Proposer une session"
   },
   "SessionForm": {
     "pageTitle": "Proposer une session",

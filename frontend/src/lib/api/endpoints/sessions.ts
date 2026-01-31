@@ -111,4 +111,11 @@ export const sessionsApi = {
   submit: async (sessionId: string): Promise<ApiResponse<GameSession>> => {
     return api.post<GameSession>(`/api/v1/sessions/${sessionId}/submit`);
   },
+
+  /**
+   * Get current user's booking for a session.
+   */
+  getMyBooking: async (sessionId: string): Promise<ApiResponse<Booking | null>> => {
+    return api.get<Booking | null>(`/api/v1/sessions/${sessionId}/my-booking`);
+  },
 };

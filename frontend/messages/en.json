@@ -95,7 +95,11 @@
     "bookingSuccess": "Booking confirmed!",
     "waitlistSuccess": "You are on the waitlist",
     "alreadyBooked": "You have already booked this session",
-    "sessionFullWaitlist": "Session full. Join the waitlist?"
+    "sessionFullWaitlist": "Session full. Join the waitlist?",
+    "cancelConfirmTitle": "Cancel booking?",
+    "cancelConfirmMessage": "Are you sure you want to cancel your booking for this session? Your spot will be given to someone on the waitlist.",
+    "confirmCancel": "Yes, cancel",
+    "keepBooking": "Keep my booking"
   },
   "GameTable": {
     "complexity": "Complexity",
@@ -204,7 +208,8 @@
     "upcomingAndCurrent": "Current and upcoming",
     "pastEvents": "Past events",
     "noEvents": "No events",
-    "noEventsDescription": "There are no scheduled events at the moment."
+    "noEventsDescription": "There are no scheduled events at the moment.",
+    "proposeSession": "Propose a session"
   },
   "SessionForm": {
     "pageTitle": "Propose a session",

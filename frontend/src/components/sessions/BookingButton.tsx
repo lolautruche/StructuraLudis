@@ -12,6 +12,7 @@ interface BookingButtonProps {
   onBook?: () => Promise<void>;
   onJoinWaitlist?: () => Promise<void>;
   onCancelBooking?: () => Promise<void>;
+  onCheckIn?: () => Promise<void>;
   isLoading?: boolean;
 }
 
@@ -22,6 +23,7 @@ export function BookingButton({
   onBook,
   onJoinWaitlist,
   onCancelBooking,
+  onCheckIn,
   isLoading = false,
 }: BookingButtonProps) {
   const t = useTranslations('Session');
@@ -30,6 +32,13 @@ export function BookingButton({
   const isFull = availableSeats <= 0;
   const canBook = session.status === 'VALIDATED' && session.has_available_seats;
   const canJoinWaitlist = session.status === 'VALIDATED' && isFull;
+
+  // Check if check-in is available (30 minutes before start until session starts)
+  const now = new Date();
+  const sessionStart = new Date(session.scheduled_start);
+  const checkInWindowStart = new Date(sessionStart.getTime() - 30 * 60 * 1000);
+  const isInCheckInWindow = now >= checkInWindowStart && now < sessionStart;
+  const canCheckIn = userBooking?.status === 'CONFIRMED' && isInCheckInWindow;
 
   // Session not bookable (finished, cancelled, in progress, etc.)
   if (!['VALIDATED'].includes(session.status)) {
@@ -58,10 +67,31 @@ export function BookingButton({
   if (userBooking) {
     const { status } = userBooking;
 
-    // Already confirmed or checked in
-    if (status === 'CONFIRMED' || status === 'CHECKED_IN') {
+    // Already checked in
+    if (status === 'CHECKED_IN') {
+      return (
+        <div className="flex flex-col sm:flex-row items-center gap-3">
+          <span className="text-emerald-600 dark:text-emerald-400 font-medium">
+            ✓ {t('bookingSuccess')}
+          </span>
+        </div>
+      );
+    }
+
+    // Confirmed booking
+    if (status === 'CONFIRMED') {
       return (
         <div className="flex flex-col sm:flex-row gap-3">
+          {canCheckIn && (
+            <Button
+              variant="success"
+              onClick={onCheckIn}
+              isLoading={isLoading}
+              className="w-full sm:w-auto"
+            >
+              {t('checkIn')}
+            </Button>
+          )}
           <Button
             variant="danger"
             onClick={onCancelBooking}

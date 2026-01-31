@@ -613,3 +613,26 @@ async def mark_no_show(
     """
     service = GameSessionService(db)
     return await service.mark_no_show(booking_id, current_user)
+
+
+@router.get("/{session_id}/my-booking", response_model=Optional[BookingRead])
+async def get_my_booking(
+    session_id: UUID,
+    current_user: User = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Get the current user's booking for a session, if any.
+
+    Returns the booking if the user has registered for this session,
+    or null if they haven't.
+    """
+    from app.domain.shared.entity import BookingStatus
+
+    result = await db.execute(
+        select(Booking)
+        .where(Booking.game_session_id == session_id)
+        .where(Booking.user_id == current_user.id)
+        .where(Booking.status.in_([BookingStatus.CONFIRMED, BookingStatus.WAITLISTED]))
+    )
+    return result.scalar_one_or_none()
