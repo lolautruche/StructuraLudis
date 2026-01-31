@@ -101,7 +101,7 @@
     "confirmCancel": "Oui, annuler",
     "keepBooking": "Garder ma réservation",
     "bookingConfirmTitle": "Confirmer votre inscription",
-    "bookingConfirmMessage": "En vous inscrivant à cette session, vous vous engagez à être présent(e) à l'heure prévue. Si vous ne pouvez pas venir, merci d'annuler votre réservation dès que possible afin que votre place puisse être attribuée à une personne en liste d'attente. Des absences répétées peuvent entraîner des restrictions sur votre compte.",
+    "bookingConfirmMessage": "En vous inscrivant à cette session, vous vous engagez à être présent(e) à l'heure prévue.\n\nSi vous ne pouvez pas venir, merci d'annuler votre réservation dès que possible afin que votre place puisse être attribuée à une personne en liste d'attente.\n\nDes absences répétées peuvent entraîner des restrictions sur votre compte.",
     "confirmBooking": "Je confirme mon inscription",
     "cancelBookingAction": "Annuler",
     "errorAgeRestriction": "Cette session nécessite un âge minimum de {age} ans. Veuillez mettre à jour votre profil avec votre date de naissance.",

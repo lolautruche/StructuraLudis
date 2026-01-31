@@ -101,7 +101,7 @@
     "confirmCancel": "Yes, cancel",
     "keepBooking": "Keep my booking",
     "bookingConfirmTitle": "Confirm your registration",
-    "bookingConfirmMessage": "By registering for this session, you commit to being present at the scheduled time. If you cannot attend, please cancel your booking as soon as possible so that your spot can be given to someone on the waitlist. Repeated no-shows may result in restrictions on your account.",
+    "bookingConfirmMessage": "By registering for this session, you commit to being present at the scheduled time.\n\nIf you cannot attend, please cancel your booking as soon as possible so that your spot can be given to someone on the waitlist.\n\nRepeated no-shows may result in restrictions on your account.",
     "confirmBooking": "I confirm my registration",
     "cancelBookingAction": "Cancel",
     "errorAgeRestriction": "This session requires a minimum age of {age}. Please update your profile with your birth date.",
