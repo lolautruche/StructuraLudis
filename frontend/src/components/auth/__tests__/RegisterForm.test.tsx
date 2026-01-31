@@ -92,7 +92,9 @@ describe('RegisterForm', () => {
     fireEvent.click(screen.getByRole('button', { name: 'registerButton' }));
 
     await waitFor(() => {
-      expect(screen.getByText(/Compte créé avec succès/)).toBeInTheDocument();
+      // Shows email verification message (translation key in tests)
+      expect(screen.getByText('registrationSuccess')).toBeInTheDocument();
+      expect(screen.getByText('checkYourEmail')).toBeInTheDocument();
     });
   });
 
