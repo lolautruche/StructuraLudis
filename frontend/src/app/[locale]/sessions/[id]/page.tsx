@@ -105,7 +105,7 @@ export default function SessionDetailPage() {
           {t('sessionNotFound')}
         </h2>
         <p className="text-slate-400 mb-6">{t('sessionNotFoundDescription')}</p>
-        <Link href="/sessions">
+        <Link href="/exhibitions">
           <Button variant="primary">{t('backToSessions')}</Button>
         </Link>
       </div>
@@ -116,7 +116,7 @@ export default function SessionDetailPage() {
     <div className="space-y-6">
       {/* Back link */}
       <Link
-        href="/sessions"
+        href="/exhibitions"
         className="inline-flex items-center text-slate-400 hover:text-white transition-colors"
       >
         <svg

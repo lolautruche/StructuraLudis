@@ -4,6 +4,7 @@
     "register": "Inscription",
     "logout": "Déconnexion",
     "sessions": "Sessions",
+    "exhibitions": "Événements",
     "dashboard": "Tableau de bord",
     "settings": "Paramètres",
     "save": "Enregistrer",
@@ -44,7 +45,9 @@
     "hasSeats": "Places disponibles",
     "allSessions": "Toutes les sessions",
     "noResults": "Aucune session trouvée",
-    "noResultsDescription": "Essayez de modifier vos filtres ou revenez plus tard."
+    "noResultsDescription": "Essayez de modifier vos filtres ou revenez plus tard.",
+    "sessions": "sessions",
+    "session": "session"
   },
   "Session": {
     "book": "Réserver",
@@ -159,6 +162,32 @@
     "section5Content": "Pour toute question concernant vos données personnelles, vous pouvez nous contacter via les paramètres de votre compte ou à l'adresse privacy@structuraludis.com.",
     "back": "Retour",
     "print": "Imprimer"
+  },
+  "Home": {
+    "subtitle": "Organisez et rejoignez des sessions de jeux de rôle facilement. Trouvez votre prochaine partie en quelques clics.",
+    "upcomingEvents": "Événements à venir",
+    "noEvents": "Aucun événement",
+    "noEventsDescription": "Il n'y a pas d'événement programmé pour le moment.",
+    "howItWorks": "Comment ça marche",
+    "feature1Title": "Découvrez des parties",
+    "feature1Description": "Explorez les sessions disponibles et trouvez le jeu qui vous correspond.",
+    "feature2Title": "Réservez facilement",
+    "feature2Description": "Inscrivez-vous en un clic et recevez vos confirmations par email.",
+    "feature3Title": "Restez informé",
+    "feature3Description": "Notifications en temps réel pour les changements et rappels."
+  },
+  "Exhibition": {
+    "title": "Événements",
+    "past": "Terminé",
+    "registrationOpen": "Inscriptions ouvertes",
+    "registrationClosed": "Inscriptions fermées",
+    "viewSessions": "Voir les sessions",
+    "backToEvents": "Retour aux événements",
+    "selectEvent": "Sélectionnez un événement pour voir ses sessions",
+    "upcomingAndCurrent": "En cours et à venir",
+    "pastEvents": "Événements passés",
+    "noEvents": "Aucun événement",
+    "noEventsDescription": "Il n'y a pas d'événement programmé pour le moment."
   },
   "SessionForm": {
     "pageTitle": "Proposer une session",

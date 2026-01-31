@@ -79,7 +79,7 @@ export function AgendaTimeline({
         <p className="text-slate-400 mb-6 max-w-md mx-auto">
           {t('noSessionsDescription')}
         </p>
-        <Link href="/sessions">
+        <Link href="/exhibitions">
           <Button variant="primary">{t('findSessions')}</Button>
         </Link>
       </div>

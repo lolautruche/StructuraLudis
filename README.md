@@ -38,6 +38,7 @@ Designed to eliminate "dead table time" and physical queues at large-scale festi
 
 ### Prerequisites
 - Docker & Docker Compose
+- Make (optional, but recommended)
 
 ### Quick Start
 
@@ -50,19 +51,53 @@ cd StructuraLudis
 cp .env.example .env
 
 # 3. Start all services
-docker compose up -d
+make up
 
-# 4. Run migrations
-docker compose exec sl-api alembic upgrade head
-
-# 5. Seed the database with fixtures
-docker compose exec sl-api python -m scripts.seed_db
+# 4. Run migrations and seed the database
+make db-migrate
+make db-seed
 ```
 
 The application will be available at:
 - **Frontend:** http://localhost:3000
 - **Backend API:** http://localhost:8000
 - **API Documentation:** http://localhost:8000/docs
+
+---
+
+## Make Commands
+
+Run `make help` to see all available commands. Here are the most common ones:
+
+### Docker
+| Command | Description |
+|---------|-------------|
+| `make up` | Start all containers |
+| `make down` | Stop all containers (preserves data) |
+| `make restart` | Restart all containers |
+| `make logs` | Follow all container logs |
+| `make build` | Rebuild all containers |
+| `make clean` | Stop and remove volumes (**deletes DB data**) |
+
+### Database
+| Command | Description |
+|---------|-------------|
+| `make db-migrate` | Run database migrations |
+| `make db-seed` | Load fixtures (keeps existing data) |
+| `make db-fixtures` | Reset DB and load fresh fixtures |
+| `make db-reset` | Reset database (**deletes all data**) |
+| `make db-shell` | Open psql shell |
+
+### Development
+| Command | Description |
+|---------|-------------|
+| `make backend-restart` | Restart backend container |
+| `make backend-logs` | Follow backend logs |
+| `make frontend-restart` | Restart frontend with clean cache |
+| `make frontend-logs` | Follow frontend logs |
+| `make test` | Run all tests |
+| `make test-backend` | Run backend tests only |
+| `make test-frontend` | Run frontend tests only |
 
 ---
 
@@ -91,31 +126,29 @@ The seed script creates a complete dataset for development and testing:
 ### Fixture Commands
 
 ```bash
-# First time seeding
-docker compose exec sl-api python -m scripts.seed_db
+# Load fixtures (first time or to add new data)
+make db-seed
 
-# Force reseed (clears and recreates all data)
-docker compose exec sl-api python -m scripts.seed_db --force
+# Reset DB and load fresh fixtures (interactive confirmation)
+make db-fixtures
 
-# Complete database reset
-docker compose exec sl-api alembic downgrade base
-docker compose exec sl-api alembic upgrade head
-docker compose exec sl-api python -m scripts.seed_db
+# Complete database reset without fixtures
+make db-reset
 ```
 
 ---
 
 ## Running Tests
 
-### Backend
 ```bash
-docker compose exec sl-api pytest
-```
+# Run all tests
+make test
 
-### Frontend
-```bash
-cd frontend
-npm test
+# Backend only
+make test-backend
+
+# Frontend only
+make test-frontend
 ```
 
 ---

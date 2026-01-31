@@ -24,10 +24,10 @@ export function Header() {
           {/* Navigation */}
           <nav className="hidden md:flex items-center space-x-6">
             <Link
-              href="/sessions"
+              href="/exhibitions"
               className="text-slate-300 hover:text-white transition-colors"
             >
-              {t('sessions')}
+              {t('exhibitions')}
             </Link>
             {isAuthenticated && (
               <Link

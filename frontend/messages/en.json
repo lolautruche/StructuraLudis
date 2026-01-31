@@ -4,6 +4,7 @@
     "register": "Sign up",
     "logout": "Logout",
     "sessions": "Sessions",
+    "exhibitions": "Events",
     "dashboard": "Dashboard",
     "settings": "Settings",
     "save": "Save",
@@ -44,7 +45,9 @@
     "hasSeats": "Has seats",
     "allSessions": "All sessions",
     "noResults": "No sessions found",
-    "noResultsDescription": "Try adjusting your filters or check back later."
+    "noResultsDescription": "Try adjusting your filters or check back later.",
+    "sessions": "sessions",
+    "session": "session"
   },
   "Session": {
     "book": "Book",
@@ -159,6 +162,32 @@
     "section5Content": "For any questions about your personal data, you can contact us through your account settings or at privacy@structuraludis.com.",
     "back": "Back",
     "print": "Print"
+  },
+  "Home": {
+    "subtitle": "Organize and join role-playing game sessions easily. Find your next game in just a few clicks.",
+    "upcomingEvents": "Upcoming events",
+    "noEvents": "No events",
+    "noEventsDescription": "There are no scheduled events at the moment.",
+    "howItWorks": "How it works",
+    "feature1Title": "Discover games",
+    "feature1Description": "Explore available sessions and find the game that suits you.",
+    "feature2Title": "Book easily",
+    "feature2Description": "Sign up in one click and receive your confirmations by email.",
+    "feature3Title": "Stay informed",
+    "feature3Description": "Real-time notifications for changes and reminders."
+  },
+  "Exhibition": {
+    "title": "Events",
+    "past": "Past",
+    "registrationOpen": "Registration open",
+    "registrationClosed": "Registration closed",
+    "viewSessions": "View sessions",
+    "backToEvents": "Back to events",
+    "selectEvent": "Select an event to see its sessions",
+    "upcomingAndCurrent": "Current and upcoming",
+    "pastEvents": "Past events",
+    "noEvents": "No events",
+    "noEventsDescription": "There are no scheduled events at the moment."
   },
   "SessionForm": {
     "pageTitle": "Propose a session",
