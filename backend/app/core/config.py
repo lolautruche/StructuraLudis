@@ -59,6 +59,9 @@ class Settings(BaseSettings):
     FIREBASE_CREDENTIALS_FILE: str = ""  # Path to Firebase service account JSON
     PUSH_NOTIFICATIONS_ENABLED: bool = False
 
+    # Frontend URL for email links (Issue #73)
+    FRONTEND_URL: str = "http://localhost:3000"
+
 
 # Singleton instance
 settings = Settings()

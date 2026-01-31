@@ -9,6 +9,8 @@ import {
   LoginResponse,
   RegisterRequest,
   User,
+  EmailVerificationResponse,
+  ResendVerificationResponse,
 } from '../types';
 
 export const authApi = {
@@ -42,5 +44,19 @@ export const authApi = {
    */
   getCurrentUser: async (): Promise<ApiResponse<User>> => {
     return api.get<User>('/api/v1/users/me');
+  },
+
+  /**
+   * Verify email with token.
+   */
+  verifyEmail: async (token: string): Promise<ApiResponse<EmailVerificationResponse>> => {
+    return api.get<EmailVerificationResponse>(`/api/v1/auth/verify-email?token=${encodeURIComponent(token)}`);
+  },
+
+  /**
+   * Resend verification email.
+   */
+  resendVerification: async (): Promise<ApiResponse<ResendVerificationResponse>> => {
+    return api.post<ResendVerificationResponse>('/api/v1/auth/resend-verification', {});
   },
 };

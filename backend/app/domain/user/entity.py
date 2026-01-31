@@ -45,6 +45,15 @@ class User(Base, TimestampMixin):
         DateTime(timezone=True), nullable=True
     )
 
+    # Email verification (Issue #73)
+    email_verified: Mapped[bool] = mapped_column(Boolean, default=False)
+    email_verification_token: Mapped[Optional[str]] = mapped_column(
+        String(64), nullable=True
+    )
+    email_verification_sent_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+
     def get_age(self) -> Optional[int]:
         """Calculate age from birth_date."""
         if not self.birth_date:

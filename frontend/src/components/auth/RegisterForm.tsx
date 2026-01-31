@@ -5,7 +5,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useTranslations } from 'next-intl';
-import { Link, useRouter } from '@/i18n/routing';
+import { Link } from '@/i18n/routing';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button, Input, Checkbox } from '@/components/ui';
 
@@ -29,7 +29,6 @@ type RegisterFormData = z.infer<typeof registerSchema>;
 export function RegisterForm() {
   const t = useTranslations('Auth');
   const tErrors = useTranslations('Errors');
-  const router = useRouter();
   const { register: registerUser } = useAuth();
   const [serverError, setServerError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
@@ -82,10 +81,7 @@ export function RegisterForm() {
 
     if (result.success) {
       setSuccess(true);
-      // Redirect to login after short delay
-      setTimeout(() => {
-        router.push('/auth/login');
-      }, 2000);
+      // Don't auto-redirect - let user read the verification email message
     } else {
       // Map API errors to translated messages
       if (result.error?.includes('email') && result.error?.includes('exists')) {
@@ -99,12 +95,15 @@ export function RegisterForm() {
   if (success) {
     return (
       <div className="text-center py-8">
-        <div className="text-4xl mb-4">✓</div>
+        <div className="text-4xl mb-4">&#9993;</div>
         <h3 className="text-lg font-semibold text-emerald-600 dark:text-emerald-400 mb-2">
-          Compte créé avec succès !
+          {t('registrationSuccess')}
         </h3>
-        <p className="text-slate-600 dark:text-slate-400">
-          Redirection vers la page de connexion...
+        <p className="text-slate-600 dark:text-slate-400 mb-4">
+          {t('checkYourEmail')}
+        </p>
+        <p className="text-sm text-slate-500 dark:text-slate-500">
+          {t('verificationEmailSent')}
         </p>
       </div>
     );

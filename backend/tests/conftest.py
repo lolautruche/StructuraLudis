@@ -106,7 +106,7 @@ async def test_organization(db_session: AsyncSession) -> dict:
 
 @pytest.fixture
 async def test_user(db_session: AsyncSession) -> dict:
-    """Create a test user with USER role."""
+    """Create a test user with USER role (email verified)."""
     from app.domain.user.entity import User
 
     user = User(
@@ -116,6 +116,7 @@ async def test_user(db_session: AsyncSession) -> dict:
         full_name="Test User",
         global_role=GlobalRole.USER,
         is_active=True,
+        email_verified=True,  # Verified for backward compatibility
     )
     db_session.add(user)
     await db_session.commit()
@@ -142,6 +143,7 @@ async def test_organizer(db_session: AsyncSession, test_organization: dict) -> d
         full_name="Test Organizer",
         global_role=GlobalRole.ORGANIZER,
         is_active=True,
+        email_verified=True,  # Verified for backward compatibility
     )
     db_session.add(user)
 
@@ -179,7 +181,7 @@ async def test_organizer(db_session: AsyncSession, test_organization: dict) -> d
 
 @pytest.fixture
 async def second_test_user(db_session: AsyncSession) -> dict:
-    """Create a second test user with USER role."""
+    """Create a second test user with USER role (email verified)."""
     from app.domain.user.entity import User
 
     user = User(
@@ -189,6 +191,7 @@ async def second_test_user(db_session: AsyncSession) -> dict:
         full_name="Second Test User",
         global_role=GlobalRole.USER,
         is_active=True,
+        email_verified=True,  # Verified for backward compatibility
     )
     db_session.add(user)
     await db_session.commit()
@@ -213,6 +216,7 @@ async def test_super_admin(db_session: AsyncSession) -> dict:
         full_name="Super Admin",
         global_role=GlobalRole.SUPER_ADMIN,
         is_active=True,
+        email_verified=True,  # Verified for backward compatibility
     )
     db_session.add(user)
     await db_session.commit()
@@ -281,6 +285,7 @@ async def second_organizer(db_session: AsyncSession, test_organization: dict) ->
         full_name="Second Organizer",
         global_role=GlobalRole.ORGANIZER,
         is_active=True,
+        email_verified=True,  # Verified for backward compatibility
     )
     db_session.add(user)
 

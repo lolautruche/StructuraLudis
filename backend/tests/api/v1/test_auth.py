@@ -2,6 +2,7 @@
 Tests for Authentication API endpoints.
 """
 import pytest
+from datetime import datetime, timezone, timedelta
 from uuid import uuid4
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -293,3 +294,201 @@ class TestJWTAuthentication:
             headers={"Authorization": f"Bearer {token}"},
         )
         assert orgs_resp.status_code == 200
+
+
+class TestEmailVerification:
+    """Tests for email verification endpoints."""
+
+    async def test_register_sends_verification_email(self, client: AsyncClient):
+        """Register creates user with unverified email and sends verification."""
+        payload = {
+            "email": "needsverify@example.com",
+            "password": "securepassword123",
+            "full_name": "Needs Verify",
+            "accept_privacy_policy": True,
+        }
+
+        response = await client.post("/api/v1/auth/register", json=payload)
+
+        assert response.status_code == 201
+        data = response.json()
+        # New users should have email_verified = False
+        assert data["email_verified"] is False
+
+    async def test_verify_email_success(
+        self, client: AsyncClient, db_session: AsyncSession
+    ):
+        """Verify email with valid token succeeds."""
+        # Create user with verification token
+        test_token = "valid_token_12345678901234567890123456789012345678901234"
+        user = User(
+            id=uuid4(),
+            email="toverify@example.com",
+            hashed_password=get_password_hash("password123"),
+            full_name="To Verify",
+            global_role=GlobalRole.USER,
+            is_active=True,
+            email_verified=False,
+            email_verification_token=test_token,
+            email_verification_sent_at=datetime.now(timezone.utc),
+        )
+        db_session.add(user)
+        await db_session.commit()
+
+        response = await client.get(f"/api/v1/auth/verify-email?token={test_token}")
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["success"] is True
+
+        # Refresh user to check update
+        await db_session.refresh(user)
+        assert user.email_verified is True
+        assert user.email_verification_token is None
+
+    async def test_verify_email_invalid_token(self, client: AsyncClient):
+        """Verify email with invalid token returns 400."""
+        response = await client.get("/api/v1/auth/verify-email?token=invalid_token")
+
+        assert response.status_code == 400
+        assert "invalid" in response.json()["detail"].lower()
+
+    async def test_verify_email_expired_token(
+        self, client: AsyncClient, db_session: AsyncSession
+    ):
+        """Verify email with expired token returns 400."""
+        # Create user with expired token
+        test_token = "expired_token_123456789012345678901234567890123456789012"
+        user = User(
+            id=uuid4(),
+            email="expired@example.com",
+            hashed_password=get_password_hash("password123"),
+            full_name="Expired Token",
+            global_role=GlobalRole.USER,
+            is_active=True,
+            email_verified=False,
+            email_verification_token=test_token,
+            email_verification_sent_at=datetime.now(timezone.utc) - timedelta(days=8),
+        )
+        db_session.add(user)
+        await db_session.commit()
+
+        response = await client.get(f"/api/v1/auth/verify-email?token={test_token}")
+
+        assert response.status_code == 400
+
+    async def test_resend_verification_success(
+        self, client: AsyncClient, db_session: AsyncSession
+    ):
+        """Resend verification email succeeds for unverified user."""
+        # Create unverified user
+        user = User(
+            id=uuid4(),
+            email="resend@example.com",
+            hashed_password=get_password_hash("password123"),
+            full_name="Resend User",
+            global_role=GlobalRole.USER,
+            is_active=True,
+            email_verified=False,
+        )
+        db_session.add(user)
+        await db_session.commit()
+
+        response = await client.post(
+            "/api/v1/auth/resend-verification",
+            headers={"X-User-ID": str(user.id)},
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["success"] is True
+
+        # Check token was set
+        await db_session.refresh(user)
+        assert user.email_verification_token is not None
+        assert user.email_verification_sent_at is not None
+
+    async def test_resend_verification_already_verified(
+        self, client: AsyncClient, db_session: AsyncSession
+    ):
+        """Resend verification returns success=False for verified user."""
+        # Create verified user
+        user = User(
+            id=uuid4(),
+            email="alreadyverified@example.com",
+            hashed_password=get_password_hash("password123"),
+            full_name="Already Verified",
+            global_role=GlobalRole.USER,
+            is_active=True,
+            email_verified=True,
+        )
+        db_session.add(user)
+        await db_session.commit()
+
+        response = await client.post(
+            "/api/v1/auth/resend-verification",
+            headers={"X-User-ID": str(user.id)},
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["success"] is False
+        assert "already verified" in data["message"].lower()
+
+    async def test_resend_verification_rate_limited(
+        self, client: AsyncClient, db_session: AsyncSession
+    ):
+        """Resend verification is rate limited (60s cooldown)."""
+        # Create user with recent verification send
+        user = User(
+            id=uuid4(),
+            email="ratelimited@example.com",
+            hashed_password=get_password_hash("password123"),
+            full_name="Rate Limited",
+            global_role=GlobalRole.USER,
+            is_active=True,
+            email_verified=False,
+            email_verification_token="existing_token_12345678901234567890123456789012",
+            email_verification_sent_at=datetime.now(timezone.utc) - timedelta(seconds=30),
+        )
+        db_session.add(user)
+        await db_session.commit()
+
+        response = await client.post(
+            "/api/v1/auth/resend-verification",
+            headers={"X-User-ID": str(user.id)},
+        )
+
+        assert response.status_code == 429
+        assert "Retry-After" in response.headers
+
+    async def test_resend_verification_requires_auth(self, client: AsyncClient):
+        """Resend verification requires authentication."""
+        response = await client.post("/api/v1/auth/resend-verification")
+
+        assert response.status_code == 401
+
+    async def test_login_allowed_without_verification(
+        self, client: AsyncClient, db_session: AsyncSession
+    ):
+        """Login is allowed even if email is not verified."""
+        password = "password123"
+        user = User(
+            id=uuid4(),
+            email="unverified_login@example.com",
+            hashed_password=get_password_hash(password),
+            full_name="Unverified Login",
+            global_role=GlobalRole.USER,
+            is_active=True,
+            email_verified=False,
+        )
+        db_session.add(user)
+        await db_session.commit()
+
+        response = await client.post(
+            "/api/v1/auth/login",
+            json={"email": user.email, "password": password},
+        )
+
+        assert response.status_code == 200
+        assert "access_token" in response.json()

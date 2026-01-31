@@ -30,6 +30,7 @@ class UserRead(UserBase):
     id: UUID
     global_role: str  # String from DB, matches GlobalRole values
     is_active: bool
+    email_verified: bool = False  # Email verification status (Issue #73)
     last_login: Optional[datetime] = None
     privacy_accepted_at: Optional[datetime] = None  # GDPR consent timestamp
     created_at: datetime
