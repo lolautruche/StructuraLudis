@@ -119,6 +119,7 @@ async def seed(force: bool = False):
             global_role=GlobalRole.SUPER_ADMIN,
             locale="fr",
             privacy_accepted_at=datetime.now(timezone.utc),
+            email_verified=True,
         )
 
         # Main Organizer
@@ -130,6 +131,7 @@ async def seed(force: bool = False):
             global_role=GlobalRole.ORGANIZER,
             locale="fr",
             privacy_accepted_at=datetime.now(timezone.utc),
+            email_verified=True,
         )
 
         # Partner staff (exhibitors)
@@ -141,6 +143,7 @@ async def seed(force: bool = False):
             global_role=GlobalRole.PARTNER,
             locale="fr",
             privacy_accepted_at=datetime.now(timezone.utc),
+            email_verified=True,
         )
 
         partner_arkhane = User(
@@ -151,6 +154,7 @@ async def seed(force: bool = False):
             global_role=GlobalRole.PARTNER,
             locale="fr",
             privacy_accepted_at=datetime.now(timezone.utc),
+            email_verified=True,
         )
 
         # GMs (some affiliated with partners, some independent)
@@ -162,6 +166,7 @@ async def seed(force: bool = False):
             global_role=GlobalRole.USER,
             locale="fr",
             privacy_accepted_at=datetime.now(timezone.utc),
+            email_verified=True,
         )
 
         gm2 = User(
@@ -172,6 +177,7 @@ async def seed(force: bool = False):
             global_role=GlobalRole.USER,
             locale="fr",
             privacy_accepted_at=datetime.now(timezone.utc),
+            email_verified=True,
         )
 
         gm3 = User(
@@ -182,6 +188,7 @@ async def seed(force: bool = False):
             global_role=GlobalRole.USER,
             locale="fr",
             privacy_accepted_at=datetime.now(timezone.utc),
+            email_verified=True,
         )
 
         # Players (12 players for realistic session filling)
@@ -200,6 +207,7 @@ async def seed(force: bool = False):
                 global_role=GlobalRole.USER,
                 locale="fr",
                 privacy_accepted_at=datetime.now(timezone.utc),
+                email_verified=True,
             )
             for i, name in enumerate(player_names, 1)
         ]
