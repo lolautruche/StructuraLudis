@@ -1,4 +1,4 @@
-import { render, screen, waitFor, fireEvent } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent, act } from '@testing-library/react';
 import { SessionSubmissionForm } from '../SessionSubmissionForm';
 import { exhibitionsApi, gamesApi, sessionsApi } from '@/lib/api';
 
@@ -114,9 +114,14 @@ describe('SessionSubmissionForm', () => {
     });
   });
 
-  it('renders loading state initially', () => {
+  it('renders loading state initially', async () => {
     render(<SessionSubmissionForm exhibitionId="ex-123" />);
     expect(screen.getByText('loading')).toBeInTheDocument();
+
+    // Wait for loading to complete to avoid act() warnings
+    await waitFor(() => {
+      expect(screen.queryByText('loading')).not.toBeInTheDocument();
+    });
   });
 
   it('loads exhibition data on mount', async () => {
@@ -126,6 +131,11 @@ describe('SessionSubmissionForm', () => {
       expect(exhibitionsApi.getById).toHaveBeenCalledWith('ex-123');
       expect(exhibitionsApi.getTimeSlots).toHaveBeenCalledWith('ex-123');
       expect(exhibitionsApi.getSafetyTools).toHaveBeenCalledWith('ex-123');
+    });
+
+    // Wait for loading to complete to avoid act() warnings
+    await waitFor(() => {
+      expect(screen.queryByText('loading')).not.toBeInTheDocument();
     });
   });
 

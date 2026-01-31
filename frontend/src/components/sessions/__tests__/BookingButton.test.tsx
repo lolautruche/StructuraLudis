@@ -78,7 +78,7 @@ describe('BookingButton', () => {
     );
 
     expect(screen.getByText('Log in to book')).toBeInTheDocument();
-    expect(screen.getByRole('link')).toHaveAttribute('href', '/login');
+    expect(screen.getByRole('link')).toHaveAttribute('href', '/auth/login');
   });
 
   it('shows book button when authenticated and seats available', () => {
