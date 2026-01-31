@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { Link } from '@/i18n/routing';
@@ -16,10 +16,20 @@ export default function VerifyEmailPage() {
   const { refreshUser } = useAuth();
   const [state, setState] = useState<VerificationState>('loading');
   const [errorMessage, setErrorMessage] = useState<string>('');
+  const verificationAttempted = useRef(false);
 
   const token = searchParams.get('token');
 
+  const doRefreshUser = useCallback(() => {
+    refreshUser();
+  }, [refreshUser]);
+
   useEffect(() => {
+    // Prevent double verification attempts
+    if (verificationAttempted.current) {
+      return;
+    }
+
     async function verifyEmail() {
       if (!token) {
         setState('error');
@@ -27,13 +37,15 @@ export default function VerifyEmailPage() {
         return;
       }
 
+      verificationAttempted.current = true;
+
       try {
         const response = await authApi.verifyEmail(token);
 
         if (response.data?.success) {
           setState('success');
           // Refresh user data to update email_verified status
-          await refreshUser();
+          doRefreshUser();
         } else {
           setState('error');
           setErrorMessage(response.error?.detail || t('verificationFailedMessage'));
@@ -45,7 +57,7 @@ export default function VerifyEmailPage() {
     }
 
     verifyEmail();
-  }, [token, t, refreshUser]);
+  }, [token, t, doRefreshUser]);
 
   return (
     <div className="max-w-md mx-auto mt-8">

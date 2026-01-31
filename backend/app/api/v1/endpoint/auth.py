@@ -3,9 +3,10 @@ Authentication API endpoints.
 
 Login, registration, token management, and email verification.
 """
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, Header, HTTPException, Query, status
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
+from typing import Optional
 
 from app.core.config import settings
 from app.core.database import get_db
@@ -15,6 +16,20 @@ from app.domain.user.schemas import UserRead
 from app.services.auth import AuthService, PrivacyPolicyNotAcceptedError
 from app.services.email_verification import EmailVerificationService
 from app.api.deps import get_current_active_user
+
+
+def _parse_locale_from_header(accept_language: Optional[str]) -> str:
+    """Extract locale from Accept-Language header, defaulting to 'en'."""
+    if not accept_language:
+        return "en"
+    # Parse first language from header (e.g., "fr-FR,fr;q=0.9,en;q=0.8" -> "fr")
+    first_lang = accept_language.split(",")[0].split(";")[0].strip()
+    # Extract base language (e.g., "fr-FR" -> "fr")
+    base_lang = first_lang.split("-")[0].lower()
+    # Only support known locales
+    if base_lang in ("fr", "en"):
+        return base_lang
+    return "en"
 
 router = APIRouter()
 
@@ -60,6 +75,7 @@ async def login(
 async def register(
     data: RegisterRequest,
     db: AsyncSession = Depends(get_db),
+    accept_language: Optional[str] = Header(None, alias="Accept-Language"),
 ):
     """
     Register a new user account.
@@ -90,7 +106,8 @@ async def register(
     # Use configured frontend URL for verification links
     frontend_base_url = settings.FRONTEND_URL
 
-    locale = user.locale or "en"
+    # Get locale from Accept-Language header or user preference
+    locale = user.locale or _parse_locale_from_header(accept_language)
 
     await verification_service.generate_and_send_verification(
         user=user,
@@ -133,6 +150,7 @@ async def verify_email(
 async def resend_verification(
     current_user: User = Depends(get_current_active_user),
     db: AsyncSession = Depends(get_db),
+    accept_language: Optional[str] = Header(None, alias="Accept-Language"),
 ):
     """
     Resend the verification email to the current user.
@@ -160,7 +178,8 @@ async def resend_verification(
     # Use configured frontend URL for verification links
     frontend_base_url = settings.FRONTEND_URL
 
-    locale = current_user.locale or "en"
+    # Get locale from Accept-Language header or user preference
+    locale = current_user.locale or _parse_locale_from_header(accept_language)
 
     success = await verification_service.generate_and_send_verification(
         user=current_user,
