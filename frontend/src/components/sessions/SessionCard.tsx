@@ -5,7 +5,7 @@ import { Link } from '@/i18n/routing';
 import { Card, Badge } from '@/components/ui';
 import { AvailabilityBadge } from './AvailabilityBadge';
 import { SafetyToolsBadges } from './SafetyToolsBadges';
-import { formatTime } from '@/lib/utils';
+import { formatDate, formatTime } from '@/lib/utils';
 import type { GameSession } from '@/lib/api/types';
 
 interface SessionCardProps {
@@ -16,6 +16,7 @@ interface SessionCardProps {
 export function SessionCard({ session, locale = 'fr' }: SessionCardProps) {
   const t = useTranslations('GameTable');
 
+  const sessionDate = formatDate(session.scheduled_start, locale);
   const startTime = formatTime(session.scheduled_start, locale);
   const endTime = formatTime(session.scheduled_end, locale);
 
@@ -44,8 +45,12 @@ export function SessionCard({ session, locale = 'fr' }: SessionCardProps) {
             </div>
           )}
 
-          {/* Time & Location */}
+          {/* Date, Time & Location */}
           <div className="flex flex-col gap-1 text-sm text-slate-600 dark:text-slate-400">
+            <div className="flex items-center gap-2">
+              <span>📅</span>
+              <span>{sessionDate}</span>
+            </div>
             <div className="flex items-center gap-2">
               <span>⏰</span>
               <span>{startTime} - {endTime}</span>

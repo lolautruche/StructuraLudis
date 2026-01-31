@@ -67,35 +67,35 @@ export const sessionsApi = {
    * Book a seat in a session.
    */
   book: async (sessionId: string): Promise<ApiResponse<Booking>> => {
-    return api.post<Booking>(`/api/v1/sessions/${sessionId}/book`);
+    return api.post<Booking>(`/api/v1/sessions/${sessionId}/bookings`, { role: 'PLAYER' });
   },
 
   /**
-   * Join waitlist for a session.
+   * Join waitlist for a session (same endpoint, backend handles waitlist automatically when full).
    */
   joinWaitlist: async (sessionId: string): Promise<ApiResponse<Booking>> => {
-    return api.post<Booking>(`/api/v1/sessions/${sessionId}/waitlist`);
+    return api.post<Booking>(`/api/v1/sessions/${sessionId}/bookings`, { role: 'PLAYER' });
   },
 
   /**
    * Cancel a booking.
    */
-  cancelBooking: async (bookingId: string): Promise<ApiResponse<void>> => {
-    return api.delete<void>(`/api/v1/bookings/${bookingId}`);
+  cancelBooking: async (bookingId: string): Promise<ApiResponse<Booking>> => {
+    return api.delete<Booking>(`/api/v1/sessions/bookings/${bookingId}`);
   },
 
   /**
    * Check in for a session.
    */
   checkIn: async (bookingId: string): Promise<ApiResponse<Booking>> => {
-    return api.post<Booking>(`/api/v1/bookings/${bookingId}/check-in`);
+    return api.post<Booking>(`/api/v1/sessions/bookings/${bookingId}/check-in`);
   },
 
   /**
    * Create a new session.
    */
   create: async (session: SessionCreateRequest): Promise<ApiResponse<GameSession>> => {
-    return api.post<GameSession>('/api/v1/sessions', session);
+    return api.post<GameSession>('/api/v1/sessions/', session);
   },
 
   /**
@@ -110,5 +110,12 @@ export const sessionsApi = {
    */
   submit: async (sessionId: string): Promise<ApiResponse<GameSession>> => {
     return api.post<GameSession>(`/api/v1/sessions/${sessionId}/submit`);
+  },
+
+  /**
+   * Get current user's booking for a session.
+   */
+  getMyBooking: async (sessionId: string): Promise<ApiResponse<Booking | null>> => {
+    return api.get<Booking | null>(`/api/v1/sessions/${sessionId}/my-booking`);
   },
 };

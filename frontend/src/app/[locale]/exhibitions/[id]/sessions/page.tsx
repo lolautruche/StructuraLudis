@@ -10,8 +10,9 @@ import {
   type SessionFiltersState,
 } from '@/components/sessions';
 import { SessionCard } from '@/components/sessions/SessionCard';
-import { Card } from '@/components/ui';
+import { Button, Card } from '@/components/ui';
 import { sessionsApi, exhibitionsApi } from '@/lib/api';
+import { useAuth } from '@/contexts/AuthContext';
 import type { GameSession, Exhibition } from '@/lib/api/types';
 
 export default function ExhibitionSessionsPage() {
@@ -24,6 +25,7 @@ export default function ExhibitionSessionsPage() {
   const searchParams = useSearchParams();
 
   const exhibitionId = params.id as string;
+  const { isAuthenticated } = useAuth();
 
   const [exhibition, setExhibition] = useState<Exhibition | null>(null);
   const [sessions, setSessions] = useState<GameSession[]>([]);
@@ -128,11 +130,22 @@ export default function ExhibitionSessionsPage() {
       {/* Exhibition Header */}
       {exhibition && (
         <div className="border-b border-slate-200 dark:border-slate-700 pb-6">
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">{exhibition.title}</h1>
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-slate-600 dark:text-slate-400">
-            <span>📅 {formatDateRange(exhibition.start_date, exhibition.end_date)}</span>
-            {(exhibition.location_name || exhibition.city) && (
-              <span>📍 {[exhibition.location_name, exhibition.city].filter(Boolean).join(', ')}</span>
+          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+            <div>
+              <h1 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">{exhibition.title}</h1>
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-slate-600 dark:text-slate-400">
+                <span>📅 {formatDateRange(exhibition.start_date, exhibition.end_date)}</span>
+                {(exhibition.location_name || exhibition.city) && (
+                  <span>📍 {[exhibition.location_name, exhibition.city].filter(Boolean).join(', ')}</span>
+                )}
+              </div>
+            </div>
+            {isAuthenticated && (
+              <Link href={`/my/sessions/new?exhibition=${exhibitionId}`}>
+                <Button variant="primary">
+                  {tExhibition('proposeSession')}
+                </Button>
+              </Link>
             )}
           </div>
           {exhibition.description && (

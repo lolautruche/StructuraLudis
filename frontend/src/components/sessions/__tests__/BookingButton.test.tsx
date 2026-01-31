@@ -14,6 +14,7 @@ jest.mock('next-intl', () => ({
       finished: 'Finished',
       cancelled: 'Cancelled',
       full: 'Full',
+      waitlistSuccess: 'You are on the waitlist',
       waitlistPosition: `Position ${values?.position} on waitlist`,
     };
     return translations[key] || key;
@@ -78,7 +79,7 @@ describe('BookingButton', () => {
     );
 
     expect(screen.getByText('Log in to book')).toBeInTheDocument();
-    expect(screen.getByRole('link')).toHaveAttribute('href', '/login');
+    expect(screen.getByRole('link')).toHaveAttribute('href', '/auth/login');
   });
 
   it('shows book button when authenticated and seats available', () => {
@@ -145,7 +146,7 @@ describe('BookingButton', () => {
     expect(onCancelBooking).toHaveBeenCalled();
   });
 
-  it('shows waitlist position when user is on waitlist', () => {
+  it('shows waitlist status when user is on waitlist', () => {
     const session = createMockSession({
       confirmed_players_count: 5,
       max_players_count: 5,
@@ -162,7 +163,7 @@ describe('BookingButton', () => {
       />
     );
 
-    expect(screen.getByText('Position 3 on waitlist')).toBeInTheDocument();
+    expect(screen.getByText('You are on the waitlist')).toBeInTheDocument();
     expect(screen.getByText('Cancel booking')).toBeInTheDocument();
   });
 

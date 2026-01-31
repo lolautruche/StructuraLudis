@@ -80,16 +80,22 @@ export function TimeSlotSelector({
   }, [selectedSlot, calculateDuration, t]);
 
   // Convert datetime-local to ISO string and vice versa
+  // datetime-local expects LOCAL time, but we store ISO (UTC) strings
   const toDatetimeLocal = (isoString: string) => {
     if (!isoString) return '';
     const date = new Date(isoString);
-    // Format for datetime-local input: YYYY-MM-DDTHH:mm
-    return date.toISOString().slice(0, 16);
+    // Format for datetime-local input: YYYY-MM-DDTHH:mm in LOCAL time
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
   };
 
   const fromDatetimeLocal = (localString: string) => {
     if (!localString) return '';
-    // datetime-local format: YYYY-MM-DDTHH:mm
+    // datetime-local format: YYYY-MM-DDTHH:mm (interpreted as local time)
     return new Date(localString).toISOString();
   };
 

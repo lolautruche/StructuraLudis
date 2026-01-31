@@ -559,13 +559,86 @@ async def create_booking(
     Requires email verification.
     If session is full, booking goes to waitlist.
     """
+    from sqlalchemy import func
+    from app.domain.shared.entity import BookingStatus
+
     # Build full BookingCreate from path + body
     booking_data = BookingCreate(
         game_session_id=session_id,
         role=booking_in.role,
     )
     service = GameSessionService(db)
-    return await service.create_booking(booking_data, current_user)
+    booking = await service.create_booking(booking_data, current_user)
+
+    # Send notifications if booking is confirmed (not waitlisted)
+    # Notifications are non-blocking - if they fail, the booking still succeeds
+    if booking.status == BookingStatus.CONFIRMED:
+        try:
+            # Get session and exhibition info
+            session_result = await db.execute(
+                select(GameSession).where(GameSession.id == session_id)
+            )
+            session = session_result.scalar_one()
+
+            exhibition_result = await db.execute(
+                select(Exhibition).where(Exhibition.id == session.exhibition_id)
+            )
+            exhibition = exhibition_result.scalar_one()
+
+            # Get GM info
+            gm_result = await db.execute(
+                select(User).where(User.id == session.created_by_user_id)
+            )
+            gm = gm_result.scalar_one()
+
+            # Count current confirmed bookings
+            confirmed_result = await db.execute(
+                select(func.count(Booking.id)).where(
+                    Booking.game_session_id == session_id,
+                    Booking.status.in_([BookingStatus.CONFIRMED, BookingStatus.CHECKED_IN]),
+                )
+            )
+            confirmed_count = confirmed_result.scalar() or 0
+
+            notification_service = NotificationService(db)
+
+            # Build context
+            context = SessionNotificationContext(
+                session_id=session.id,
+                session_title=session.title,
+                exhibition_id=exhibition.id,
+                exhibition_title=exhibition.title,
+                scheduled_start=session.scheduled_start,
+                scheduled_end=session.scheduled_end,
+                gm_name=gm.full_name,
+                player_name=current_user.full_name or current_user.email,
+                players_registered=confirmed_count,
+                max_players=session.max_players_count,
+            )
+
+            # Notify player
+            player_recipient = NotificationRecipient(
+                user_id=current_user.id,
+                email=current_user.email,
+                full_name=current_user.full_name,
+                locale=current_user.locale or "en",
+            )
+            await notification_service.notify_booking_confirmed(player_recipient, context)
+
+            # Notify GM
+            gm_recipient = NotificationRecipient(
+                user_id=gm.id,
+                email=gm.email,
+                full_name=gm.full_name,
+                locale=gm.locale or "en",
+            )
+            await notification_service.notify_gm_new_player(gm_recipient, context)
+        except Exception as e:
+            # Log error but don't fail the booking
+            import logging
+            logging.getLogger(__name__).error(f"Failed to send booking notifications: {e}")
+
+    return booking
 
 
 @router.delete("/bookings/{booking_id}", response_model=BookingRead)
@@ -579,8 +652,105 @@ async def cancel_booking(
 
     May promote someone from waitlist.
     """
+    from sqlalchemy import func
+    from app.domain.shared.entity import BookingStatus
+
+    # Get booking info before cancellation
+    booking_result = await db.execute(
+        select(Booking).where(Booking.id == booking_id)
+    )
+    booking_before = booking_result.scalar_one_or_none()
+    if not booking_before:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Booking not found",
+        )
+
+    was_confirmed = booking_before.status in [BookingStatus.CONFIRMED, BookingStatus.CHECKED_IN]
+    session_id = booking_before.game_session_id
+
+    # Get session and exhibition info
+    session_result = await db.execute(
+        select(GameSession).where(GameSession.id == session_id)
+    )
+    session = session_result.scalar_one()
+
+    exhibition_result = await db.execute(
+        select(Exhibition).where(Exhibition.id == session.exhibition_id)
+    )
+    exhibition = exhibition_result.scalar_one()
+
+    # Get player and GM info
+    player_result = await db.execute(
+        select(User).where(User.id == booking_before.user_id)
+    )
+    player = player_result.scalar_one()
+
+    gm_result = await db.execute(
+        select(User).where(User.id == session.created_by_user_id)
+    )
+    gm = gm_result.scalar_one()
+
+    # Perform the cancellation
     service = GameSessionService(db)
-    return await service.cancel_booking(booking_id, current_user)
+    booking = await service.cancel_booking(booking_id, current_user)
+
+    # Send notifications - different email for confirmed vs waitlisted
+    # Notifications are non-blocking - if they fail, the cancellation still succeeds
+    try:
+        notification_service = NotificationService(db)
+
+        # Build context
+        context = SessionNotificationContext(
+            session_id=session.id,
+            session_title=session.title,
+            exhibition_id=exhibition.id,
+            exhibition_title=exhibition.title,
+            scheduled_start=session.scheduled_start,
+            scheduled_end=session.scheduled_end,
+            gm_name=gm.full_name,
+            player_name=player.full_name or player.email,
+            max_players=session.max_players_count,
+        )
+
+        # Notify player
+        player_recipient = NotificationRecipient(
+            user_id=player.id,
+            email=player.email,
+            full_name=player.full_name,
+            locale=player.locale or "en",
+        )
+
+        if was_confirmed:
+            # Count remaining confirmed bookings (for GM notification)
+            confirmed_result = await db.execute(
+                select(func.count(Booking.id)).where(
+                    Booking.game_session_id == session_id,
+                    Booking.status.in_([BookingStatus.CONFIRMED, BookingStatus.CHECKED_IN]),
+                )
+            )
+            context.players_registered = confirmed_result.scalar() or 0
+
+            # Send booking cancelled email to player
+            await notification_service.notify_booking_cancelled_to_player(player_recipient, context)
+
+            # Notify GM about player cancellation
+            gm_recipient = NotificationRecipient(
+                user_id=gm.id,
+                email=gm.email,
+                full_name=gm.full_name,
+                locale=gm.locale or "en",
+            )
+            await notification_service.notify_gm_player_cancelled(gm_recipient, context)
+        else:
+            # Send waitlist cancelled email to player (no GM notification for waitlist)
+            await notification_service.notify_waitlist_cancelled_to_player(player_recipient, context)
+    except Exception as e:
+        # Log error but don't fail the cancellation
+        import logging
+        logging.getLogger(__name__).error(f"Failed to send cancellation notifications: {e}")
+
+    return booking
 
 
 @router.post("/bookings/{booking_id}/check-in", response_model=BookingRead)
@@ -613,3 +783,26 @@ async def mark_no_show(
     """
     service = GameSessionService(db)
     return await service.mark_no_show(booking_id, current_user)
+
+
+@router.get("/{session_id}/my-booking", response_model=Optional[BookingRead])
+async def get_my_booking(
+    session_id: UUID,
+    current_user: User = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Get the current user's booking for a session, if any.
+
+    Returns the booking if the user has registered for this session,
+    or null if they haven't.
+    """
+    from app.domain.shared.entity import BookingStatus
+
+    result = await db.execute(
+        select(Booking)
+        .where(Booking.game_session_id == session_id)
+        .where(Booking.user_id == current_user.id)
+        .where(Booking.status.in_([BookingStatus.CONFIRMED, BookingStatus.WAITING_LIST]))
+    )
+    return result.scalar_one_or_none()

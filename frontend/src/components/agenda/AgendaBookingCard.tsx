@@ -94,7 +94,7 @@ export function AgendaBookingCard({
           )}
           {booking.waitlist_count > 0 && (
             <span className="text-amber-600 dark:text-amber-400">
-              (+{booking.waitlist_count} {t('waitlisted').toLowerCase()})
+              (+{tSession('waitlistInfo', { count: booking.waitlist_count })})
             </span>
           )}
         </div>

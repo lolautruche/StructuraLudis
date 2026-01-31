@@ -95,7 +95,20 @@
     "bookingSuccess": "Réservation confirmée !",
     "waitlistSuccess": "Vous êtes sur la liste d'attente",
     "alreadyBooked": "Vous avez déjà réservé cette session",
-    "sessionFullWaitlist": "Session complète. Rejoindre la liste d'attente ?"
+    "sessionFullWaitlist": "Session complète. Rejoindre la liste d'attente ?",
+    "cancelConfirmTitle": "Annuler la réservation ?",
+    "cancelConfirmMessage": "Voulez-vous vraiment annuler votre réservation pour cette session ? Votre place sera donnée à une personne en liste d'attente.",
+    "confirmCancel": "Oui, annuler",
+    "keepBooking": "Garder ma réservation",
+    "bookingConfirmTitle": "Confirmer votre inscription",
+    "bookingConfirmMessage": "En vous inscrivant à cette session, vous vous engagez à être présent(e) à l'heure prévue.\n\nSi vous ne pouvez pas venir, merci d'annuler votre réservation dès que possible afin que votre place puisse être attribuée à une personne en liste d'attente.\n\nDes absences répétées peuvent entraîner des restrictions sur votre compte.",
+    "confirmBooking": "Je confirme mon inscription",
+    "cancelBookingAction": "Annuler",
+    "errorAgeRestriction": "Cette session nécessite un âge minimum de {age} ans. Veuillez mettre à jour votre profil avec votre date de naissance.",
+    "errorSessionFull": "Cette session est complète.",
+    "errorAlreadyBooked": "Vous avez déjà réservé cette session.",
+    "errorBookingFailed": "La réservation a échoué. Veuillez réessayer.",
+    "cancelSuccess": "Réservation annulée"
   },
   "GameTable": {
     "complexity": "Complexité",
@@ -204,7 +217,8 @@
     "upcomingAndCurrent": "En cours et à venir",
     "pastEvents": "Événements passés",
     "noEvents": "Aucun événement",
-    "noEventsDescription": "Il n'y a pas d'événement programmé pour le moment."
+    "noEventsDescription": "Il n'y a pas d'événement programmé pour le moment.",
+    "proposeSession": "Proposer une session"
   },
   "SafetyTools": {
     "xCard": "X-Card",

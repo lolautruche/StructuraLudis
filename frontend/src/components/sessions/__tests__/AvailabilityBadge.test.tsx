@@ -46,7 +46,7 @@ describe('AvailabilityBadge', () => {
     expect(screen.getByText('seats')).toBeInTheDocument();
   });
 
-  it('shows waitlist position when full with waitlist', () => {
+  it('shows full with waitlist info when full with waitlist', () => {
     render(
       <AvailabilityBadge
         status="VALIDATED"
@@ -55,7 +55,11 @@ describe('AvailabilityBadge', () => {
         waitlistCount={3}
       />
     );
-    expect(screen.getByText('waitlistPosition')).toBeInTheDocument();
+    // Badge shows compact format "full +3" with full info in title
+    expect(screen.getByText(/full/)).toBeInTheDocument();
+    expect(screen.getByText(/\+3/)).toBeInTheDocument();
+    // Full waitlist info is in title attribute for tooltip
+    expect(screen.getByTitle(/waitlistInfo/)).toBeInTheDocument();
   });
 
   it('shows zero seats when full without waitlist', () => {

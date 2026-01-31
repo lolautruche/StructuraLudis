@@ -95,7 +95,20 @@
     "bookingSuccess": "Booking confirmed!",
     "waitlistSuccess": "You are on the waitlist",
     "alreadyBooked": "You have already booked this session",
-    "sessionFullWaitlist": "Session full. Join the waitlist?"
+    "sessionFullWaitlist": "Session full. Join the waitlist?",
+    "cancelConfirmTitle": "Cancel booking?",
+    "cancelConfirmMessage": "Are you sure you want to cancel your booking for this session? Your spot will be given to someone on the waitlist.",
+    "confirmCancel": "Yes, cancel",
+    "keepBooking": "Keep my booking",
+    "bookingConfirmTitle": "Confirm your registration",
+    "bookingConfirmMessage": "By registering for this session, you commit to being present at the scheduled time.\n\nIf you cannot attend, please cancel your booking as soon as possible so that your spot can be given to someone on the waitlist.\n\nRepeated no-shows may result in restrictions on your account.",
+    "confirmBooking": "I confirm my registration",
+    "cancelBookingAction": "Cancel",
+    "errorAgeRestriction": "This session requires a minimum age of {age}. Please update your profile with your birth date.",
+    "errorSessionFull": "This session is full.",
+    "errorAlreadyBooked": "You have already booked this session.",
+    "errorBookingFailed": "Booking failed. Please try again.",
+    "cancelSuccess": "Booking cancelled"
   },
   "GameTable": {
     "complexity": "Complexity",
@@ -204,7 +217,8 @@
     "upcomingAndCurrent": "Current and upcoming",
     "pastEvents": "Past events",
     "noEvents": "No events",
-    "noEventsDescription": "There are no scheduled events at the moment."
+    "noEventsDescription": "There are no scheduled events at the moment.",
+    "proposeSession": "Propose a session"
   },
   "SafetyTools": {
     "xCard": "X-Card",
