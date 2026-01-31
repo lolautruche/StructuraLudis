@@ -22,6 +22,7 @@ export default function SessionDetailPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isBooking, setIsBooking] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [bookingError, setBookingError] = useState<string | null>(null);
   const [showCancelDialog, setShowCancelDialog] = useState(false);
 
   // Fetch session details and user booking in parallel
@@ -56,6 +57,7 @@ export default function SessionDetailPage() {
   const handleBook = useCallback(async () => {
     if (!session) return;
     setIsBooking(true);
+    setBookingError(null);
 
     const response = await sessionsApi.book(session.id);
     if (response.data) {
@@ -63,8 +65,7 @@ export default function SessionDetailPage() {
       // Refresh session to get updated counts
       await fetchSession();
     } else if (response.error) {
-      console.error('Booking failed:', response.error);
-      // TODO: Show error toast to user
+      setBookingError(response.error.message);
     }
 
     setIsBooking(false);
@@ -168,6 +169,23 @@ export default function SessionDetailPage() {
         </svg>
         {t('backToSessions')}
       </Link>
+
+      {/* Booking error message */}
+      {bookingError && (
+        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
+          <div className="flex items-start gap-3">
+            <span className="text-red-500 dark:text-red-400 text-xl">⚠️</span>
+            <p className="text-red-700 dark:text-red-300 flex-1">{bookingError}</p>
+            <button
+              onClick={() => setBookingError(null)}
+              className="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-200"
+              aria-label="Dismiss"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Session detail */}
       <SessionDetail
