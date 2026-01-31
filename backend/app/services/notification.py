@@ -19,6 +19,9 @@ from app.core.templates import (
     render_session_cancelled,
     render_waitlist_promoted,
     render_session_reminder,
+    render_new_player_registration,
+    render_booking_cancelled,
+    render_player_cancelled,
 )
 from app.domain.notification.entity import Notification
 from app.domain.notification.schemas import NotificationType, NotificationChannel
@@ -48,6 +51,10 @@ class SessionNotificationContext:
     table_number: Optional[str] = None
     gm_name: Optional[str] = None
     cancellation_reason: Optional[str] = None
+    # For booking notifications
+    player_name: Optional[str] = None
+    players_registered: Optional[int] = None
+    max_players: Optional[int] = None
 
 
 class NotificationService:
@@ -324,6 +331,117 @@ class NotificationService:
         )
 
         return email_sent
+
+    async def notify_gm_new_player(
+        self,
+        gm_recipient: NotificationRecipient,
+        context: SessionNotificationContext,
+        action_url: Optional[str] = None,
+    ) -> bool:
+        """
+        Notify a GM that a new player has registered.
+
+        Channels: Email, In-App
+        """
+        subject, html_body = render_new_player_registration(
+            locale=gm_recipient.locale,
+            session_title=context.session_title,
+            exhibition_title=context.exhibition_title,
+            scheduled_start=context.scheduled_start,
+            player_name=context.player_name or "Unknown",
+            players_registered=context.players_registered or 0,
+            max_players=context.max_players or 0,
+            action_url=action_url,
+        )
+
+        # Create in-app notification
+        notification = await self._create_notification_record(
+            user_id=gm_recipient.user_id,
+            notification_type=NotificationType.BOOKING_CONFIRMED,
+            channel=NotificationChannel.EMAIL,
+            subject=subject,
+            body=f"{context.player_name} has registered for {context.session_title}.",
+            context={
+                "session_id": str(context.session_id),
+                "exhibition_id": str(context.exhibition_id),
+            },
+        )
+
+        # Send email
+        return await self._send_email(gm_recipient, subject, html_body, notification)
+
+    async def notify_booking_cancelled_to_player(
+        self,
+        recipient: NotificationRecipient,
+        context: SessionNotificationContext,
+        action_url: Optional[str] = None,
+    ) -> bool:
+        """
+        Notify a player that their booking has been cancelled.
+
+        Channels: Email, In-App
+        """
+        subject, html_body = render_booking_cancelled(
+            locale=recipient.locale,
+            session_title=context.session_title,
+            exhibition_title=context.exhibition_title,
+            scheduled_start=context.scheduled_start,
+            action_url=action_url,
+        )
+
+        # Create in-app notification
+        notification = await self._create_notification_record(
+            user_id=recipient.user_id,
+            notification_type=NotificationType.SESSION_CANCELLED,
+            channel=NotificationChannel.EMAIL,
+            subject=subject,
+            body=f"Your booking for {context.session_title} has been cancelled.",
+            context={
+                "session_id": str(context.session_id),
+                "exhibition_id": str(context.exhibition_id),
+            },
+        )
+
+        # Send email
+        return await self._send_email(recipient, subject, html_body, notification)
+
+    async def notify_gm_player_cancelled(
+        self,
+        gm_recipient: NotificationRecipient,
+        context: SessionNotificationContext,
+        action_url: Optional[str] = None,
+    ) -> bool:
+        """
+        Notify a GM that a player has cancelled their registration.
+
+        Channels: Email, In-App
+        """
+        subject, html_body = render_player_cancelled(
+            locale=gm_recipient.locale,
+            session_title=context.session_title,
+            exhibition_title=context.exhibition_title,
+            scheduled_start=context.scheduled_start,
+            player_name=context.player_name or "Unknown",
+            players_registered=context.players_registered or 0,
+            max_players=context.max_players or 0,
+            action_url=action_url,
+        )
+
+        # Create in-app notification
+        notification = await self._create_notification_record(
+            user_id=gm_recipient.user_id,
+            notification_type=NotificationType.SESSION_CANCELLED,
+            channel=NotificationChannel.EMAIL,
+            subject=subject,
+            body=f"{context.player_name} has cancelled their registration for {context.session_title}.",
+            context={
+                "session_id": str(context.session_id),
+                "exhibition_id": str(context.exhibition_id),
+            },
+        )
+
+        # Send email
+        return await self._send_email(gm_recipient, subject, html_body, notification)
 
     # =========================================================================
     # In-App Notification Management

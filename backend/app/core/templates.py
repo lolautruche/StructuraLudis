@@ -80,6 +80,29 @@ EMAIL_STRINGS = {
         "email_verification_expiration": "This link will expire in 7 days. If you did not create an account, you can safely ignore this email.",
         "email_verification_link_instruction": "If the button doesn't work, copy and paste this link into your browser:",
         "email_verification_closing": "Thank you for joining us!",
+
+        # New player registration (GM notification)
+        "new_player_registration_subject": "New player registered: {session_title}",
+        "new_player_registration_greeting": "New Player Registration",
+        "new_player_registration_intro": "A new player has registered for your session.",
+        "new_player_registration_action": "View Session",
+        "new_player_registration_closing": "Good luck with your session!",
+        "player_label": "Player",
+        "players_registered_label": "Players registered",
+
+        # Booking cancelled (player notification)
+        "booking_cancelled_subject": "Booking cancelled: {session_title}",
+        "booking_cancelled_greeting": "Booking Cancelled",
+        "booking_cancelled_intro": "Your booking has been cancelled.",
+        "booking_cancelled_action": "Find Other Sessions",
+        "booking_cancelled_closing": "We hope to see you at another session!",
+
+        # Booking cancelled (GM notification)
+        "player_cancelled_subject": "Player cancelled: {session_title}",
+        "player_cancelled_greeting": "Player Cancellation",
+        "player_cancelled_intro": "A player has cancelled their registration for your session.",
+        "player_cancelled_action": "View Session",
+        "player_cancelled_closing": "The spot may be filled by someone on the waitlist.",
     },
     "fr": {
         # Common
@@ -137,6 +160,29 @@ EMAIL_STRINGS = {
         "email_verification_expiration": "Ce lien expirera dans 7 jours. Si vous n'avez pas créé de compte, vous pouvez ignorer cet email.",
         "email_verification_link_instruction": "Si le bouton ne fonctionne pas, copiez et collez ce lien dans votre navigateur :",
         "email_verification_closing": "Merci de nous avoir rejoints !",
+
+        # New player registration (GM notification)
+        "new_player_registration_subject": "Nouveau joueur inscrit : {session_title}",
+        "new_player_registration_greeting": "Nouvelle inscription",
+        "new_player_registration_intro": "Un nouveau joueur s'est inscrit à votre session.",
+        "new_player_registration_action": "Voir la session",
+        "new_player_registration_closing": "Bonne partie !",
+        "player_label": "Joueur",
+        "players_registered_label": "Joueurs inscrits",
+
+        # Booking cancelled (player notification)
+        "booking_cancelled_subject": "Réservation annulée : {session_title}",
+        "booking_cancelled_greeting": "Réservation annulée",
+        "booking_cancelled_intro": "Votre réservation a été annulée.",
+        "booking_cancelled_action": "Trouver d'autres sessions",
+        "booking_cancelled_closing": "Nous espérons vous revoir à une autre session !",
+
+        # Booking cancelled (GM notification)
+        "player_cancelled_subject": "Joueur désisté : {session_title}",
+        "player_cancelled_greeting": "Désistement d'un joueur",
+        "player_cancelled_intro": "Un joueur a annulé son inscription à votre session.",
+        "player_cancelled_action": "Voir la session",
+        "player_cancelled_closing": "La place pourra être attribuée à une personne en liste d'attente.",
     },
 }
 
@@ -359,4 +405,99 @@ def render_email_verification(
         expiration_text=get_string("email_verification_expiration", locale),
         link_instruction=get_string("email_verification_link_instruction", locale),
         closing_text=get_string("email_verification_closing", locale),
+    )
+
+
+def render_new_player_registration(
+    locale: str,
+    session_title: str,
+    exhibition_title: str,
+    scheduled_start: datetime,
+    player_name: str,
+    players_registered: int,
+    max_players: int,
+    action_url: Optional[str] = None,
+) -> tuple[str, str]:
+    """Render new player registration email for GM."""
+    date_str, time_str = format_datetime(scheduled_start, locale)
+
+    return render_email_template(
+        "new_player_registration",
+        locale=locale,
+        session_title=session_title,
+        exhibition_title=exhibition_title,
+        scheduled_date=date_str,
+        scheduled_time=time_str,
+        player_name=player_name,
+        players_registered=players_registered,
+        max_players=max_players,
+        action_url=action_url,
+        greeting=get_string("new_player_registration_greeting", locale),
+        intro_text=get_string("new_player_registration_intro", locale),
+        action_button_text=get_string("new_player_registration_action", locale),
+        closing_text=get_string("new_player_registration_closing", locale),
+        player_label=get_string("player_label", locale),
+        players_registered_label=get_string("players_registered_label", locale),
+    )
+
+
+def render_booking_cancelled(
+    locale: str,
+    session_title: str,
+    exhibition_title: str,
+    scheduled_start: datetime,
+    action_url: Optional[str] = None,
+) -> tuple[str, str]:
+    """Render booking cancelled email for player."""
+    date_str, time_str = format_datetime(scheduled_start, locale)
+
+    return render_email_template(
+        "booking_cancelled",
+        locale=locale,
+        session_title=session_title,
+        exhibition_title=exhibition_title,
+        scheduled_date=date_str,
+        scheduled_time=time_str,
+        action_url=action_url,
+        greeting=get_string("booking_cancelled_greeting", locale),
+        intro_text=get_string("booking_cancelled_intro", locale),
+        action_button_text=get_string("booking_cancelled_action", locale),
+        closing_text=get_string("booking_cancelled_closing", locale),
+    )
+
+
+def render_player_cancelled(
+    locale: str,
+    session_title: str,
+    exhibition_title: str,
+    scheduled_start: datetime,
+    player_name: str,
+    players_registered: int,
+    max_players: int,
+    action_url: Optional[str] = None,
+) -> tuple[str, str]:
+    """Render player cancelled email for GM."""
+    date_str, time_str = format_datetime(scheduled_start, locale)
+
+    # Get subject explicitly since we're using a different template name
+    subject = get_string("player_cancelled_subject", locale, session_title=session_title)
+
+    return render_email_template(
+        "booking_cancelled",
+        locale=locale,
+        subject=subject,
+        session_title=session_title,
+        exhibition_title=exhibition_title,
+        scheduled_date=date_str,
+        scheduled_time=time_str,
+        player_name=player_name,
+        players_registered=players_registered,
+        max_players=max_players,
+        action_url=action_url,
+        greeting=get_string("player_cancelled_greeting", locale),
+        intro_text=get_string("player_cancelled_intro", locale),
+        action_button_text=get_string("player_cancelled_action", locale),
+        closing_text=get_string("player_cancelled_closing", locale),
+        player_label=get_string("player_label", locale),
+        players_registered_label=get_string("players_registered_label", locale),
     )
