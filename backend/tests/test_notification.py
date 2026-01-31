@@ -20,6 +20,9 @@ from app.core.email import (
 from app.core.templates import (
     render_booking_confirmed,
     render_session_cancelled,
+    render_new_player_registration,
+    render_booking_cancelled,
+    render_player_cancelled,
     get_string,
     format_datetime,
 )
@@ -155,6 +158,96 @@ class TestEmailTemplates:
 
         assert "15/07/2026" == date_str
         assert "14:30" == time_str
+
+    def test_render_new_player_registration_english(self):
+        """Renders new player registration email for GM in English."""
+        subject, html = render_new_player_registration(
+            locale="en",
+            session_title="Epic DnD Adventure",
+            exhibition_title="GameCon 2026",
+            scheduled_start=datetime(2026, 7, 15, 14, 0, tzinfo=timezone.utc),
+            player_name="Jane Player",
+            players_registered=3,
+            max_players=5,
+        )
+
+        assert "Epic DnD Adventure" in subject
+        assert "registered" in subject.lower() or "player" in subject.lower()
+        assert "Jane Player" in html
+        assert "3" in html
+        assert "5" in html
+
+    def test_render_new_player_registration_french(self):
+        """Renders new player registration email for GM in French."""
+        subject, html = render_new_player_registration(
+            locale="fr",
+            session_title="Aventure JDR",
+            exhibition_title="GameCon 2026",
+            scheduled_start=datetime(2026, 7, 15, 14, 0, tzinfo=timezone.utc),
+            player_name="Jean Joueur",
+            players_registered=2,
+            max_players=4,
+        )
+
+        assert "Aventure JDR" in subject
+        assert "inscrit" in subject.lower()
+        assert "Jean Joueur" in html
+
+    def test_render_booking_cancelled_english(self):
+        """Renders booking cancelled email for player in English."""
+        subject, html = render_booking_cancelled(
+            locale="en",
+            session_title="Cancelled Session",
+            exhibition_title="GameCon 2026",
+            scheduled_start=datetime(2026, 7, 15, 14, 0, tzinfo=timezone.utc),
+        )
+
+        assert "cancelled" in subject.lower()
+        assert "Cancelled Session" in html
+
+    def test_render_booking_cancelled_french(self):
+        """Renders booking cancelled email for player in French."""
+        subject, html = render_booking_cancelled(
+            locale="fr",
+            session_title="Session Annulée",
+            exhibition_title="GameCon 2026",
+            scheduled_start=datetime(2026, 7, 15, 14, 0, tzinfo=timezone.utc),
+        )
+
+        assert "annulée" in subject.lower()
+        assert "Session Annulée" in html
+
+    def test_render_player_cancelled_english(self):
+        """Renders player cancelled email for GM in English."""
+        subject, html = render_player_cancelled(
+            locale="en",
+            session_title="DnD Campaign",
+            exhibition_title="GameCon 2026",
+            scheduled_start=datetime(2026, 7, 15, 14, 0, tzinfo=timezone.utc),
+            player_name="Jane Player",
+            players_registered=2,
+            max_players=5,
+        )
+
+        assert "cancelled" in subject.lower()
+        assert "Jane Player" in html
+        assert "2" in html
+        assert "5" in html
+
+    def test_render_player_cancelled_french(self):
+        """Renders player cancelled email for GM in French."""
+        subject, html = render_player_cancelled(
+            locale="fr",
+            session_title="Campagne JDR",
+            exhibition_title="GameCon 2026",
+            scheduled_start=datetime(2026, 7, 15, 14, 0, tzinfo=timezone.utc),
+            player_name="Jean Joueur",
+            players_registered=3,
+            max_players=6,
+        )
+
+        assert "désisté" in subject.lower()
+        assert "Jean Joueur" in html
 
 
 class TestNotificationAPI:
