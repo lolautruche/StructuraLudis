@@ -5,6 +5,7 @@ import { Inter } from 'next/font/google';
 import { routing } from '@/i18n/routing';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { ThemeProvider } from '@/contexts/ThemeContext';
+import { ToastProvider } from '@/contexts/ToastContext';
 import { Header } from '@/components/layout';
 import { EmailVerificationBanner } from '@/components/auth';
 import '../globals.css';
@@ -58,24 +59,26 @@ export default async function LocaleLayout({
         <NextIntlClientProvider messages={messages}>
           <ThemeProvider>
             <AuthProvider>
-              <div className="flex flex-col min-h-screen">
-                <Header />
-                <main className="flex-1 container mx-auto px-4 py-8">
-                  <EmailVerificationBanner />
-                  {children}
-                </main>
-                <footer
-                  className="border-t py-6 transition-colors"
-                  style={{ borderColor: 'var(--color-border)' }}
-                >
-                  <div
-                    className="container mx-auto px-4 text-center text-sm"
-                    style={{ color: 'var(--color-text-muted)' }}
+              <ToastProvider>
+                <div className="flex flex-col min-h-screen">
+                  <Header />
+                  <main className="flex-1 container mx-auto px-4 py-8">
+                    <EmailVerificationBanner />
+                    {children}
+                  </main>
+                  <footer
+                    className="border-t py-6 transition-colors"
+                    style={{ borderColor: 'var(--color-border)' }}
                   >
-                    Structura Ludis &copy; {new Date().getFullYear()}
-                  </div>
-                </footer>
-              </div>
+                    <div
+                      className="container mx-auto px-4 text-center text-sm"
+                      style={{ color: 'var(--color-text-muted)' }}
+                    >
+                      Structura Ludis &copy; {new Date().getFullYear()}
+                    </div>
+                  </footer>
+                </div>
+              </ToastProvider>
             </AuthProvider>
           </ThemeProvider>
         </NextIntlClientProvider>

@@ -45,7 +45,7 @@ export function AvailabilityBadge({
   if (waitlistCount > 0) {
     return (
       <Badge variant="warning">
-        {t('waitlistPosition', { position: waitlistCount + 1 })}
+        {t('full')} ({t('waitlistInfo', { count: waitlistCount })})
       </Badge>
     );
   }

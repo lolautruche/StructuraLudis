@@ -8,6 +8,7 @@ import { Button, ConfirmDialog } from '@/components/ui';
 import { SessionDetail } from '@/components/sessions';
 import { sessionsApi } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/contexts/ToastContext';
 import type { GameSession, Booking } from '@/lib/api/types';
 
 export default function SessionDetailPage() {
@@ -16,6 +17,7 @@ export default function SessionDetailPage() {
   const t = useTranslations('Session');
   const locale = useLocale();
   const { isAuthenticated } = useAuth();
+  const { showSuccess } = useToast();
 
   const [session, setSession] = useState<GameSession | null>(null);
   const [userBooking, setUserBooking] = useState<Booking | null>(null);
@@ -87,13 +89,14 @@ export default function SessionDetailPage() {
       setUserBooking(response.data);
       // Refresh session to get updated counts
       await fetchSession();
+      showSuccess(t('bookingSuccess'));
     } else if (response.error) {
       setBookingError(translateBookingError(response.error.message));
     }
 
     setIsBooking(false);
     setShowBookingConfirmDialog(false);
-  }, [session, fetchSession, translateBookingError]);
+  }, [session, fetchSession, translateBookingError, showSuccess, t]);
 
   // Handle join waitlist
   const handleJoinWaitlist = useCallback(async () => {
@@ -104,10 +107,11 @@ export default function SessionDetailPage() {
     if (response.data) {
       setUserBooking(response.data);
       await fetchSession();
+      showSuccess(t('waitlistSuccess'));
     }
 
     setIsBooking(false);
-  }, [session, fetchSession]);
+  }, [session, fetchSession, showSuccess, t]);
 
   // Show cancel confirmation dialog
   const handleCancelBooking = useCallback(async () => {
@@ -123,11 +127,12 @@ export default function SessionDetailPage() {
     if (!response.error) {
       setUserBooking(null);
       await fetchSession();
+      showSuccess(t('cancelSuccess'));
     }
 
     setIsBooking(false);
     setShowCancelDialog(false);
-  }, [userBooking, fetchSession]);
+  }, [userBooking, fetchSession, showSuccess, t]);
 
   // Handle check-in
   const handleCheckIn = useCallback(async () => {

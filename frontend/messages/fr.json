@@ -107,7 +107,8 @@
     "errorAgeRestriction": "Cette session nécessite un âge minimum de {age} ans. Veuillez mettre à jour votre profil avec votre date de naissance.",
     "errorSessionFull": "Cette session est complète.",
     "errorAlreadyBooked": "Vous avez déjà réservé cette session.",
-    "errorBookingFailed": "La réservation a échoué. Veuillez réessayer."
+    "errorBookingFailed": "La réservation a échoué. Veuillez réessayer.",
+    "cancelSuccess": "Réservation annulée"
   },
   "GameTable": {
     "complexity": "Complexité",

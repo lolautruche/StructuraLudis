@@ -6,3 +6,4 @@ export { Badge, type BadgeProps } from './Badge';
 export { Select, type SelectProps, type SelectOption } from './Select';
 export { Textarea, type TextareaProps } from './Textarea';
 export { ConfirmDialog } from './ConfirmDialog';
+export { Toast, ToastContainer, type ToastType, type ToastProps } from './Toast';
