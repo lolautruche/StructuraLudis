@@ -95,7 +95,7 @@ export const sessionsApi = {
    * Create a new session.
    */
   create: async (session: SessionCreateRequest): Promise<ApiResponse<GameSession>> => {
-    return api.post<GameSession>('/api/v1/sessions', session);
+    return api.post<GameSession>('/api/v1/sessions/', session);
   },
 
   /**

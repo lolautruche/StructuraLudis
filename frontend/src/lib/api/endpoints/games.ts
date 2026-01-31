@@ -17,14 +17,15 @@ export const gamesApi = {
    * Search/list games.
    */
   search: async (params: GameSearchParams = {}): Promise<ApiResponse<Game[]>> => {
-    const searchParams = new URLSearchParams();
+    // Build URL with trailing slash to satisfy FastAPI's redirect_slashes=False
+    const url = new URL('/api/v1/games/', window.location.origin);
     Object.entries(params).forEach(([key, value]) => {
       if (value !== undefined && value !== null && value !== '') {
-        searchParams.append(key, String(value));
+        url.searchParams.append(key, String(value));
       }
     });
-    const query = searchParams.toString();
-    return api.get<Game[]>(`/api/v1/games/${query ? `?${query}` : ''}`);
+    const path = url.pathname + url.search;
+    return api.get<Game[]>(path);
   },
 
   /**
@@ -45,6 +46,7 @@ export const gamesApi = {
    * List all game categories.
    */
   getCategories: async (): Promise<ApiResponse<GameCategory[]>> => {
+    // No trailing slash - backend route is /categories not /categories/
     return api.get<GameCategory[]>('/api/v1/games/categories');
   },
 };
