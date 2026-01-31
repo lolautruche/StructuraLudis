@@ -47,9 +47,9 @@ export function SessionDetail({
           {/* Title and Status */}
           <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
             <div className="space-y-2">
-              <h1 className="text-2xl font-bold text-white">{session.title}</h1>
+              <h1 className="text-2xl font-bold text-slate-900 dark:text-white">{session.title}</h1>
               {session.game_title && (
-                <div className="flex items-center gap-2 text-lg text-slate-300">
+                <div className="flex items-center gap-2 text-lg text-slate-700 dark:text-slate-300">
                   <span>🎲</span>
                   <span>{session.game_title}</span>
                 </div>
@@ -65,11 +65,11 @@ export function SessionDetail({
 
           {/* Description */}
           {session.description && (
-            <p className="text-slate-400">{session.description}</p>
+            <p className="text-slate-600 dark:text-slate-400">{session.description}</p>
           )}
 
           {/* Booking Button */}
-          <div className="pt-4 border-t border-slate-700">
+          <div className="pt-4 border-t border-slate-200 dark:border-slate-700">
             <BookingButton
               session={session}
               userBooking={userBooking}
@@ -94,8 +94,8 @@ export function SessionDetail({
             <div className="flex items-center gap-3">
               <span className="text-xl">📅</span>
               <div>
-                <p className="text-white font-medium">{startDate}</p>
-                <p className="text-slate-400 text-sm">
+                <p className="text-slate-900 dark:text-white font-medium">{startDate}</p>
+                <p className="text-slate-600 dark:text-slate-400 text-sm">
                   {t('from')} {startTime} {t('to')} {endTime}
                 </p>
               </div>
@@ -106,12 +106,12 @@ export function SessionDetail({
                 <span className="text-xl">📍</span>
                 <div>
                   {session.zone_name && (
-                    <p className="text-white font-medium">
+                    <p className="text-slate-900 dark:text-white font-medium">
                       {t('zone')}: {session.zone_name}
                     </p>
                   )}
                   {session.table_label && (
-                    <p className="text-slate-400 text-sm">
+                    <p className="text-slate-600 dark:text-slate-400 text-sm">
                       {t('table')}: {session.table_label}
                     </p>
                   )}
@@ -132,8 +132,8 @@ export function SessionDetail({
               <div className="flex items-center gap-3">
                 <span className="text-xl">👤</span>
                 <div>
-                  <p className="text-slate-400 text-sm">{tTable('gm')}</p>
-                  <p className="text-white font-medium">{session.gm_name}</p>
+                  <p className="text-slate-600 dark:text-slate-400 text-sm">{tTable('gm')}</p>
+                  <p className="text-slate-900 dark:text-white font-medium">{session.gm_name}</p>
                 </div>
               </div>
             )}
@@ -143,7 +143,7 @@ export function SessionDetail({
               <div className="flex items-center gap-3">
                 <span className="text-xl">🏢</span>
                 <div>
-                  <p className="text-white font-medium">
+                  <p className="text-slate-900 dark:text-white font-medium">
                     {tTable('organizedBy', { name: session.provided_by_group_name })}
                   </p>
                 </div>
@@ -155,13 +155,13 @@ export function SessionDetail({
               <span className="text-xl">🎯</span>
               <div>
                 {isFull ? (
-                  <p className="text-red-400 font-medium">{t('full')}</p>
+                  <p className="text-red-600 dark:text-red-400 font-medium">{t('full')}</p>
                 ) : (
-                  <p className="text-emerald-400 font-medium">
+                  <p className="text-emerald-600 dark:text-emerald-400 font-medium">
                     {t('spotsLeft', { count: availableSeats })}
                   </p>
                 )}
-                <p className="text-slate-400 text-sm">
+                <p className="text-slate-600 dark:text-slate-400 text-sm">
                   {session.confirmed_players_count}/{session.max_players_count} {t('players').toLowerCase()}
                 </p>
               </div>
@@ -169,7 +169,7 @@ export function SessionDetail({
 
             {/* Waitlist info */}
             {session.waitlist_count > 0 && (
-              <div className="text-amber-400 text-sm">
+              <div className="text-amber-600 dark:text-amber-400 text-sm">
                 {t('waitlistInfo', { count: session.waitlist_count })}
               </div>
             )}
@@ -206,8 +206,8 @@ export function SessionDetail({
 
           {/* Safety tools */}
           {session.safety_tools && session.safety_tools.length > 0 && (
-            <div className="mt-4 pt-4 border-t border-slate-700">
-              <p className="text-slate-400 text-sm mb-2">{tTable('safetyTools')}</p>
+            <div className="mt-4 pt-4 border-t border-slate-200 dark:border-slate-700">
+              <p className="text-slate-600 dark:text-slate-400 text-sm mb-2">{tTable('safetyTools')}</p>
               <SafetyToolsBadges tools={session.safety_tools} />
             </div>
           )}

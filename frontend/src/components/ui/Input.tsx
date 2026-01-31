@@ -20,7 +20,7 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
         {label && (
           <label
             htmlFor={inputId}
-            className="block text-sm font-medium text-slate-300 mb-1"
+            className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1"
           >
             {label}
           </label>
@@ -31,12 +31,14 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
             id={inputId}
             type={isPassword && showPassword ? 'text' : type}
             className={cn(
-              'w-full px-4 py-2 bg-ludis-card border rounded-lg text-white placeholder-slate-400',
+              'w-full px-4 py-2 rounded-lg transition-colors',
+              'bg-white dark:bg-ludis-card border',
+              'text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-400',
               'focus:outline-none focus:ring-2 focus:ring-ludis-primary focus:border-transparent',
               'disabled:opacity-50 disabled:cursor-not-allowed',
               error
                 ? 'border-red-500 focus:ring-red-500'
-                : 'border-slate-600 hover:border-slate-500',
+                : 'border-slate-300 dark:border-slate-600 hover:border-slate-400 dark:hover:border-slate-500',
               isPassword && 'pr-10',
               className
             )}
@@ -49,7 +51,7 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
           {isPassword && (
             <button
               type="button"
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 dark:hover:text-white"
               onClick={() => setShowPassword(!showPassword)}
               aria-label={showPassword ? 'Hide password' : 'Show password'}
             >
@@ -91,7 +93,7 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
           </p>
         )}
         {helperText && !error && (
-          <p id={`${inputId}-helper`} className="mt-1 text-sm text-slate-400">
+          <p id={`${inputId}-helper`} className="mt-1 text-sm text-slate-500 dark:text-slate-400">
             {helperText}
           </p>
         )}

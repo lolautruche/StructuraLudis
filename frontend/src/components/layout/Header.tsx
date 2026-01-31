@@ -5,13 +5,20 @@ import { Link } from '@/i18n/routing';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui';
 import { LanguageSwitcher } from './LanguageSwitcher';
+import { ThemeToggle } from './ThemeToggle';
 
 export function Header() {
   const t = useTranslations('Common');
   const { user, isAuthenticated, logout } = useAuth();
 
   return (
-    <header className="sticky top-0 z-50 bg-ludis-dark/95 backdrop-blur border-b border-slate-800">
+    <header
+      className="sticky top-0 z-50 backdrop-blur border-b transition-colors"
+      style={{
+        backgroundColor: 'var(--color-bg-header)',
+        borderColor: 'var(--color-border)'
+      }}
+    >
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
@@ -25,14 +32,16 @@ export function Header() {
           <nav className="hidden md:flex items-center space-x-6">
             <Link
               href="/exhibitions"
-              className="text-slate-300 hover:text-white transition-colors"
+              className="transition-colors"
+              style={{ color: 'var(--color-text-secondary)' }}
             >
               {t('exhibitions')}
             </Link>
             {isAuthenticated && (
               <Link
                 href="/my/agenda"
-                className="text-slate-300 hover:text-white transition-colors"
+                className="transition-colors"
+                style={{ color: 'var(--color-text-secondary)' }}
               >
                 {t('myAgenda')}
               </Link>
@@ -40,12 +49,16 @@ export function Header() {
           </nav>
 
           {/* Right side */}
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-3">
+            <ThemeToggle />
             <LanguageSwitcher />
 
             {isAuthenticated ? (
               <div className="flex items-center space-x-4">
-                <span className="text-sm text-slate-400 hidden sm:block">
+                <span
+                  className="text-sm hidden sm:block"
+                  style={{ color: 'var(--color-text-muted)' }}
+                >
                   {user?.full_name || user?.email}
                 </span>
                 <Button variant="ghost" size="sm" onClick={logout}>

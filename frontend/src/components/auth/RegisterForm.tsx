@@ -100,10 +100,10 @@ export function RegisterForm() {
     return (
       <div className="text-center py-8">
         <div className="text-4xl mb-4">✓</div>
-        <h3 className="text-lg font-semibold text-emerald-400 mb-2">
+        <h3 className="text-lg font-semibold text-emerald-600 dark:text-emerald-400 mb-2">
           Compte créé avec succès !
         </h3>
-        <p className="text-slate-400">
+        <p className="text-slate-600 dark:text-slate-400">
           Redirection vers la page de connexion...
         </p>
       </div>
@@ -113,7 +113,7 @@ export function RegisterForm() {
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
       {serverError && (
-        <div className="p-3 bg-red-500/10 border border-red-500/30 rounded-lg text-red-400 text-sm">
+        <div className="p-3 bg-red-500/10 border border-red-500/30 rounded-lg text-red-600 dark:text-red-400 text-sm">
           {serverError}
         </div>
       )}
@@ -147,13 +147,13 @@ export function RegisterForm() {
         />
         {password && (
           <div className="flex items-center gap-2">
-            <div className="flex-1 h-1 bg-slate-700 rounded-full overflow-hidden">
+            <div className="flex-1 h-1 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
               <div
                 className={`h-full transition-all ${passwordStrength.color}`}
                 style={{ width: `${(passwordStrength.score / 5) * 100}%` }}
               />
             </div>
-            <span className="text-xs text-slate-400">{passwordStrength.label}</span>
+            <span className="text-xs text-slate-500 dark:text-slate-400">{passwordStrength.label}</span>
           </div>
         )}
       </div>

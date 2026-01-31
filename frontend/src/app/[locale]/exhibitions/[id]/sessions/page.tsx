@@ -121,22 +121,22 @@ export default function ExhibitionSessionsPage() {
   return (
     <div className="space-y-6">
       {/* Back link */}
-      <Link href="/exhibitions" className="text-sm text-slate-400 hover:text-white">
+      <Link href="/exhibitions" className="text-sm text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white">
         ← {tExhibition('backToEvents')}
       </Link>
 
       {/* Exhibition Header */}
       {exhibition && (
-        <div className="border-b border-slate-700 pb-6">
-          <h1 className="text-2xl font-bold text-white mb-2">{exhibition.title}</h1>
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-slate-400">
+        <div className="border-b border-slate-200 dark:border-slate-700 pb-6">
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">{exhibition.title}</h1>
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-slate-600 dark:text-slate-400">
             <span>📅 {formatDateRange(exhibition.start_date, exhibition.end_date)}</span>
             {(exhibition.location_name || exhibition.city) && (
               <span>📍 {[exhibition.location_name, exhibition.city].filter(Boolean).join(', ')}</span>
             )}
           </div>
           {exhibition.description && (
-            <p className="text-slate-400 mt-3">{exhibition.description}</p>
+            <p className="text-slate-600 dark:text-slate-400 mt-3">{exhibition.description}</p>
           )}
         </div>
       )}
@@ -144,7 +144,7 @@ export default function ExhibitionSessionsPage() {
       {/* Sessions count */}
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-semibold">{t('title')}</h2>
-        <span className="text-sm text-slate-400">
+        <span className="text-sm text-slate-600 dark:text-slate-400">
           {filteredSessions.length} {t('allSessions').toLowerCase()}
         </span>
       </div>
@@ -162,10 +162,10 @@ export default function ExhibitionSessionsPage() {
           {[...Array(6)].map((_, i) => (
             <Card key={i} className="animate-pulse">
               <Card.Content className="space-y-3">
-                <div className="h-6 bg-slate-700 rounded w-3/4" />
-                <div className="h-4 bg-slate-700 rounded w-1/2" />
-                <div className="h-4 bg-slate-700 rounded w-2/3" />
-                <div className="h-4 bg-slate-700 rounded w-1/3" />
+                <div className="h-6 bg-slate-200 dark:bg-slate-700 rounded w-3/4" />
+                <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-1/2" />
+                <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-2/3" />
+                <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-1/3" />
               </Card.Content>
             </Card>
           ))}
@@ -174,10 +174,10 @@ export default function ExhibitionSessionsPage() {
         <Card>
           <Card.Content className="text-center py-12">
             <div className="text-4xl mb-4">🎲</div>
-            <h3 className="text-lg font-semibold text-white mb-2">
+            <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-2">
               {t('noResults')}
             </h3>
-            <p className="text-slate-400">
+            <p className="text-slate-600 dark:text-slate-400">
               {t('noResultsDescription')}
             </p>
           </Card.Content>

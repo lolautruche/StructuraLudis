@@ -19,7 +19,7 @@ export default function RegisterPage() {
           <RegisterForm />
         </Card.Content>
         <Card.Footer className="text-center">
-          <p className="text-sm text-slate-400">
+          <p className="text-sm text-slate-600 dark:text-slate-400">
             {t('hasAccount')}{' '}
             <Link
               href="/auth/login"

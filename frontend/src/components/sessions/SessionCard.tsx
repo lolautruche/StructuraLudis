@@ -25,7 +25,7 @@ export function SessionCard({ session, locale = 'fr' }: SessionCardProps) {
         <Card.Content className="space-y-3">
           {/* Header: Title + Status */}
           <div className="flex items-start justify-between gap-2">
-            <h3 className="font-semibold text-white line-clamp-2">
+            <h3 className="font-semibold text-slate-900 dark:text-white line-clamp-2">
               {session.title}
             </h3>
             <AvailabilityBadge
@@ -38,14 +38,14 @@ export function SessionCard({ session, locale = 'fr' }: SessionCardProps) {
 
           {/* Game info */}
           {session.game_title && (
-            <div className="flex items-center gap-2 text-sm text-slate-400">
+            <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
               <span>🎲</span>
               <span className="line-clamp-1">{session.game_title}</span>
             </div>
           )}
 
           {/* Time & Location */}
-          <div className="flex flex-col gap-1 text-sm text-slate-400">
+          <div className="flex flex-col gap-1 text-sm text-slate-600 dark:text-slate-400">
             <div className="flex items-center gap-2">
               <span>⏰</span>
               <span>{startTime} - {endTime}</span>
@@ -62,14 +62,14 @@ export function SessionCard({ session, locale = 'fr' }: SessionCardProps) {
 
           {/* GM */}
           {session.gm_name && (
-            <div className="flex items-center gap-2 text-sm text-slate-400">
+            <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
               <span>👤</span>
               <span>{t('gm')}: {session.gm_name}</span>
             </div>
           )}
 
           {/* Footer: Badges */}
-          <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-slate-700">
+          <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-slate-200 dark:border-slate-700">
             {/* Language */}
             <Badge size="sm" variant="default">
               {session.language.toUpperCase()}

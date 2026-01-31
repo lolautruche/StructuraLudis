@@ -38,7 +38,7 @@ export default function HomePage() {
         <h1 className="text-4xl md:text-5xl font-bold mb-4">
           <span className="text-gradient">Structura Ludis</span>
         </h1>
-        <p className="text-xl text-slate-400 max-w-2xl mx-auto mb-8">
+        <p className="text-xl text-slate-600 dark:text-slate-400 max-w-2xl mx-auto mb-8">
           {t('subtitle')}
         </p>
         <div className="flex items-center justify-center gap-4">
@@ -52,17 +52,17 @@ export default function HomePage() {
 
       {/* Exhibitions */}
       <section>
-        <h2 className="text-2xl font-bold mb-6">{t('upcomingEvents')}</h2>
+        <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-6">{t('upcomingEvents')}</h2>
 
         {isLoading ? (
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {[...Array(3)].map((_, i) => (
               <Card key={i} className="animate-pulse">
                 <Card.Content className="space-y-4">
-                  <div className="h-6 bg-slate-700 rounded w-3/4" />
-                  <div className="h-4 bg-slate-700 rounded w-full" />
-                  <div className="h-4 bg-slate-700 rounded w-1/2" />
-                  <div className="h-4 bg-slate-700 rounded w-2/3" />
+                  <div className="h-6 bg-slate-200 dark:bg-slate-700 rounded w-3/4" />
+                  <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-full" />
+                  <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-1/2" />
+                  <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-2/3" />
                 </Card.Content>
               </Card>
             ))}
@@ -71,10 +71,10 @@ export default function HomePage() {
           <Card>
             <Card.Content className="text-center py-12">
               <div className="text-4xl mb-4">📅</div>
-              <h3 className="text-lg font-semibold text-white mb-2">
+              <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-2">
                 {t('noEvents')}
               </h3>
-              <p className="text-slate-400">
+              <p className="text-slate-600 dark:text-slate-400">
                 {t('noEventsDescription')}
               </p>
             </Card.Content>
@@ -94,13 +94,13 @@ export default function HomePage() {
 
       {/* Features */}
       <section>
-        <h2 className="text-2xl font-bold mb-6">{t('howItWorks')}</h2>
+        <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-6">{t('howItWorks')}</h2>
         <div className="grid md:grid-cols-3 gap-6">
           <Card>
             <Card.Content className="text-center py-8">
               <div className="text-4xl mb-4">🎲</div>
-              <h3 className="text-lg font-semibold mb-2">{t('feature1Title')}</h3>
-              <p className="text-slate-400 text-sm">
+              <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-2">{t('feature1Title')}</h3>
+              <p className="text-slate-600 dark:text-slate-400 text-sm">
                 {t('feature1Description')}
               </p>
             </Card.Content>
@@ -109,8 +109,8 @@ export default function HomePage() {
           <Card>
             <Card.Content className="text-center py-8">
               <div className="text-4xl mb-4">📅</div>
-              <h3 className="text-lg font-semibold mb-2">{t('feature2Title')}</h3>
-              <p className="text-slate-400 text-sm">
+              <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-2">{t('feature2Title')}</h3>
+              <p className="text-slate-600 dark:text-slate-400 text-sm">
                 {t('feature2Description')}
               </p>
             </Card.Content>
@@ -119,8 +119,8 @@ export default function HomePage() {
           <Card>
             <Card.Content className="text-center py-8">
               <div className="text-4xl mb-4">🔔</div>
-              <h3 className="text-lg font-semibold mb-2">{t('feature3Title')}</h3>
-              <p className="text-slate-400 text-sm">
+              <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-2">{t('feature3Title')}</h3>
+              <p className="text-slate-600 dark:text-slate-400 text-sm">
                 {t('feature3Description')}
               </p>
             </Card.Content>

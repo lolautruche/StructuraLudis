@@ -210,7 +210,7 @@ export function SessionSubmissionForm({
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-ludis-primary mx-auto mb-4" />
-          <p className="text-slate-400">{t('loading')}</p>
+          <p className="text-slate-600 dark:text-slate-400">{t('loading')}</p>
         </div>
       </div>
     );
@@ -220,7 +220,7 @@ export function SessionSubmissionForm({
   if (loadError) {
     return (
       <div className="text-center py-12">
-        <p className="text-red-400 mb-4">{loadError}</p>
+        <p className="text-red-600 dark:text-red-400 mb-4">{loadError}</p>
         <Button variant="secondary" onClick={onCancel}>
           {t('goBack')}
         </Button>
@@ -232,7 +232,7 @@ export function SessionSubmissionForm({
     <form className="space-y-8">
       {/* Section 1: Game Selection */}
       <section className="space-y-4">
-        <h2 className="text-lg font-semibold text-white border-b border-slate-700 pb-2">
+        <h2 className="text-lg font-semibold text-slate-900 dark:text-white border-b border-slate-200 dark:border-slate-700 pb-2">
           {t('sectionGame')}
         </h2>
         <GameSelector
@@ -244,7 +244,7 @@ export function SessionSubmissionForm({
 
       {/* Section 2: Schedule */}
       <section className="space-y-4">
-        <h2 className="text-lg font-semibold text-white border-b border-slate-700 pb-2">
+        <h2 className="text-lg font-semibold text-slate-900 dark:text-white border-b border-slate-200 dark:border-slate-700 pb-2">
           {t('sectionSchedule')}
         </h2>
         <TimeSlotSelector
@@ -263,7 +263,7 @@ export function SessionSubmissionForm({
 
       {/* Section 3: Session Details */}
       <section className="space-y-4">
-        <h2 className="text-lg font-semibold text-white border-b border-slate-700 pb-2">
+        <h2 className="text-lg font-semibold text-slate-900 dark:text-white border-b border-slate-200 dark:border-slate-700 pb-2">
           {t('sectionDetails')}
         </h2>
 
@@ -299,7 +299,7 @@ export function SessionSubmissionForm({
 
       {/* Section 4: Player Settings */}
       <section className="space-y-4">
-        <h2 className="text-lg font-semibold text-white border-b border-slate-700 pb-2">
+        <h2 className="text-lg font-semibold text-slate-900 dark:text-white border-b border-slate-200 dark:border-slate-700 pb-2">
           {t('sectionPlayers')}
         </h2>
 
@@ -358,7 +358,7 @@ export function SessionSubmissionForm({
 
       {/* Section 5: Safety Tools */}
       <section className="space-y-4">
-        <h2 className="text-lg font-semibold text-white border-b border-slate-700 pb-2">
+        <h2 className="text-lg font-semibold text-slate-900 dark:text-white border-b border-slate-200 dark:border-slate-700 pb-2">
           {t('sectionSafetyTools')}
         </h2>
         <SafetyToolsSelector
@@ -372,12 +372,12 @@ export function SessionSubmissionForm({
       {/* Submit Error */}
       {submitError && (
         <Card className="p-4 border-red-500 bg-red-500/10">
-          <p className="text-red-400">{submitError}</p>
+          <p className="text-red-600 dark:text-red-400">{submitError}</p>
         </Card>
       )}
 
       {/* Actions */}
-      <section className="flex flex-col sm:flex-row gap-4 pt-4 border-t border-slate-700">
+      <section className="flex flex-col sm:flex-row gap-4 pt-4 border-t border-slate-200 dark:border-slate-700">
         {onCancel && (
           <Button
             type="button"

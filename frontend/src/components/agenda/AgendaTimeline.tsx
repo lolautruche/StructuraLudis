@@ -73,10 +73,10 @@ export function AgendaTimeline({
     return (
       <div className="text-center py-12">
         <div className="text-6xl mb-4">📅</div>
-        <h3 className="text-lg font-medium text-white mb-2">
+        <h3 className="text-lg font-medium text-slate-900 dark:text-white mb-2">
           {t('noSessions')}
         </h3>
-        <p className="text-slate-400 mb-6 max-w-md mx-auto">
+        <p className="text-slate-600 dark:text-slate-400 mb-6 max-w-md mx-auto">
           {t('noSessionsDescription')}
         </p>
         <Link href="/exhibitions">
@@ -97,15 +97,15 @@ export function AgendaTimeline({
       {Object.entries(groupedByDate).map(([date, items]) => (
         <div key={date} className="space-y-4">
           {/* Date header */}
-          <div className="sticky top-0 bg-ludis-dark/95 backdrop-blur py-2 z-10">
-            <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+          <div className="sticky top-0 bg-white/95 dark:bg-ludis-dark/95 backdrop-blur py-2 z-10">
+            <h3 className="text-lg font-semibold text-slate-900 dark:text-white flex items-center gap-2">
               <span>📅</span>
               {date}
             </h3>
           </div>
 
           {/* Items for this date */}
-          <div className="space-y-3 pl-4 border-l-2 border-slate-700">
+          <div className="space-y-3 pl-4 border-l-2 border-slate-200 dark:border-slate-700">
             {items.map((item) => (
               <div key={`${item.type}-${item.data.id}`}>
                 {item.type === 'session' ? (

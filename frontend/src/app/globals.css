@@ -3,12 +3,40 @@
 @tailwind utilities;
 
 @layer base {
+  /* Light theme (default) */
+  :root {
+    --color-bg-primary: #f8fafc;      /* Slate 50 - soft off-white */
+    --color-bg-secondary: #f1f5f9;    /* Slate 100 */
+    --color-bg-card: #ffffff;
+    --color-bg-header: rgba(248, 250, 252, 0.95);
+    --color-text-primary: #1e293b;    /* Slate 800 */
+    --color-text-secondary: #64748b;  /* Slate 500 */
+    --color-text-muted: #94a3b8;      /* Slate 400 */
+    --color-border: #e2e8f0;          /* Slate 200 */
+    --color-border-hover: #cbd5e1;    /* Slate 300 */
+  }
+
+  /* Dark theme */
+  .dark {
+    --color-bg-primary: #0f172a;      /* Slate 900 */
+    --color-bg-secondary: #1e293b;    /* Slate 800 */
+    --color-bg-card: #1e293b;
+    --color-bg-header: rgba(15, 23, 42, 0.95);
+    --color-text-primary: #f8fafc;    /* Slate 50 */
+    --color-text-secondary: #cbd5e1;  /* Slate 300 */
+    --color-text-muted: #64748b;      /* Slate 500 */
+    --color-border: #334155;          /* Slate 700 */
+    --color-border-hover: #475569;    /* Slate 600 */
+  }
+
   html {
     @apply scroll-smooth;
   }
 
   body {
     @apply min-h-screen;
+    background-color: var(--color-bg-primary);
+    color: var(--color-text-primary);
   }
 
   /* Focus visible styles for accessibility */

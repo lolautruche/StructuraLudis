@@ -148,10 +148,10 @@ export function TimeSlotSelector({
 
           {/* Duration display */}
           <div className="flex items-center justify-between text-sm">
-            <span className="text-slate-400">
+            <span className="text-slate-600 dark:text-slate-400">
               {t('duration')}: {calculateDuration} {t('minutes')}
             </span>
-            <span className="text-slate-400">
+            <span className="text-slate-600 dark:text-slate-400">
               {t('maxDuration')}: {selectedSlot.max_duration_minutes} {t('minutes')}
             </span>
           </div>

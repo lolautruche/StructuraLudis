@@ -59,7 +59,7 @@ export function SessionFilters({
           <select
             value={filters.language}
             onChange={(e) => updateFilter('language', e.target.value)}
-            className="bg-ludis-card border border-slate-600 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-ludis-primary"
+            className="bg-white dark:bg-ludis-card border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-ludis-primary"
           >
             <option value="">{t('allSessions')}</option>
             {languages.map((lang) => (

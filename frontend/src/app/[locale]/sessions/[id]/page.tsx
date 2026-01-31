@@ -91,7 +91,7 @@ export default function SessionDetailPage() {
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-ludis-primary mx-auto mb-4" />
-          <p className="text-slate-400">Loading...</p>
+          <p className="text-slate-600 dark:text-slate-400">Loading...</p>
         </div>
       </div>
     );
@@ -101,10 +101,10 @@ export default function SessionDetailPage() {
   if (error || !session) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[400px] text-center">
-        <h2 className="text-xl font-semibold text-white mb-2">
+        <h2 className="text-xl font-semibold text-slate-900 dark:text-white mb-2">
           {t('sessionNotFound')}
         </h2>
-        <p className="text-slate-400 mb-6">{t('sessionNotFoundDescription')}</p>
+        <p className="text-slate-600 dark:text-slate-400 mb-6">{t('sessionNotFoundDescription')}</p>
         <Link href="/exhibitions">
           <Button variant="primary">{t('backToSessions')}</Button>
         </Link>
@@ -119,7 +119,7 @@ export default function SessionDetailPage() {
       {/* Back link */}
       <Link
         href={backUrl}
-        className="inline-flex items-center text-slate-400 hover:text-white transition-colors"
+        className="inline-flex items-center text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors"
       >
         <svg
           className="w-5 h-5 mr-2"

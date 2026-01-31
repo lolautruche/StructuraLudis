@@ -45,10 +45,10 @@ export function AgendaSessionCard({ session, locale = 'fr' }: AgendaSessionCardP
         </div>
 
         {/* Title */}
-        <h3 className="font-semibold text-white">{session.title}</h3>
+        <h3 className="font-semibold text-slate-900 dark:text-white">{session.title}</h3>
 
         {/* Time & Location */}
-        <div className="flex flex-col gap-1 text-sm text-slate-400">
+        <div className="flex flex-col gap-1 text-sm text-slate-600 dark:text-slate-400">
           <div className="flex items-center gap-2">
             <span>⏰</span>
             <span>{startTime} - {endTime}</span>
@@ -67,26 +67,26 @@ export function AgendaSessionCard({ session, locale = 'fr' }: AgendaSessionCardP
         <div className="flex items-center gap-3 text-sm">
           <div className="flex items-center gap-2">
             <span>👥</span>
-            <span className="text-slate-300">
+            <span className="text-slate-700 dark:text-slate-300">
               {session.confirmed_players}/{session.max_players_count}
             </span>
           </div>
           {session.confirmed_players < session.max_players_count ? (
-            <span className="text-emerald-400">
+            <span className="text-emerald-600 dark:text-emerald-400">
               {tSession('spotsLeft', { count: session.max_players_count - session.confirmed_players })}
             </span>
           ) : (
-            <span className="text-red-400">{tSession('full')}</span>
+            <span className="text-red-600 dark:text-red-400">{tSession('full')}</span>
           )}
           {session.waitlist_count > 0 && (
-            <span className="text-amber-400">
+            <span className="text-amber-600 dark:text-amber-400">
               (+{session.waitlist_count} {t('waitlisted').toLowerCase()})
             </span>
           )}
         </div>
 
         {/* Actions */}
-        <div className="flex items-center gap-2 pt-2 border-t border-slate-700">
+        <div className="flex items-center gap-2 pt-2 border-t border-slate-200 dark:border-slate-700">
           <Link href={`/sessions/${session.id}`}>
             <Button variant="ghost" size="sm">
               {t('viewDetails')}
