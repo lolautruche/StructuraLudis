@@ -695,45 +695,46 @@ async def cancel_booking(
     service = GameSessionService(db)
     booking = await service.cancel_booking(booking_id, current_user)
 
-    # Send notifications only if the booking was confirmed (not waitlisted)
+    # Send notifications - different email for confirmed vs waitlisted
     # Notifications are non-blocking - if they fail, the cancellation still succeeds
-    if was_confirmed:
-        try:
-            # Count remaining confirmed bookings
+    try:
+        notification_service = NotificationService(db)
+
+        # Build context
+        context = SessionNotificationContext(
+            session_id=session.id,
+            session_title=session.title,
+            exhibition_id=exhibition.id,
+            exhibition_title=exhibition.title,
+            scheduled_start=session.scheduled_start,
+            scheduled_end=session.scheduled_end,
+            gm_name=gm.full_name,
+            player_name=player.full_name or player.email,
+            max_players=session.max_players_count,
+        )
+
+        # Notify player
+        player_recipient = NotificationRecipient(
+            user_id=player.id,
+            email=player.email,
+            full_name=player.full_name,
+            locale=player.locale or "en",
+        )
+
+        if was_confirmed:
+            # Count remaining confirmed bookings (for GM notification)
             confirmed_result = await db.execute(
                 select(func.count(Booking.id)).where(
                     Booking.game_session_id == session_id,
                     Booking.status.in_([BookingStatus.CONFIRMED, BookingStatus.CHECKED_IN]),
                 )
             )
-            confirmed_count = confirmed_result.scalar() or 0
+            context.players_registered = confirmed_result.scalar() or 0
 
-            notification_service = NotificationService(db)
-
-            # Build context
-            context = SessionNotificationContext(
-                session_id=session.id,
-                session_title=session.title,
-                exhibition_id=exhibition.id,
-                exhibition_title=exhibition.title,
-                scheduled_start=session.scheduled_start,
-                scheduled_end=session.scheduled_end,
-                gm_name=gm.full_name,
-                player_name=player.full_name or player.email,
-                players_registered=confirmed_count,
-                max_players=session.max_players_count,
-            )
-
-            # Notify player
-            player_recipient = NotificationRecipient(
-                user_id=player.id,
-                email=player.email,
-                full_name=player.full_name,
-                locale=player.locale or "en",
-            )
+            # Send booking cancelled email to player
             await notification_service.notify_booking_cancelled_to_player(player_recipient, context)
 
-            # Notify GM
+            # Notify GM about player cancellation
             gm_recipient = NotificationRecipient(
                 user_id=gm.id,
                 email=gm.email,
@@ -741,10 +742,13 @@ async def cancel_booking(
                 locale=gm.locale or "en",
             )
             await notification_service.notify_gm_player_cancelled(gm_recipient, context)
-        except Exception as e:
-            # Log error but don't fail the cancellation
-            import logging
-            logging.getLogger(__name__).error(f"Failed to send cancellation notifications: {e}")
+        else:
+            # Send waitlist cancelled email to player (no GM notification for waitlist)
+            await notification_service.notify_waitlist_cancelled_to_player(player_recipient, context)
+    except Exception as e:
+        # Log error but don't fail the cancellation
+        import logging
+        logging.getLogger(__name__).error(f"Failed to send cancellation notifications: {e}")
 
     return booking
 

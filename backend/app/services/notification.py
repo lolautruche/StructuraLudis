@@ -22,6 +22,7 @@ from app.core.templates import (
     render_new_player_registration,
     render_booking_cancelled,
     render_player_cancelled,
+    render_waitlist_cancelled,
 )
 from app.domain.notification.entity import Notification
 from app.domain.notification.schemas import NotificationType, NotificationChannel
@@ -396,6 +397,41 @@ class NotificationService:
             channel=NotificationChannel.EMAIL,
             subject=subject,
             body=f"Your booking for {context.session_title} has been cancelled.",
+            context={
+                "session_id": str(context.session_id),
+                "exhibition_id": str(context.exhibition_id),
+            },
+        )
+
+        # Send email
+        return await self._send_email(recipient, subject, html_body, notification)
+
+    async def notify_waitlist_cancelled_to_player(
+        self,
+        recipient: NotificationRecipient,
+        context: SessionNotificationContext,
+        action_url: Optional[str] = None,
+    ) -> bool:
+        """
+        Notify a player that they've been removed from the waitlist.
+
+        Channels: Email, In-App
+        """
+        subject, html_body = render_waitlist_cancelled(
+            locale=recipient.locale,
+            session_title=context.session_title,
+            exhibition_title=context.exhibition_title,
+            scheduled_start=context.scheduled_start,
+            action_url=action_url,
+        )
+
+        # Create in-app notification
+        notification = await self._create_notification_record(
+            user_id=recipient.user_id,
+            notification_type=NotificationType.SESSION_CANCELLED,
+            channel=NotificationChannel.EMAIL,
+            subject=subject,
+            body=f"You have been removed from the waitlist for {context.session_title}.",
             context={
                 "session_id": str(context.session_id),
                 "exhibition_id": str(context.exhibition_id),

@@ -103,6 +103,13 @@ EMAIL_STRINGS = {
         "player_cancelled_intro": "A player has cancelled their registration for your session.",
         "player_cancelled_action": "View Session",
         "player_cancelled_closing": "The spot may be filled by someone on the waitlist.",
+
+        # Waitlist cancelled (player notification)
+        "waitlist_cancelled_subject": "Waitlist cancelled: {session_title}",
+        "waitlist_cancelled_greeting": "Waitlist Cancellation",
+        "waitlist_cancelled_intro": "You have been removed from the waitlist for the following session.",
+        "waitlist_cancelled_action": "Find Other Sessions",
+        "waitlist_cancelled_closing": "We hope to see you at another session!",
     },
     "fr": {
         # Common
@@ -183,6 +190,13 @@ EMAIL_STRINGS = {
         "player_cancelled_intro": "Un joueur a annulé son inscription à votre session.",
         "player_cancelled_action": "Voir la session",
         "player_cancelled_closing": "La place pourra être attribuée à une personne en liste d'attente.",
+
+        # Waitlist cancelled (player notification)
+        "waitlist_cancelled_subject": "Liste d'attente annulée : {session_title}",
+        "waitlist_cancelled_greeting": "Retrait de la liste d'attente",
+        "waitlist_cancelled_intro": "Vous avez été retiré(e) de la liste d'attente pour la session suivante.",
+        "waitlist_cancelled_action": "Trouver d'autres sessions",
+        "waitlist_cancelled_closing": "Nous espérons vous revoir à une autre session !",
     },
 }
 
@@ -500,4 +514,33 @@ def render_player_cancelled(
         closing_text=get_string("player_cancelled_closing", locale),
         player_label=get_string("player_label", locale),
         players_registered_label=get_string("players_registered_label", locale),
+    )
+
+
+def render_waitlist_cancelled(
+    locale: str,
+    session_title: str,
+    exhibition_title: str,
+    scheduled_start: datetime,
+    action_url: Optional[str] = None,
+) -> tuple[str, str]:
+    """Render waitlist cancellation email for player."""
+    date_str, time_str = format_datetime(scheduled_start, locale)
+
+    # Get subject explicitly since we're reusing booking_cancelled template
+    subject = get_string("waitlist_cancelled_subject", locale, session_title=session_title)
+
+    return render_email_template(
+        "booking_cancelled",
+        locale=locale,
+        subject=subject,
+        session_title=session_title,
+        exhibition_title=exhibition_title,
+        scheduled_date=date_str,
+        scheduled_time=time_str,
+        action_url=action_url,
+        greeting=get_string("waitlist_cancelled_greeting", locale),
+        intro_text=get_string("waitlist_cancelled_intro", locale),
+        action_button_text=get_string("waitlist_cancelled_action", locale),
+        closing_text=get_string("waitlist_cancelled_closing", locale),
     )
