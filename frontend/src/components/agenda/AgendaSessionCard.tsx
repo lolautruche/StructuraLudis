@@ -63,15 +63,24 @@ export function AgendaSessionCard({ session, locale = 'fr' }: AgendaSessionCardP
           )}
         </div>
 
-        {/* Players */}
-        <div className="flex items-center gap-2 text-sm">
-          <span>👥</span>
-          <span className="text-slate-300">
-            {session.confirmed_players}/{session.max_players_count}
-          </span>
+        {/* Players & Availability */}
+        <div className="flex items-center gap-3 text-sm">
+          <div className="flex items-center gap-2">
+            <span>👥</span>
+            <span className="text-slate-300">
+              {session.confirmed_players}/{session.max_players_count}
+            </span>
+          </div>
+          {session.confirmed_players < session.max_players_count ? (
+            <span className="text-emerald-400">
+              {tSession('spotsLeft', { count: session.max_players_count - session.confirmed_players })}
+            </span>
+          ) : (
+            <span className="text-red-400">{tSession('full')}</span>
+          )}
           {session.waitlist_count > 0 && (
             <span className="text-amber-400">
-              (+{session.waitlist_count} en attente)
+              (+{session.waitlist_count} {t('waitlisted').toLowerCase()})
             </span>
           )}
         </div>
