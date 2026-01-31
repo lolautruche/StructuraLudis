@@ -34,8 +34,8 @@ export default function NewSessionPage() {
   // Handle successful submission
   const handleSuccess = (sessionId: string, isDraft: boolean) => {
     if (isDraft) {
-      // Navigate to session edit page or dashboard
-      router.push('/my/dashboard');
+      // Navigate to session edit page or agenda
+      router.push('/my/agenda');
     } else {
       // Navigate to session detail page
       router.push(`/sessions/${sessionId}`);
@@ -71,8 +71,8 @@ export default function NewSessionPage() {
         <div className="text-center py-12">
           <h1 className="text-2xl font-bold text-white mb-4">{t('missingExhibition')}</h1>
           <p className="text-slate-400 mb-6">{t('missingExhibitionDescription')}</p>
-          <Button onClick={() => router.push('/my/dashboard')}>
-            {t('goToDashboard')}
+          <Button onClick={() => router.push('/my/agenda')}>
+            {t('goToAgenda')}
           </Button>
         </div>
       </div>

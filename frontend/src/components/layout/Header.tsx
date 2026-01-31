@@ -31,10 +31,10 @@ export function Header() {
             </Link>
             {isAuthenticated && (
               <Link
-                href="/my/dashboard"
+                href="/my/agenda"
                 className="text-slate-300 hover:text-white transition-colors"
               >
-                {t('dashboard')}
+                {t('myAgenda')}
               </Link>
             )}
           </nav>

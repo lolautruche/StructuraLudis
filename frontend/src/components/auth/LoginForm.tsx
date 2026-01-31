@@ -21,7 +21,7 @@ interface LoginFormProps {
   redirectTo?: string;
 }
 
-export function LoginForm({ redirectTo = '/my/dashboard' }: LoginFormProps) {
+export function LoginForm({ redirectTo = '/my/agenda' }: LoginFormProps) {
   const t = useTranslations('Auth');
   const tErrors = useTranslations('Errors');
   const router = useRouter();

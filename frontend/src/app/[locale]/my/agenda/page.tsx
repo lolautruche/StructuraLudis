@@ -8,7 +8,7 @@ import { userApi, exhibitionsApi, sessionsApi } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
 import type { UserAgenda } from '@/lib/api/types';
 
-export default function DashboardPage() {
+export default function AgendaPage() {
   const t = useTranslations('Agenda');
   const locale = useLocale();
   const router = useRouter();
