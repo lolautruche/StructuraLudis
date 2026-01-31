@@ -24,24 +24,25 @@ export default function SessionDetailPage() {
   const [error, setError] = useState<string | null>(null);
   const [showCancelDialog, setShowCancelDialog] = useState(false);
 
-  // Fetch session details and user booking
+  // Fetch session details and user booking in parallel
   const fetchSession = useCallback(async () => {
     setIsLoading(true);
     setError(null);
 
-    const response = await sessionsApi.getById(sessionId);
-    if (response.data) {
-      setSession(response.data);
+    // Fetch session and booking in parallel
+    const [sessionResponse, bookingResponse] = await Promise.all([
+      sessionsApi.getById(sessionId),
+      isAuthenticated ? sessionsApi.getMyBooking(sessionId) : Promise.resolve({ data: null }),
+    ]);
+
+    if (sessionResponse.data) {
+      setSession(sessionResponse.data);
     } else {
-      setError(response.error?.message || 'Session not found');
+      setError(sessionResponse.error?.message || 'Session not found');
     }
 
-    // Fetch user's booking if authenticated
-    if (isAuthenticated) {
-      const bookingResponse = await sessionsApi.getMyBooking(sessionId);
-      if (bookingResponse.data) {
-        setUserBooking(bookingResponse.data);
-      }
+    if (bookingResponse.data) {
+      setUserBooking(bookingResponse.data);
     }
 
     setIsLoading(false);
