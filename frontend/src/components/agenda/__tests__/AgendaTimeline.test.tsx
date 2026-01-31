@@ -120,6 +120,9 @@ describe('AgendaTimeline', () => {
           zone_name: 'Zone B',
           table_label: 'Table 2',
           gm_name: 'John Doe',
+          max_players_count: 5,
+          confirmed_players: 4,
+          waitlist_count: 2,
         },
       ],
     });
