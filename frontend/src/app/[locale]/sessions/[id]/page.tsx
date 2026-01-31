@@ -112,11 +112,13 @@ export default function SessionDetailPage() {
     );
   }
 
+  const backUrl = `/exhibitions/${session.exhibition_id}/sessions`;
+
   return (
     <div className="space-y-6">
       {/* Back link */}
       <Link
-        href="/exhibitions"
+        href={backUrl}
         className="inline-flex items-center text-slate-400 hover:text-white transition-colors"
       >
         <svg
