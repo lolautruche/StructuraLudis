@@ -206,6 +206,14 @@
     "noEvents": "No events",
     "noEventsDescription": "There are no scheduled events at the moment."
   },
+  "SafetyTools": {
+    "xCard": "X-Card",
+    "linesVeils": "Lines & Veils",
+    "scriptChange": "Script Change",
+    "openDoor": "Open Door",
+    "starsWishes": "Stars & Wishes",
+    "consentChecklist": "Consent Checklist"
+  },
   "SessionForm": {
     "pageTitle": "Propose a session",
     "pageDescription": "Fill out the form below to propose a new game session for this exhibition.",

@@ -2,6 +2,12 @@ import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import { SessionSubmissionForm } from '../SessionSubmissionForm';
 import { exhibitionsApi, gamesApi, sessionsApi } from '@/lib/api';
 
+// Mock next-intl
+jest.mock('next-intl', () => ({
+  useTranslations: () => (key: string) => key,
+  useLocale: () => 'en',
+}));
+
 // Mock the API modules
 jest.mock('@/lib/api', () => ({
   exhibitionsApi: {

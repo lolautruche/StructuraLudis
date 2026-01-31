@@ -2,6 +2,35 @@ import { render, screen } from '@testing-library/react';
 import { SessionCard } from '../SessionCard';
 import type { GameSession } from '@/lib/api/types';
 
+// Mock next-intl
+jest.mock('next-intl', () => ({
+  useTranslations: (namespace: string) => (key: string, values?: Record<string, unknown>) => {
+    if (namespace === 'SafetyTools') {
+      const translations: Record<string, string> = {
+        xCard: 'X-Card',
+        linesVeils: 'Lines & Veils',
+        scriptChange: 'Script Change',
+      };
+      return translations[key] || key;
+    }
+    // Other namespaces return the key
+    if (values) {
+      return Object.entries(values).reduce(
+        (acc, [k, v]) => acc.replace(`{${k}}`, String(v)),
+        key
+      );
+    }
+    return key;
+  },
+}));
+
+// Mock routing
+jest.mock('@/i18n/routing', () => ({
+  Link: ({ children, href }: { children: React.ReactNode; href: string }) => (
+    <a href={href}>{children}</a>
+  ),
+}));
+
 const mockSession: GameSession = {
   id: '123',
   title: 'Test Session',

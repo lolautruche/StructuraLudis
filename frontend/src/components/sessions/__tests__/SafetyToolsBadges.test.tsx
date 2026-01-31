@@ -1,6 +1,21 @@
 import { render, screen } from '@testing-library/react';
 import { SafetyToolsBadges } from '../SafetyToolsBadges';
 
+// Mock next-intl
+jest.mock('next-intl', () => ({
+  useTranslations: () => (key: string) => {
+    const translations: Record<string, string> = {
+      xCard: 'X-Card',
+      linesVeils: 'Lines & Veils',
+      scriptChange: 'Script Change',
+      openDoor: 'Open Door',
+      starsWishes: 'Stars & Wishes',
+      consentChecklist: 'Consent Checklist',
+    };
+    return translations[key] || key;
+  },
+}));
+
 describe('SafetyToolsBadges', () => {
   it('renders nothing when tools array is empty', () => {
     const { container } = render(<SafetyToolsBadges tools={[]} />);
@@ -18,9 +33,10 @@ describe('SafetyToolsBadges', () => {
     expect(screen.getByText(/Lines & Veils/)).toBeInTheDocument();
   });
 
-  it('renders unknown tools as-is', () => {
+  it('renders unknown tools with camelCase key as fallback', () => {
     render(<SafetyToolsBadges tools={['custom-tool']} />);
-    expect(screen.getByText(/custom-tool/)).toBeInTheDocument();
+    // Unknown tools fall back to the camelCase translation key
+    expect(screen.getByText(/customTool/)).toBeInTheDocument();
   });
 
   it('limits displayed tools based on max prop', () => {

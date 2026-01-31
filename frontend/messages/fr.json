@@ -206,6 +206,14 @@
     "noEvents": "Aucun événement",
     "noEventsDescription": "Il n'y a pas d'événement programmé pour le moment."
   },
+  "SafetyTools": {
+    "xCard": "X-Card",
+    "linesVeils": "Lignes et Voiles",
+    "scriptChange": "Changement de Script",
+    "openDoor": "Porte Ouverte",
+    "starsWishes": "Étoiles et Souhaits",
+    "consentChecklist": "Liste de Consentement"
+  },
   "SessionForm": {
     "pageTitle": "Proposer une session",
     "pageDescription": "Remplissez le formulaire ci-dessous pour proposer une nouvelle session de jeu pour cet événement.",
