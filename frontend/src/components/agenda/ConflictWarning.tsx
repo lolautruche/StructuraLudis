@@ -1,9 +1,10 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
+import { SessionConflict } from '@/lib/api/types';
 
 interface ConflictWarningProps {
-  conflicts: string[];
+  conflicts: SessionConflict[];
 }
 
 export function ConflictWarning({ conflicts }: ConflictWarningProps) {
@@ -12,6 +13,17 @@ export function ConflictWarning({ conflicts }: ConflictWarningProps) {
   if (conflicts.length === 0) {
     return null;
   }
+
+  const formatConflict = (conflict: SessionConflict): string => {
+    const role1 = t(`role_${conflict.session1_role}`);
+    const role2 = t(`role_${conflict.session2_role}`);
+    return t('conflictMessage', {
+      session1: conflict.session1_title,
+      role1,
+      session2: conflict.session2_title,
+      role2,
+    });
+  };
 
   return (
     <div className="bg-amber-50 dark:bg-amber-900/30 border border-amber-300 dark:border-amber-700 rounded-lg p-4">
@@ -32,7 +44,7 @@ export function ConflictWarning({ conflicts }: ConflictWarningProps) {
           <ul className="mt-2 space-y-1">
             {conflicts.map((conflict, index) => (
               <li key={index} className="text-sm text-amber-600 dark:text-amber-300/80">
-                {conflict}
+                {formatConflict(conflict)}
               </li>
             ))}
           </ul>

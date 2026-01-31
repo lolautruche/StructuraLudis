@@ -143,6 +143,9 @@
     "confirmed": "Confirmé",
     "conflictWarning": "Attention : conflit d'horaire détecté",
     "conflicts": "Conflits détectés",
+    "conflictMessage": "« {session1} » ({role1}) chevauche « {session2} » ({role2})",
+    "role_gm": "MJ",
+    "role_player": "joueur",
     "noConflicts": "Aucun conflit",
     "checkInSuccess": "Présence confirmée !",
     "checkInError": "Erreur lors du check-in"

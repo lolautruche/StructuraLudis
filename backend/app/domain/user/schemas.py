@@ -107,6 +107,14 @@ class MyBookingSummary(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+class SessionConflict(BaseModel):
+    """A scheduling conflict between two sessions."""
+    session1_title: str
+    session1_role: str  # "gm" or "player"
+    session2_title: str
+    session2_role: str  # "gm" or "player"
+
+
 class UserAgenda(BaseModel):
     """
     Combined agenda for a user (JS.B6).
@@ -125,9 +133,9 @@ class UserAgenda(BaseModel):
         default_factory=list,
         description="Sessions I'm registered for as player"
     )
-    conflicts: List[str] = Field(
+    conflicts: List[SessionConflict] = Field(
         default_factory=list,
-        description="Warning messages for scheduling conflicts"
+        description="Scheduling conflicts between sessions"
     )
 
     model_config = ConfigDict(from_attributes=True)

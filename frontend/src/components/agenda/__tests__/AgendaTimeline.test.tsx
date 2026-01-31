@@ -4,7 +4,7 @@ import type { UserAgenda } from '@/lib/api/types';
 
 // Mock next-intl
 jest.mock('next-intl', () => ({
-  useTranslations: () => (key: string) => {
+  useTranslations: () => (key: string, params?: Record<string, string>) => {
     const translations: Record<string, string> = {
       noSessions: 'No sessions scheduled',
       noSessionsDescription: "You don't have any sessions yet.",
@@ -14,6 +14,10 @@ jest.mock('next-intl', () => ({
       confirmed: 'Confirmed',
       viewDetails: 'View details',
       inProgress: 'In progress',
+      conflicts: 'Conflicts detected',
+      role_gm: 'GM',
+      role_player: 'player',
+      conflictMessage: `'${params?.session1}' (${params?.role1}) overlaps with '${params?.session2}' (${params?.role2})`,
     };
     return translations[key] || key;
   },
@@ -158,7 +162,7 @@ describe('AgendaTimeline', () => {
           waitlist_count: 0,
         },
       ],
-      conflicts: ["Conflict: 'Session A' overlaps with 'Session B'"],
+      conflicts: [{ session1_title: 'Session A', session1_role: 'gm', session2_title: 'Session B', session2_role: 'player' }],
     });
 
     render(
@@ -169,7 +173,7 @@ describe('AgendaTimeline', () => {
       />
     );
 
-    expect(screen.getByText("Conflict: 'Session A' overlaps with 'Session B'")).toBeInTheDocument();
+    expect(screen.getByText("'Session A' (GM) overlaps with 'Session B' (player)")).toBeInTheDocument();
   });
 
   it('groups items by date', () => {

@@ -18,6 +18,7 @@ from app.domain.user.schemas import (
     MySessionSummary,
     MyBookingSummary,
     UserAgenda,
+    SessionConflict,
 )
 from app.domain.game.entity import GameSession, Booking
 from app.domain.exhibition.entity import Exhibition, Zone, PhysicalTable
@@ -372,10 +373,12 @@ async def get_my_agenda(
         for t2 in session_times[i + 1:]:
             # Check overlap
             if t1["start"] < t2["end"] and t1["end"] > t2["start"]:
-                conflicts.append(
-                    f"Conflict: '{t1['title']}' ({t1['type']}) overlaps with "
-                    f"'{t2['title']}' ({t2['type']})"
-                )
+                conflicts.append(SessionConflict(
+                    session1_title=t1["title"],
+                    session1_role=t1["type"],
+                    session2_title=t2["title"],
+                    session2_role=t2["type"],
+                ))
 
     return UserAgenda(
         user_id=current_user.id,

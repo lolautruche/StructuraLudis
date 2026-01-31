@@ -384,4 +384,9 @@ class TestUserAgenda:
         assert len(data["my_sessions"]) == 1
         assert len(data["my_bookings"]) == 1
         assert len(data["conflicts"]) > 0
-        assert "overlaps" in data["conflicts"][0].lower()
+        # Conflicts are now structured objects
+        conflict = data["conflicts"][0]
+        assert "session1_title" in conflict
+        assert "session1_role" in conflict
+        assert "session2_title" in conflict
+        assert "session2_role" in conflict

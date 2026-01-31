@@ -216,13 +216,20 @@ export interface MyBookingSummary {
   waitlist_count: number;
 }
 
+export interface SessionConflict {
+  session1_title: string;
+  session1_role: 'gm' | 'player';
+  session2_title: string;
+  session2_role: 'gm' | 'player';
+}
+
 export interface UserAgenda {
   user_id: string;
   exhibition_id: string;
   exhibition_title: string;
   my_sessions: MySessionSummary[];
   my_bookings: MyBookingSummary[];
-  conflicts: string[];
+  conflicts: SessionConflict[];
 }
 
 /**
