@@ -199,6 +199,9 @@ export interface MyBookingSummary {
   zone_name: string | null;
   table_label: string | null;
   gm_name: string | null;
+  max_players_count: number;
+  confirmed_players: number;
+  waitlist_count: number;
 }
 
 export interface UserAgenda {

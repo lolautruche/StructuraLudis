@@ -152,6 +152,8 @@ async def list_my_bookings(
             Zone.name.label("zone_name"),
             PhysicalTable.label.label("table_label"),
             User.full_name.label("gm_name"),
+            GameSession.max_players_count,
+            GameSession.id.label("session_id"),
         )
         .join(GameSession, Booking.game_session_id == GameSession.id)
         .join(Exhibition, GameSession.exhibition_id == Exhibition.id)
@@ -171,6 +173,21 @@ async def list_my_bookings(
     bookings = []
     for row in rows:
         booking = row[0]
+        session_id = row[10]
+
+        # Count confirmed and waitlist bookings for this session
+        booking_counts = await db.execute(
+            select(
+                Booking.status,
+                func.count(Booking.id),
+            )
+            .where(Booking.game_session_id == session_id)
+            .group_by(Booking.status)
+        )
+        counts = {r[0]: r[1] for r in booking_counts.fetchall()}
+        confirmed = counts.get(BookingStatus.CONFIRMED, 0) + counts.get(BookingStatus.CHECKED_IN, 0)
+        waitlist = counts.get(BookingStatus.WAITING_LIST, 0)
+
         bookings.append(MyBookingSummary(
             id=booking.id,
             game_session_id=booking.game_session_id,
@@ -184,6 +201,9 @@ async def list_my_bookings(
             zone_name=row[6],
             table_label=row[7],
             gm_name=row[8],
+            max_players_count=row[9],
+            confirmed_players=confirmed,
+            waitlist_count=waitlist,
         ))
 
     return bookings
@@ -282,6 +302,8 @@ async def get_my_agenda(
             Zone.name.label("zone_name"),
             PhysicalTable.label.label("table_label"),
             User.full_name.label("gm_name"),
+            GameSession.max_players_count,
+            GameSession.id.label("session_id"),
         )
         .join(GameSession, Booking.game_session_id == GameSession.id)
         .join(User, GameSession.created_by_user_id == User.id)
@@ -304,6 +326,21 @@ async def get_my_agenda(
     my_bookings = []
     for row in booking_rows:
         booking = row[0]
+        session_id = row[8]
+
+        # Count confirmed and waitlist bookings for this session
+        booking_counts = await db.execute(
+            select(
+                Booking.status,
+                func.count(Booking.id),
+            )
+            .where(Booking.game_session_id == session_id)
+            .group_by(Booking.status)
+        )
+        counts = {r[0]: r[1] for r in booking_counts.fetchall()}
+        confirmed = counts.get(BookingStatus.CONFIRMED, 0) + counts.get(BookingStatus.CHECKED_IN, 0)
+        waitlist = counts.get(BookingStatus.WAITING_LIST, 0)
+
         my_bookings.append(MyBookingSummary(
             id=booking.id,
             game_session_id=booking.game_session_id,
@@ -317,6 +354,9 @@ async def get_my_agenda(
             zone_name=row[4],
             table_label=row[5],
             gm_name=row[6],
+            max_players_count=row[7],
+            confirmed_players=confirmed,
+            waitlist_count=waitlist,
         ))
 
         session_times.append({

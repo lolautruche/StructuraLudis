@@ -99,6 +99,9 @@ class MyBookingSummary(BaseModel):
     zone_name: Optional[str] = None
     table_label: Optional[str] = None
     gm_name: Optional[str] = None
+    max_players_count: int = 0
+    confirmed_players: int = 0
+    waitlist_count: int = 0
 
     model_config = ConfigDict(from_attributes=True)
 

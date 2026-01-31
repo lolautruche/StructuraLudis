@@ -77,6 +77,28 @@ export function AgendaBookingCard({
           </div>
         )}
 
+        {/* Players & Availability */}
+        <div className="flex items-center gap-3 text-sm">
+          <div className="flex items-center gap-2">
+            <span>👥</span>
+            <span className="text-slate-300">
+              {booking.confirmed_players}/{booking.max_players_count}
+            </span>
+          </div>
+          {booking.confirmed_players < booking.max_players_count ? (
+            <span className="text-emerald-400">
+              {tSession('spotsLeft', { count: booking.max_players_count - booking.confirmed_players })}
+            </span>
+          ) : (
+            <span className="text-red-400">{tSession('full')}</span>
+          )}
+          {booking.waitlist_count > 0 && (
+            <span className="text-amber-400">
+              (+{booking.waitlist_count} {t('waitlisted').toLowerCase()})
+            </span>
+          )}
+        </div>
+
         {/* Actions */}
         <div className="flex items-center gap-2 pt-2 border-t border-slate-700">
           <Link href={`/sessions/${booking.game_session_id}`}>
