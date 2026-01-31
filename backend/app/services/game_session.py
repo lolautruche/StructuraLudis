@@ -1069,8 +1069,9 @@ class GameSessionService:
         if exclude_session_id:
             query = query.where(GameSession.id != exclude_session_id)
 
+        # Use scalars().first() since there could be multiple overlapping bookings
         result = await self.db.execute(query)
-        return result.scalar_one_or_none()
+        return result.scalars().first()
 
     async def _check_gm_session_overlap(
         self,
