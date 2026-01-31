@@ -279,8 +279,8 @@ To provide a universal event management ecosystem for all forms of tabletop gami
 
 * **JS.X2 - Profile Management**
     * **When** I want to update my personal information,
-    * **I want** to edit my name, timezone, and language preference from my settings,
-    * **so that** my experience is personalized and my information stays current.
+    * **I want** to edit my name, birth date, timezone, and language preference from my settings,
+    * **so that** my experience is personalized, I can access age-restricted sessions, and my information stays current.
 
 ### 3.2 Notification System
 
