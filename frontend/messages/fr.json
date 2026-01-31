@@ -99,7 +99,11 @@
     "cancelConfirmTitle": "Annuler la réservation ?",
     "cancelConfirmMessage": "Voulez-vous vraiment annuler votre réservation pour cette session ? Votre place sera donnée à une personne en liste d'attente.",
     "confirmCancel": "Oui, annuler",
-    "keepBooking": "Garder ma réservation"
+    "keepBooking": "Garder ma réservation",
+    "errorAgeRestriction": "Cette session nécessite un âge minimum de {age} ans. Veuillez mettre à jour votre profil avec votre date de naissance.",
+    "errorSessionFull": "Cette session est complète.",
+    "errorAlreadyBooked": "Vous avez déjà réservé cette session.",
+    "errorBookingFailed": "La réservation a échoué. Veuillez réessayer."
   },
   "GameTable": {
     "complexity": "Complexité",

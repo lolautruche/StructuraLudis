@@ -53,6 +53,23 @@ export default function SessionDetailPage() {
     fetchSession();
   }, [fetchSession]);
 
+  // Map backend error messages to translated ones
+  const translateBookingError = useCallback((errorMessage: string): string => {
+    // Check for age restriction error
+    const ageMatch = errorMessage.match(/minimum age of (\d+)/);
+    if (ageMatch) {
+      return t('errorAgeRestriction', { age: ageMatch[1] });
+    }
+    if (errorMessage.includes('full') || errorMessage.includes('no available seats')) {
+      return t('errorSessionFull');
+    }
+    if (errorMessage.includes('already booked') || errorMessage.includes('already registered')) {
+      return t('errorAlreadyBooked');
+    }
+    // Return original message if no match (fallback)
+    return errorMessage;
+  }, [t]);
+
   // Handle booking
   const handleBook = useCallback(async () => {
     if (!session) return;
@@ -65,11 +82,11 @@ export default function SessionDetailPage() {
       // Refresh session to get updated counts
       await fetchSession();
     } else if (response.error) {
-      setBookingError(response.error.message);
+      setBookingError(translateBookingError(response.error.message));
     }
 
     setIsBooking(false);
-  }, [session, fetchSession]);
+  }, [session, fetchSession, translateBookingError]);
 
   // Handle join waitlist
   const handleJoinWaitlist = useCallback(async () => {
