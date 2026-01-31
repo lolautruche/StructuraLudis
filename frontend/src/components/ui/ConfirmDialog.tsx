@@ -57,7 +57,7 @@ export function ConfirmDialog({
     return () => document.removeEventListener('keydown', handleEscape);
   }, [isOpen, onClose]);
 
-  const buttonVariant = variant === 'danger' ? 'danger' : variant === 'warning' ? 'warning' : 'primary';
+  const buttonVariant = variant === 'danger' ? 'danger' : 'primary';
 
   return (
     <dialog

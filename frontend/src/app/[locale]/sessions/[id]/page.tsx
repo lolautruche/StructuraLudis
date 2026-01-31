@@ -81,7 +81,7 @@ export default function SessionDetailPage() {
   }, [session, fetchSession]);
 
   // Show cancel confirmation dialog
-  const handleCancelBooking = useCallback(() => {
+  const handleCancelBooking = useCallback(async () => {
     setShowCancelDialog(true);
   }, []);
 
