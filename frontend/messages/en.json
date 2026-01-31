@@ -143,7 +143,7 @@
     "confirmed": "Confirmed",
     "conflictWarning": "Warning: schedule conflict detected",
     "conflicts": "Conflicts detected",
-    "conflictMessage": "'{session1}' ({role1}) overlaps with '{session2}' ({role2})",
+    "conflictMessage": "''{session1}'' ({role1}) overlaps with ''{session2}'' ({role2})",
     "role_gm": "GM",
     "role_player": "player",
     "noConflicts": "No conflicts",
