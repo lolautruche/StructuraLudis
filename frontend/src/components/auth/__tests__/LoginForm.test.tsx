@@ -52,6 +52,30 @@ describe('LoginForm', () => {
       expect(mockLogin).toHaveBeenCalledWith({
         email: 'test@example.com',
         password: 'password123',
+        remember_me: false,
+      });
+    });
+  });
+
+  it('calls login with remember_me true when checkbox is checked', async () => {
+    mockLogin.mockResolvedValue({ success: true });
+
+    render(<LoginForm />);
+
+    fireEvent.change(screen.getByLabelText('email'), {
+      target: { value: 'test@example.com' },
+    });
+    fireEvent.change(screen.getByLabelText('password'), {
+      target: { value: 'password123' },
+    });
+    fireEvent.click(screen.getByLabelText('rememberMe'));
+    fireEvent.click(screen.getByRole('button', { name: 'loginButton' }));
+
+    await waitFor(() => {
+      expect(mockLogin).toHaveBeenCalledWith({
+        email: 'test@example.com',
+        password: 'password123',
+        remember_me: true,
       });
     });
   });
