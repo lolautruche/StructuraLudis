@@ -6,6 +6,7 @@
     "sessions": "Sessions",
     "exhibitions": "Événements",
     "myAgenda": "Mon agenda",
+    "myEvents": "Mes événements",
     "settings": "Paramètres",
     "save": "Enregistrer",
     "cancel": "Annuler",
@@ -190,6 +191,12 @@
     "emailChangeFailed": "Échec du changement d'email",
     "emailChangeFailedMessage": "Le lien de vérification est invalide ou a expiré.",
     "emailChangeExpired": "Ce lien de vérification a expiré. Veuillez demander un nouveau changement d'email."
+  },
+  "MyEvents": {
+    "title": "Mes événements",
+    "subtitle": "Événements que vous pouvez gérer",
+    "noEvents": "Aucun événement à gérer",
+    "noEventsDescription": "Vous n'avez pas encore d'événement assigné."
   },
   "Agenda": {
     "title": "Mon agenda",

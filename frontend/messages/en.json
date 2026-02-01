@@ -6,6 +6,7 @@
     "sessions": "Sessions",
     "exhibitions": "Events",
     "myAgenda": "My Agenda",
+    "myEvents": "My Events",
     "settings": "Settings",
     "save": "Save",
     "cancel": "Cancel",
@@ -190,6 +191,12 @@
     "emailChangeFailed": "Email change failed",
     "emailChangeFailedMessage": "The verification link is invalid or has expired.",
     "emailChangeExpired": "This verification link has expired. Please request a new email change."
+  },
+  "MyEvents": {
+    "title": "My Events",
+    "subtitle": "Events you can manage",
+    "noEvents": "No events to manage",
+    "noEventsDescription": "You don't have any events assigned to you yet."
   },
   "Agenda": {
     "title": "My Agenda",
