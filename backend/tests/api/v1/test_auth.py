@@ -226,7 +226,7 @@ class TestJWTAuthentication:
             email="jwt@example.com",
             hashed_password=get_password_hash("password"),
             full_name="JWT User",
-            global_role=GlobalRole.ORGANIZER,
+            global_role=GlobalRole.USER,  # Regular user (#99)
             is_active=True,
         )
         db_session.add(user)
@@ -241,7 +241,7 @@ class TestJWTAuthentication:
             headers={"Authorization": f"Bearer {token}"},
         )
 
-        # ORGANIZER doesn't have admin access, but auth should pass
+        # Regular USER doesn't have admin access, but auth should pass
         # (will get 403, not 401)
         assert response.status_code == 403
 

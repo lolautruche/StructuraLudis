@@ -11,12 +11,16 @@ from sqlalchemy import Boolean, Date, DateTime, ForeignKey, String, func
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.domain.shared.entity import Base, TimestampMixin, GroupRole, GlobalRole
+from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy import UniqueConstraint
+
+from app.domain.shared.entity import Base, TimestampMixin, GroupRole, GlobalRole, ExhibitionRole
 from datetime import date
 
 if TYPE_CHECKING:
     from app.domain.organization.entity import UserGroup
     from app.domain.media.entity import Media
+    from app.domain.exhibition.entity import Exhibition
 
 
 class User(Base, TimestampMixin):
@@ -91,6 +95,9 @@ class User(Base, TimestampMixin):
     media: Mapped[List["Media"]] = relationship(
         back_populates="uploaded_by_user", cascade="all, delete-orphan"
     )
+    exhibition_roles: Mapped[List["UserExhibitionRole"]] = relationship(
+        back_populates="user", cascade="all, delete-orphan"
+    )
 
 
 class UserGroupMembership(Base):
@@ -118,3 +125,34 @@ class UserGroupMembership(Base):
     # Relationships
     user: Mapped["User"] = relationship(back_populates="memberships")
     user_group: Mapped["UserGroup"] = relationship(back_populates="memberships")
+
+
+class UserExhibitionRole(Base, TimestampMixin):
+    """
+    Event-scoped role assignment (Issue #99).
+
+    Links a user to an exhibition with a specific role.
+    For PARTNER role, zone_ids specifies which zones they manage.
+    """
+    __tablename__ = "user_exhibition_roles"
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE")
+    )
+    exhibition_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("exhibitions.id", ondelete="CASCADE")
+    )
+    role: Mapped[ExhibitionRole] = mapped_column(String(20))
+    # For PARTNER: list of zone UUIDs they can manage (as strings)
+    zone_ids: Mapped[Optional[List[str]]] = mapped_column(JSONB, nullable=True)
+
+    # Relationships
+    user: Mapped["User"] = relationship(back_populates="exhibition_roles")
+    exhibition: Mapped["Exhibition"] = relationship()
+
+    __table_args__ = (
+        UniqueConstraint('user_id', 'exhibition_id', name='uq_user_exhibition_role'),
+    )

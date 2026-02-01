@@ -24,8 +24,8 @@ from app.domain.exhibition.schemas import (
     BatchTablesResponse,
 )
 from app.domain.user.entity import User
-from app.domain.shared.entity import GlobalRole
-from app.api.deps import get_current_active_user, require_zone_manager
+from app.domain.shared.entity import GlobalRole, ExhibitionRole
+from app.api.deps import get_current_active_user, require_zone_manager, has_exhibition_role
 from app.services.exhibition import ExhibitionService
 
 router = APIRouter()
@@ -73,13 +73,15 @@ async def create_zone(
             detail="Exhibition not found",
         )
 
-    # Check permission
-    if current_user.global_role != GlobalRole.SUPER_ADMIN:
-        if current_user.global_role != GlobalRole.ORGANIZER:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Only organizers can create zones",
-            )
+    # Check permission: SUPER_ADMIN, ADMIN, or exhibition ORGANIZER
+    can_create = await has_exhibition_role(
+        current_user, exhibition.id, [ExhibitionRole.ORGANIZER], db
+    )
+    if not can_create:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only organizers can create zones",
+        )
 
     service = ExhibitionService(db)
     return await service.create_zone(zone_in, current_user)
@@ -164,7 +166,10 @@ async def delegate_zone(
         )
 
     # Only organizers can delegate zones
-    if current_user.global_role not in [GlobalRole.SUPER_ADMIN, GlobalRole.ORGANIZER]:
+    can_delegate = await has_exhibition_role(
+        current_user, zone.exhibition_id, [ExhibitionRole.ORGANIZER], db
+    )
+    if not can_delegate:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Only organizers can delegate zones",
@@ -212,7 +217,10 @@ async def delete_zone(
         )
 
     # Only organizers can delete zones
-    if current_user.global_role not in [GlobalRole.SUPER_ADMIN, GlobalRole.ORGANIZER]:
+    can_delete = await has_exhibition_role(
+        current_user, zone.exhibition_id, [ExhibitionRole.ORGANIZER], db
+    )
+    if not can_delete:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Only organizers can delete zones",

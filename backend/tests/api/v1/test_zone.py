@@ -6,9 +6,9 @@ from uuid import uuid4
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.domain.user.entity import User, UserGroupMembership
+from app.domain.user.entity import User, UserGroupMembership, UserExhibitionRole
 from app.domain.organization.entity import UserGroup
-from app.domain.shared.entity import GlobalRole, UserGroupType, GroupRole
+from app.domain.shared.entity import GlobalRole, ExhibitionRole, UserGroupType, GroupRole
 
 
 class TestListZones:
@@ -568,20 +568,20 @@ class TestZoneDelegation:
 
 
 class TestPartnerPermissions:
-    """Tests for partner permissions on delegated zones."""
+    """Tests for partner permissions on delegated zones (#99)."""
 
     @pytest.fixture
     async def partner_setup(
         self, auth_client: AsyncClient, db_session: AsyncSession, test_organizer: dict
     ):
-        """Create a partner user with a delegated zone."""
-        # Create partner user
+        """Create a partner user with access to a specific zone via UserExhibitionRole."""
+        # Create partner user (global role is USER)
         partner_user = User(
             id=uuid4(),
             email="partner@example.com",
             hashed_password="hashed_password",
             full_name="Partner User",
-            global_role=GlobalRole.PARTNER,
+            global_role=GlobalRole.USER,
             is_active=True,
         )
         db_session.add(partner_user)
@@ -605,7 +605,7 @@ class TestPartnerPermissions:
         db_session.add(membership)
         await db_session.commit()
 
-        # Create exhibition and zone delegated to partner
+        # Create exhibition
         exhibition_payload = {
             "title": "Partner Test",
             "slug": "partner-test-" + str(uuid4())[:8],
@@ -616,11 +616,10 @@ class TestPartnerPermissions:
         create_resp = await auth_client.post("/api/v1/exhibitions/", json=exhibition_payload)
         exhibition_id = create_resp.json()["id"]
 
-        # Create delegated zone
+        # Create zone for partner
         zone_payload = {
             "name": "Partner Zone",
             "exhibition_id": exhibition_id,
-            "delegated_to_group_id": str(partner_group.id),
         }
         zone_resp = await auth_client.post("/api/v1/zones/", json=zone_payload)
         delegated_zone_id = zone_resp.json()["id"]
@@ -632,6 +631,17 @@ class TestPartnerPermissions:
         }
         zone_resp2 = await auth_client.post("/api/v1/zones/", json=zone_payload2)
         other_zone_id = zone_resp2.json()["id"]
+
+        # Assign PARTNER role with access to the delegated zone via UserExhibitionRole
+        partner_role = UserExhibitionRole(
+            id=uuid4(),
+            user_id=partner_user.id,
+            exhibition_id=exhibition_id,
+            role=ExhibitionRole.PARTNER,
+            zone_ids=[delegated_zone_id],  # Only access to this zone
+        )
+        db_session.add(partner_role)
+        await db_session.commit()
 
         return {
             "partner_user_id": str(partner_user.id),

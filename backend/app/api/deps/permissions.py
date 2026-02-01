@@ -1,9 +1,9 @@
 """
 Permission dependencies.
 
-Provides role-based access control for API endpoints.
+Provides role-based access control for API endpoints (Issue #99).
 """
-from typing import Callable, List
+from typing import Callable, List, Optional
 from uuid import UUID
 
 from fastapi import Depends, HTTPException, status
@@ -11,8 +11,8 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
-from app.domain.shared.entity import GlobalRole, GroupRole
-from app.domain.user.entity import User, UserGroupMembership
+from app.domain.shared.entity import GlobalRole, ExhibitionRole
+from app.domain.user.entity import User, UserExhibitionRole
 from app.domain.exhibition.entity import Exhibition, Zone
 from app.api.deps.auth import get_current_active_user
 
@@ -38,6 +38,52 @@ def require_roles(allowed_roles: List[GlobalRole]) -> Callable:
     return check_roles
 
 
+async def get_user_exhibition_role(
+    user_id: UUID,
+    exhibition_id: UUID,
+    db: AsyncSession,
+) -> Optional[UserExhibitionRole]:
+    """Get a user's role assignment for a specific exhibition."""
+    result = await db.execute(
+        select(UserExhibitionRole).where(
+            UserExhibitionRole.user_id == user_id,
+            UserExhibitionRole.exhibition_id == exhibition_id,
+        )
+    )
+    return result.scalar_one_or_none()
+
+
+async def has_exhibition_role(
+    user: User,
+    exhibition_id: UUID,
+    roles: List[ExhibitionRole],
+    db: AsyncSession,
+) -> bool:
+    """
+    Check if user has any of the specified exhibition roles.
+
+    Returns True if:
+    - User is SUPER_ADMIN or ADMIN (platform admins have all permissions)
+    - User has one of the specified roles for this exhibition
+    """
+    if not user or not user.is_active:
+        return False
+
+    # Platform admins have all permissions
+    if user.global_role in [GlobalRole.SUPER_ADMIN, GlobalRole.ADMIN]:
+        return True
+
+    # Check exhibition-scoped role
+    result = await db.execute(
+        select(UserExhibitionRole).where(
+            UserExhibitionRole.user_id == user.id,
+            UserExhibitionRole.exhibition_id == exhibition_id,
+            UserExhibitionRole.role.in_([r.value for r in roles]),
+        )
+    )
+    return result.scalar_one_or_none() is not None
+
+
 async def can_manage_exhibition(
     user: User,
     exhibition: Exhibition,
@@ -47,33 +93,12 @@ async def can_manage_exhibition(
     Check if user can manage the specified exhibition.
 
     Returns True if:
-    - User is SUPER_ADMIN
-    - User is ORGANIZER and belongs to the exhibition's organization
+    - User is SUPER_ADMIN or ADMIN
+    - User has ORGANIZER role for this specific exhibition
     """
-    if not user or not user.is_active:
-        return False
-
-    # SUPER_ADMIN can do anything
-    if user.global_role == GlobalRole.SUPER_ADMIN:
-        return True
-
-    # Check if user is ORGANIZER
-    if user.global_role != GlobalRole.ORGANIZER:
-        return False
-
-    # Check if user belongs to the exhibition's organization
-    membership = await db.execute(
-        select(UserGroupMembership)
-        .join(UserGroupMembership.user_group)
-        .where(
-            UserGroupMembership.user_id == user.id,
-            UserGroupMembership.user_group.has(
-                organization_id=exhibition.organization_id
-            ),
-        )
+    return await has_exhibition_role(
+        user, exhibition.id, [ExhibitionRole.ORGANIZER], db
     )
-
-    return membership.scalar_one_or_none() is not None
 
 
 async def require_exhibition_organizer(
@@ -85,8 +110,8 @@ async def require_exhibition_organizer(
     Check if user can manage the specified exhibition.
 
     Allowed if:
-    - User is SUPER_ADMIN
-    - User is ORGANIZER and belongs to the exhibition's organization
+    - User is SUPER_ADMIN or ADMIN
+    - User has ORGANIZER role for this exhibition
     """
     # Get the exhibition
     result = await db.execute(
@@ -109,6 +134,44 @@ async def require_exhibition_organizer(
     return current_user
 
 
+async def can_manage_zone(
+    user: User,
+    zone: Zone,
+    db: AsyncSession,
+) -> bool:
+    """
+    Check if user can manage the specified zone.
+
+    Returns True if:
+    - User is SUPER_ADMIN or ADMIN
+    - User has ORGANIZER role for the exhibition (manages all zones)
+    - User has PARTNER role for the exhibition with this zone in their zone_ids
+    """
+    if not user or not user.is_active:
+        return False
+
+    # Platform admins can manage all zones
+    if user.global_role in [GlobalRole.SUPER_ADMIN, GlobalRole.ADMIN]:
+        return True
+
+    # Get user's exhibition role
+    user_role = await get_user_exhibition_role(user.id, zone.exhibition_id, db)
+
+    if not user_role:
+        return False
+
+    # ORGANIZER can manage all zones in their exhibition
+    if user_role.role == ExhibitionRole.ORGANIZER:
+        return True
+
+    # PARTNER can only manage their assigned zones
+    if user_role.role == ExhibitionRole.PARTNER:
+        if user_role.zone_ids and str(zone.id) in user_role.zone_ids:
+            return True
+
+    return False
+
+
 async def require_zone_manager(
     zone_id: UUID,
     current_user: User = Depends(get_current_active_user),
@@ -118,15 +181,11 @@ async def require_zone_manager(
     Check if user can manage the specified zone.
 
     Allowed if:
-    - User is SUPER_ADMIN
-    - User is exhibition organizer
-    - User is PARTNER and zone is delegated to their group
+    - User is SUPER_ADMIN or ADMIN
+    - User has ORGANIZER role for the exhibition
+    - User has PARTNER role with this zone in their zone_ids
     """
-    # SUPER_ADMIN can do anything
-    if current_user.global_role == GlobalRole.SUPER_ADMIN:
-        return current_user
-
-    # Get the zone with exhibition
+    # Get the zone
     result = await db.execute(
         select(Zone).where(Zone.id == zone_id)
     )
@@ -138,19 +197,10 @@ async def require_zone_manager(
             detail="Zone not found",
         )
 
-    # Check if zone is delegated to user's group
-    if zone.delegated_to_group_id:
-        membership = await db.execute(
-            select(UserGroupMembership).where(
-                UserGroupMembership.user_id == current_user.id,
-                UserGroupMembership.user_group_id == zone.delegated_to_group_id,
-                UserGroupMembership.group_role.in_([GroupRole.OWNER, GroupRole.ADMIN]),
-            )
+    if not await can_manage_zone(current_user, zone, db):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You do not have permission to manage this zone",
         )
-        if membership.scalar_one_or_none():
-            return current_user
 
-    # Fall back to exhibition organizer check
-    return await require_exhibition_organizer(
-        zone.exhibition_id, current_user, db
-    )
+    return current_user

@@ -22,19 +22,19 @@ class TestListGroups:
         assert response.json() == []
 
     async def test_list_with_filter(
-        self, auth_client: AsyncClient, test_organizer: dict
+        self, admin_client: AsyncClient, test_organizer: dict
     ):
-        """List filters by organization_id."""
+        """List filters by organization_id (#99: admins can create groups)."""
         # Create a group
         group_payload = {
             "name": "Test Partner Group",
             "organization_id": test_organizer["organization_id"],
             "type": "ASSOCIATION",
         }
-        await auth_client.post("/api/v1/groups/", json=group_payload)
+        await admin_client.post("/api/v1/groups/", json=group_payload)
 
         # List with filter
-        response = await auth_client.get(
+        response = await admin_client.get(
             f"/api/v1/groups/?organization_id={test_organizer['organization_id']}"
         )
 
@@ -49,9 +49,9 @@ class TestCreateGroup:
     """Tests for POST /api/v1/groups/"""
 
     async def test_create_success(
-        self, auth_client: AsyncClient, test_organizer: dict
+        self, admin_client: AsyncClient, test_organizer: dict
     ):
-        """Organizer can create a group."""
+        """Admin can create a group (#99: admins manage groups)."""
         payload = {
             "name": "New Partner Group",
             "organization_id": test_organizer["organization_id"],
@@ -59,7 +59,7 @@ class TestCreateGroup:
             "is_public": True,
         }
 
-        response = await auth_client.post("/api/v1/groups/", json=payload)
+        response = await admin_client.post("/api/v1/groups/", json=payload)
 
         assert response.status_code == 201
         data = response.json()
@@ -91,25 +91,25 @@ class TestGroupMembers:
 
     @pytest.fixture
     async def test_group(
-        self, auth_client: AsyncClient, test_organizer: dict
+        self, admin_client: AsyncClient, test_organizer: dict
     ) -> dict:
-        """Create a test group."""
+        """Create a test group (#99: admins manage groups)."""
         payload = {
             "name": "Member Test Group",
             "organization_id": test_organizer["organization_id"],
             "type": "ASSOCIATION",
         }
-        response = await auth_client.post("/api/v1/groups/", json=payload)
+        response = await admin_client.post("/api/v1/groups/", json=payload)
         return response.json()
 
     async def test_add_member(
         self,
-        auth_client: AsyncClient,
+        admin_client: AsyncClient,
         test_group: dict,
         test_user: dict,
     ):
-        """Organizer can add a member to a group."""
-        response = await auth_client.post(
+        """Admin can add a member to a group (#99)."""
+        response = await admin_client.post(
             f"/api/v1/groups/{test_group['id']}/members",
             json={"user_id": test_user["id"], "group_role": "MEMBER"},
         )
@@ -122,19 +122,19 @@ class TestGroupMembers:
 
     async def test_add_member_already_exists(
         self,
-        auth_client: AsyncClient,
+        admin_client: AsyncClient,
         test_group: dict,
         test_user: dict,
     ):
         """Cannot add same member twice."""
         # Add first time
-        await auth_client.post(
+        await admin_client.post(
             f"/api/v1/groups/{test_group['id']}/members",
             json={"user_id": test_user["id"], "group_role": "MEMBER"},
         )
 
         # Try to add again
-        response = await auth_client.post(
+        response = await admin_client.post(
             f"/api/v1/groups/{test_group['id']}/members",
             json={"user_id": test_user["id"], "group_role": "ADMIN"},
         )
@@ -143,19 +143,19 @@ class TestGroupMembers:
 
     async def test_list_members(
         self,
-        auth_client: AsyncClient,
+        admin_client: AsyncClient,
         test_group: dict,
         test_user: dict,
     ):
         """List group members."""
         # Add a member
-        await auth_client.post(
+        await admin_client.post(
             f"/api/v1/groups/{test_group['id']}/members",
             json={"user_id": test_user["id"], "group_role": "MEMBER"},
         )
 
         # List members
-        response = await auth_client.get(
+        response = await admin_client.get(
             f"/api/v1/groups/{test_group['id']}/members"
         )
 
@@ -166,19 +166,19 @@ class TestGroupMembers:
 
     async def test_update_member_role(
         self,
-        auth_client: AsyncClient,
+        admin_client: AsyncClient,
         test_group: dict,
         test_user: dict,
     ):
         """Update a member's role."""
         # Add as member
-        await auth_client.post(
+        await admin_client.post(
             f"/api/v1/groups/{test_group['id']}/members",
             json={"user_id": test_user["id"], "group_role": "MEMBER"},
         )
 
         # Promote to admin
-        response = await auth_client.patch(
+        response = await admin_client.patch(
             f"/api/v1/groups/{test_group['id']}/members/{test_user['id']}",
             json={"group_role": "ADMIN"},
         )
@@ -188,40 +188,40 @@ class TestGroupMembers:
 
     async def test_remove_member(
         self,
-        auth_client: AsyncClient,
+        admin_client: AsyncClient,
         test_group: dict,
         test_user: dict,
     ):
         """Remove a member from group."""
         # Add member
-        await auth_client.post(
+        await admin_client.post(
             f"/api/v1/groups/{test_group['id']}/members",
             json={"user_id": test_user["id"], "group_role": "MEMBER"},
         )
 
         # Remove
-        response = await auth_client.delete(
+        response = await admin_client.delete(
             f"/api/v1/groups/{test_group['id']}/members/{test_user['id']}"
         )
 
         assert response.status_code == 204
 
         # Verify removed
-        members_resp = await auth_client.get(
+        members_resp = await admin_client.get(
             f"/api/v1/groups/{test_group['id']}/members"
         )
         assert len(members_resp.json()) == 0
 
     async def test_self_removal(
         self,
-        auth_client: AsyncClient,
+        admin_client: AsyncClient,
         client: AsyncClient,
         test_group: dict,
         test_user: dict,
     ):
         """Member can remove themselves from group."""
         # Add member
-        await auth_client.post(
+        await admin_client.post(
             f"/api/v1/groups/{test_group['id']}/members",
             json={"user_id": test_user["id"], "group_role": "MEMBER"},
         )
@@ -236,19 +236,19 @@ class TestGroupMembers:
 
     async def test_cannot_remove_last_owner(
         self,
-        auth_client: AsyncClient,
+        admin_client: AsyncClient,
         test_group: dict,
         test_organizer: dict,
     ):
         """Cannot remove the last owner of a group."""
         # Add organizer as owner
-        await auth_client.post(
+        await admin_client.post(
             f"/api/v1/groups/{test_group['id']}/members",
             json={"user_id": test_organizer["user_id"], "group_role": "OWNER"},
         )
 
         # Try to remove
-        response = await auth_client.delete(
+        response = await admin_client.delete(
             f"/api/v1/groups/{test_group['id']}/members/{test_organizer['user_id']}"
         )
 
@@ -257,19 +257,19 @@ class TestGroupMembers:
 
     async def test_cannot_demote_last_owner(
         self,
-        auth_client: AsyncClient,
+        admin_client: AsyncClient,
         test_group: dict,
         test_organizer: dict,
     ):
         """Cannot demote the last owner to member."""
         # Add organizer as owner
-        await auth_client.post(
+        await admin_client.post(
             f"/api/v1/groups/{test_group['id']}/members",
             json={"user_id": test_organizer["user_id"], "group_role": "OWNER"},
         )
 
         # Try to demote
-        response = await auth_client.patch(
+        response = await admin_client.patch(
             f"/api/v1/groups/{test_group['id']}/members/{test_organizer['user_id']}",
             json={"group_role": "MEMBER"},
         )
@@ -284,7 +284,7 @@ class TestGroupPermissions:
     @pytest.fixture
     async def group_with_admin(
         self,
-        auth_client: AsyncClient,
+        admin_client: AsyncClient,
         test_organizer: dict,
         test_user: dict,
     ) -> dict:
@@ -295,11 +295,11 @@ class TestGroupPermissions:
             "organization_id": test_organizer["organization_id"],
             "type": "ASSOCIATION",
         }
-        group_resp = await auth_client.post("/api/v1/groups/", json=payload)
+        group_resp = await admin_client.post("/api/v1/groups/", json=payload)
         group = group_resp.json()
 
         # Add test_user as admin
-        await auth_client.post(
+        await admin_client.post(
             f"/api/v1/groups/{group['id']}/members",
             json={"user_id": test_user["id"], "group_role": "ADMIN"},
         )
@@ -325,7 +325,7 @@ class TestGroupPermissions:
     async def test_regular_member_cannot_add_members(
         self,
         client: AsyncClient,
-        auth_client: AsyncClient,
+        admin_client: AsyncClient,
         test_organizer: dict,
         test_user: dict,
         second_test_user: dict,
@@ -337,11 +337,11 @@ class TestGroupPermissions:
             "organization_id": test_organizer["organization_id"],
             "type": "ASSOCIATION",
         }
-        group_resp = await auth_client.post("/api/v1/groups/", json=payload)
+        group_resp = await admin_client.post("/api/v1/groups/", json=payload)
         group = group_resp.json()
 
         # Add test_user as regular member
-        await auth_client.post(
+        await admin_client.post(
             f"/api/v1/groups/{group['id']}/members",
             json={"user_id": test_user["id"], "group_role": "MEMBER"},
         )

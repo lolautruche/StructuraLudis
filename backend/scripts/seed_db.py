@@ -51,9 +51,10 @@ from app.domain.models import (
     GameSession,
     Booking,
 )
-from app.domain.user.entity import UserGroupMembership
+from app.domain.user.entity import UserGroupMembership, UserExhibitionRole
 from app.domain.shared.entity import (
     GlobalRole,
+    ExhibitionRole,
     UserGroupType,
     GroupRole,
     ExhibitionStatus,
@@ -77,6 +78,7 @@ async def clear_data(session):
     await session.execute(delete(TimeSlot))
     await session.execute(delete(PhysicalTable))
     await session.execute(delete(Zone))
+    await session.execute(delete(UserExhibitionRole))
     await session.execute(delete(Exhibition))
     await session.execute(delete(Game))
     await session.execute(delete(GameCategory))
@@ -123,26 +125,26 @@ async def seed(force: bool = False):
             email_verified=True,
         )
 
-        # Main Organizer
+        # Main Organizer (will be assigned ORGANIZER role for the exhibition)
         organizer = User(
             id=uuid4(),
             email="organizer@fdj-lyon.com",
             hashed_password=password_hash,
             full_name="Marie Dupont",
-            global_role=GlobalRole.ORGANIZER,
+            global_role=GlobalRole.USER,
             locale="fr",
             birth_date=date(1988, 7, 22),
             privacy_accepted_at=datetime.now(timezone.utc),
             email_verified=True,
         )
 
-        # Partner staff (exhibitors)
+        # Partner staff (will be assigned PARTNER role for specific zones)
         partner_12singes = User(
             id=uuid4(),
             email="contact@les12singes.com",
             hashed_password=password_hash,
             full_name="Laurent Bernasconi",
-            global_role=GlobalRole.PARTNER,
+            global_role=GlobalRole.USER,
             locale="fr",
             birth_date=date(1975, 11, 8),
             privacy_accepted_at=datetime.now(timezone.utc),
@@ -154,7 +156,7 @@ async def seed(force: bool = False):
             email="contact@arkhane.com",
             hashed_password=password_hash,
             full_name="Julien Collas",
-            global_role=GlobalRole.PARTNER,
+            global_role=GlobalRole.USER,
             locale="fr",
             birth_date=date(1979, 4, 30),
             privacy_accepted_at=datetime.now(timezone.utc),
@@ -623,6 +625,36 @@ async def seed(force: bool = False):
         )
 
         session.add_all([zone_rpg, zone_12singes, zone_board])
+
+        # =====================================================================
+        # 7b. EXHIBITION ROLE ASSIGNMENTS (#99)
+        # =====================================================================
+        # Assign organizer role for this exhibition
+        organizer_role = UserExhibitionRole(
+            id=uuid4(),
+            user_id=organizer.id,
+            exhibition_id=exhibition.id,
+            role=ExhibitionRole.ORGANIZER,
+        )
+
+        # Assign partner roles with specific zone access
+        partner_12singes_role = UserExhibitionRole(
+            id=uuid4(),
+            user_id=partner_12singes.id,
+            exhibition_id=exhibition.id,
+            role=ExhibitionRole.PARTNER,
+            zone_ids=[str(zone_12singes.id)],
+        )
+
+        partner_arkhane_role = UserExhibitionRole(
+            id=uuid4(),
+            user_id=partner_arkhane.id,
+            exhibition_id=exhibition.id,
+            role=ExhibitionRole.PARTNER,
+            zone_ids=[str(zone_rpg.id)],  # Arkhane manages main RPG area
+        )
+
+        session.add_all([organizer_role, partner_12singes_role, partner_arkhane_role])
 
         # RPG Tables (8 in main area)
         rpg_tables = [

@@ -468,8 +468,7 @@
     "exhibitions": "Exhibitions",
     "stats": {
       "totalUsers": "Total Users",
-      "organizers": "Organizers",
-      "partners": "Partners",
+      "admins": "Administrators",
       "draftExhibitions": "Draft",
       "publishedExhibitions": "Published",
       "archivedExhibitions": "Archived"
@@ -525,9 +524,12 @@
     },
     "globalRoles": {
       "SUPER_ADMIN": "Super Admin",
-      "ORGANIZER": "Organizer",
-      "PARTNER": "Partner",
+      "ADMIN": "Administrator",
       "USER": "User"
+    },
+    "exhibitionRoles": {
+      "ORGANIZER": "Organizer",
+      "PARTNER": "Partner"
     },
     "exhibitionStatuses": {
       "DRAFT": "Draft",

@@ -23,9 +23,10 @@ from app.domain.exhibition.schemas import (
 )
 from app.domain.game.entity import GameSession, Booking
 from app.domain.organization.entity import Organization, UserGroup
-from app.domain.user.entity import User, UserGroupMembership
+from app.domain.user.entity import User, UserGroupMembership, UserExhibitionRole
 from app.domain.shared.entity import (
     ExhibitionStatus,
+    ExhibitionRole,
     GlobalRole,
     PhysicalTableStatus,
 )
@@ -50,18 +51,14 @@ class ExhibitionService:
         Create a new exhibition.
 
         Validates:
-        - User has ORGANIZER or SUPER_ADMIN role
-        - User belongs to the organization
+        - User belongs to the organization (or is SUPER_ADMIN/ADMIN)
         - Organization exists
         - Slug is unique
         - start_date < end_date (already validated in schema)
+
+        Note: The creator will need to be assigned as ORGANIZER via UserExhibitionRole
+        after the exhibition is created.
         """
-        # Check user role
-        if current_user.global_role not in [GlobalRole.ORGANIZER, GlobalRole.SUPER_ADMIN]:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Only organizers and super admins can create exhibitions",
-            )
 
         # Check organization exists
         org_result = await self.db.execute(
@@ -74,8 +71,8 @@ class ExhibitionService:
                 detail="Organization not found",
             )
 
-        # Check user belongs to organization (unless SUPER_ADMIN)
-        if current_user.global_role != GlobalRole.SUPER_ADMIN:
+        # Check user belongs to organization (unless SUPER_ADMIN or ADMIN)
+        if current_user.global_role not in [GlobalRole.SUPER_ADMIN, GlobalRole.ADMIN]:
             membership = await self.db.execute(
                 select(UserGroupMembership)
                 .join(UserGroupMembership.user_group)
@@ -116,6 +113,17 @@ class ExhibitionService:
         )
         self.db.add(exhibition)
         await self.db.flush()
+
+        # Automatically assign creator as ORGANIZER of this exhibition (#99)
+        if current_user.global_role not in [GlobalRole.SUPER_ADMIN, GlobalRole.ADMIN]:
+            organizer_role = UserExhibitionRole(
+                user_id=current_user.id,
+                exhibition_id=exhibition.id,
+                role=ExhibitionRole.ORGANIZER,
+            )
+            self.db.add(organizer_role)
+            await self.db.flush()
+
         await self.db.refresh(exhibition)
 
         return exhibition

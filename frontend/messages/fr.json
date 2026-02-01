@@ -468,8 +468,7 @@
     "exhibitions": "Événements",
     "stats": {
       "totalUsers": "Total utilisateurs",
-      "organizers": "Organisateurs",
-      "partners": "Partenaires",
+      "admins": "Administrateurs",
       "draftExhibitions": "Brouillon",
       "publishedExhibitions": "Publiés",
       "archivedExhibitions": "Archivés"
@@ -525,9 +524,12 @@
     },
     "globalRoles": {
       "SUPER_ADMIN": "Super Admin",
-      "ORGANIZER": "Organisateur",
-      "PARTNER": "Partenaire",
+      "ADMIN": "Administrateur",
       "USER": "Utilisateur"
+    },
+    "exhibitionRoles": {
+      "ORGANIZER": "Organisateur",
+      "PARTNER": "Partenaire"
     },
     "exhibitionStatuses": {
       "DRAFT": "Brouillon",

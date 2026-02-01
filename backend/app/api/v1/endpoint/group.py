@@ -59,12 +59,12 @@ async def create_group(
     """
     Create a new user group.
 
-    Requires: Organizer or SUPER_ADMIN.
+    Requires: ADMIN or SUPER_ADMIN.
     """
-    if current_user.global_role not in [GlobalRole.SUPER_ADMIN, GlobalRole.ORGANIZER]:
+    if current_user.global_role not in [GlobalRole.SUPER_ADMIN, GlobalRole.ADMIN]:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Only organizers can create groups",
+            detail="Only admins can create groups",
         )
 
     # Verify organization exists
@@ -115,7 +115,7 @@ async def update_group(
     """
     Update a user group.
 
-    Requires: Organizer, SUPER_ADMIN, or group OWNER/ADMIN.
+    Requires: ADMIN, SUPER_ADMIN, or group OWNER/ADMIN.
     """
     result = await db.execute(
         select(UserGroup).where(UserGroup.id == group_id)
@@ -129,7 +129,7 @@ async def update_group(
         )
 
     # Check permissions
-    can_update = current_user.global_role in [GlobalRole.SUPER_ADMIN, GlobalRole.ORGANIZER]
+    can_update = current_user.global_role in [GlobalRole.SUPER_ADMIN, GlobalRole.ADMIN]
 
     if not can_update:
         # Check if user is group admin/owner
@@ -168,12 +168,12 @@ async def delete_group(
     """
     Delete a user group.
 
-    Requires: Organizer or SUPER_ADMIN.
+    Requires: ADMIN or SUPER_ADMIN.
     """
-    if current_user.global_role not in [GlobalRole.SUPER_ADMIN, GlobalRole.ORGANIZER]:
+    if current_user.global_role not in [GlobalRole.SUPER_ADMIN, GlobalRole.ADMIN]:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Only organizers can delete groups",
+            detail="Only admins can delete groups",
         )
 
     result = await db.execute(
@@ -203,7 +203,7 @@ async def list_group_members(
     """
     List all members of a group.
 
-    Visible to: group members, organizers, or SUPER_ADMIN.
+    Visible to: group members, admins, or SUPER_ADMIN.
     """
     # Check group exists
     group_result = await db.execute(
@@ -220,7 +220,7 @@ async def list_group_members(
     # Check permissions (public groups visible to all, private to members/admins)
     can_view = (
         group.is_public
-        or current_user.global_role in [GlobalRole.SUPER_ADMIN, GlobalRole.ORGANIZER]
+        or current_user.global_role in [GlobalRole.SUPER_ADMIN, GlobalRole.ADMIN]
     )
 
     if not can_view:
@@ -272,7 +272,7 @@ async def add_group_member(
     """
     Add a member to a group.
 
-    Requires: Organizer, SUPER_ADMIN, or group OWNER/ADMIN.
+    Requires: ADMIN, SUPER_ADMIN, or group OWNER/ADMIN.
     """
     # Check group exists
     group_result = await db.execute(
@@ -285,7 +285,7 @@ async def add_group_member(
         )
 
     # Check permissions
-    can_add = current_user.global_role in [GlobalRole.SUPER_ADMIN, GlobalRole.ORGANIZER]
+    can_add = current_user.global_role in [GlobalRole.SUPER_ADMIN, GlobalRole.ADMIN]
 
     if not can_add:
         membership_result = await db.execute(
@@ -360,7 +360,7 @@ async def update_group_member(
     """
     Update a member's role in a group.
 
-    Requires: Organizer, SUPER_ADMIN, or group OWNER.
+    Requires: ADMIN, SUPER_ADMIN, or group OWNER.
     Cannot demote yourself if you're the only OWNER.
     """
     # Check group exists
@@ -393,7 +393,7 @@ async def update_group_member(
     membership, email, full_name = row
 
     # Check permissions - only OWNER can change roles
-    can_update = current_user.global_role in [GlobalRole.SUPER_ADMIN, GlobalRole.ORGANIZER]
+    can_update = current_user.global_role in [GlobalRole.SUPER_ADMIN, GlobalRole.ADMIN]
 
     if not can_update:
         owner_check = await db.execute(
@@ -450,7 +450,7 @@ async def remove_group_member(
     """
     Remove a member from a group.
 
-    Requires: Organizer, SUPER_ADMIN, group OWNER/ADMIN, or self-removal.
+    Requires: ADMIN, SUPER_ADMIN, group OWNER/ADMIN, or self-removal.
     Cannot remove the last OWNER.
     """
     # Check group exists
@@ -480,7 +480,7 @@ async def remove_group_member(
 
     # Check permissions
     can_remove = (
-        current_user.global_role in [GlobalRole.SUPER_ADMIN, GlobalRole.ORGANIZER]
+        current_user.global_role in [GlobalRole.SUPER_ADMIN, GlobalRole.ADMIN]
         or user_id == current_user.id  # Self-removal
     )
 

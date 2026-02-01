@@ -8,7 +8,9 @@ import { Card, Input, Select, Badge, Button, ConfirmDialog } from '@/components/
 import { useToast } from '@/contexts/ToastContext';
 import { useAuth } from '@/contexts/AuthContext';
 
-const ROLES: GlobalRole[] = ['SUPER_ADMIN', 'ORGANIZER', 'PARTNER', 'USER'];
+// Global roles (platform-wide) - Issue #99
+// Note: ORGANIZER and PARTNER are now event-scoped (ExhibitionRole)
+const ROLES: GlobalRole[] = ['SUPER_ADMIN', 'ADMIN', 'USER'];
 
 export default function AdminUsersPage() {
   const t = useTranslations('SuperAdmin.userManagement');

@@ -30,13 +30,14 @@ class TestListExhibitions:
         create_resp = await auth_client.post("/api/v1/exhibitions/", json=payload)
         assert create_resp.status_code == 201
 
-        # List should contain it
+        # List should contain it (note: test_organizer fixture creates one too)
         response = await auth_client.get("/api/v1/exhibitions/")
 
         assert response.status_code == 200
         data = response.json()
-        assert len(data) == 1
-        assert data[0]["title"] == "Test Convention"
+        assert len(data) >= 1
+        titles = [e["title"] for e in data]
+        assert "Test Convention" in titles
 
 
 class TestCreateExhibition:
@@ -1126,3 +1127,305 @@ class TestCanManagePermission:
 
         assert response.status_code == 200
         assert response.json()["can_manage"] is False
+
+
+class TestExhibitionRoleManagement:
+    """Tests for Exhibition Role Management endpoints (#99)."""
+
+    async def _create_exhibition(
+        self,
+        auth_client: AsyncClient,
+        organization_id: str,
+        slug: str = "role-test-exhibition",
+    ) -> str:
+        """Helper to create an exhibition."""
+        payload = {
+            "title": "Role Test Exhibition",
+            "slug": slug,
+            "start_date": "2026-06-15T09:00:00Z",
+            "end_date": "2026-06-17T18:00:00Z",
+            "organization_id": organization_id,
+        }
+        resp = await auth_client.post("/api/v1/exhibitions/", json=payload)
+        assert resp.status_code == 201
+        return resp.json()["id"]
+
+    async def _create_zone(
+        self,
+        auth_client: AsyncClient,
+        exhibition_id: str,
+        name: str = "Test Zone",
+    ) -> str:
+        """Helper to create a zone."""
+        payload = {
+            "name": name,
+            "exhibition_id": exhibition_id,
+            "type": "MIXED",
+        }
+        resp = await auth_client.post("/api/v1/zones/", json=payload)
+        assert resp.status_code == 201
+        return resp.json()["id"]
+
+    async def test_list_roles_empty(
+        self, auth_client: AsyncClient, test_organizer: dict
+    ):
+        """List roles for new exhibition shows only creator as ORGANIZER."""
+        exhibition_id = await self._create_exhibition(
+            auth_client, test_organizer["organization_id"], "list-roles-empty"
+        )
+
+        response = await auth_client.get(f"/api/v1/exhibitions/{exhibition_id}/roles")
+
+        assert response.status_code == 200
+        data = response.json()
+        # Creator is automatically assigned as ORGANIZER
+        assert len(data) == 1
+        assert data[0]["role"] == "ORGANIZER"
+        assert data[0]["user_id"] == test_organizer["user_id"]
+
+    async def test_assign_organizer_role(
+        self, auth_client: AsyncClient, test_organizer: dict, test_user: dict
+    ):
+        """Assign ORGANIZER role to another user."""
+        exhibition_id = await self._create_exhibition(
+            auth_client, test_organizer["organization_id"], "assign-organizer"
+        )
+
+        response = await auth_client.post(
+            f"/api/v1/exhibitions/{exhibition_id}/roles",
+            json={"user_id": test_user["id"], "role": "ORGANIZER"},
+        )
+
+        assert response.status_code == 201
+        data = response.json()
+        assert data["user_id"] == test_user["id"]
+        assert data["role"] == "ORGANIZER"
+        assert data["user_email"] is not None
+        assert data["zone_ids"] is None
+
+    async def test_assign_partner_role_with_zones(
+        self, auth_client: AsyncClient, test_organizer: dict, test_user: dict
+    ):
+        """Assign PARTNER role with zone_ids."""
+        exhibition_id = await self._create_exhibition(
+            auth_client, test_organizer["organization_id"], "assign-partner"
+        )
+        zone_id = await self._create_zone(auth_client, exhibition_id, "Partner Zone")
+
+        response = await auth_client.post(
+            f"/api/v1/exhibitions/{exhibition_id}/roles",
+            json={
+                "user_id": test_user["id"],
+                "role": "PARTNER",
+                "zone_ids": [zone_id],
+            },
+        )
+
+        assert response.status_code == 201
+        data = response.json()
+        assert data["role"] == "PARTNER"
+        assert zone_id in data["zone_ids"]
+
+    async def test_assign_partner_without_zones_fails(
+        self, auth_client: AsyncClient, test_organizer: dict, test_user: dict
+    ):
+        """PARTNER role without zone_ids returns 422."""
+        exhibition_id = await self._create_exhibition(
+            auth_client, test_organizer["organization_id"], "partner-no-zones"
+        )
+
+        response = await auth_client.post(
+            f"/api/v1/exhibitions/{exhibition_id}/roles",
+            json={"user_id": test_user["id"], "role": "PARTNER"},
+        )
+
+        assert response.status_code == 422
+
+    async def test_assign_duplicate_role_fails(
+        self, auth_client: AsyncClient, test_organizer: dict, test_user: dict
+    ):
+        """Cannot assign role to user who already has one for this exhibition."""
+        exhibition_id = await self._create_exhibition(
+            auth_client, test_organizer["organization_id"], "dup-role"
+        )
+
+        # Assign first role
+        await auth_client.post(
+            f"/api/v1/exhibitions/{exhibition_id}/roles",
+            json={"user_id": test_user["id"], "role": "ORGANIZER"},
+        )
+
+        # Try to assign again
+        response = await auth_client.post(
+            f"/api/v1/exhibitions/{exhibition_id}/roles",
+            json={"user_id": test_user["id"], "role": "ORGANIZER"},
+        )
+
+        assert response.status_code == 409
+
+    async def test_assign_role_invalid_zone_fails(
+        self, auth_client: AsyncClient, test_organizer: dict, test_user: dict
+    ):
+        """Cannot assign PARTNER with zone_ids from another exhibition."""
+        exhibition_id = await self._create_exhibition(
+            auth_client, test_organizer["organization_id"], "invalid-zone"
+        )
+        # Create another exhibition with a zone
+        other_exhibition_id = await self._create_exhibition(
+            auth_client, test_organizer["organization_id"], "other-exhibition"
+        )
+        other_zone_id = await self._create_zone(
+            auth_client, other_exhibition_id, "Other Zone"
+        )
+
+        response = await auth_client.post(
+            f"/api/v1/exhibitions/{exhibition_id}/roles",
+            json={
+                "user_id": test_user["id"],
+                "role": "PARTNER",
+                "zone_ids": [other_zone_id],
+            },
+        )
+
+        assert response.status_code == 400
+        assert "Invalid zone IDs" in response.json()["detail"]
+
+    async def test_update_role(
+        self, auth_client: AsyncClient, test_organizer: dict, test_user: dict
+    ):
+        """Update a role assignment."""
+        exhibition_id = await self._create_exhibition(
+            auth_client, test_organizer["organization_id"], "update-role"
+        )
+        zone_id = await self._create_zone(auth_client, exhibition_id, "Zone 1")
+
+        # Assign as ORGANIZER
+        create_resp = await auth_client.post(
+            f"/api/v1/exhibitions/{exhibition_id}/roles",
+            json={"user_id": test_user["id"], "role": "ORGANIZER"},
+        )
+        role_id = create_resp.json()["id"]
+
+        # Update to PARTNER with zones
+        response = await auth_client.patch(
+            f"/api/v1/exhibitions/{exhibition_id}/roles/{role_id}",
+            json={"role": "PARTNER", "zone_ids": [zone_id]},
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["role"] == "PARTNER"
+        assert zone_id in data["zone_ids"]
+
+    async def test_update_partner_zones(
+        self, auth_client: AsyncClient, test_organizer: dict, test_user: dict
+    ):
+        """Update PARTNER zone assignments."""
+        exhibition_id = await self._create_exhibition(
+            auth_client, test_organizer["organization_id"], "update-zones"
+        )
+        zone1_id = await self._create_zone(auth_client, exhibition_id, "Zone 1")
+        zone2_id = await self._create_zone(auth_client, exhibition_id, "Zone 2")
+
+        # Assign as PARTNER with zone1
+        create_resp = await auth_client.post(
+            f"/api/v1/exhibitions/{exhibition_id}/roles",
+            json={
+                "user_id": test_user["id"],
+                "role": "PARTNER",
+                "zone_ids": [zone1_id],
+            },
+        )
+        role_id = create_resp.json()["id"]
+
+        # Update to include zone2
+        response = await auth_client.patch(
+            f"/api/v1/exhibitions/{exhibition_id}/roles/{role_id}",
+            json={"zone_ids": [zone1_id, zone2_id]},
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert len(data["zone_ids"]) == 2
+        assert zone1_id in data["zone_ids"]
+        assert zone2_id in data["zone_ids"]
+
+    async def test_delete_role(
+        self, auth_client: AsyncClient, test_organizer: dict, test_user: dict
+    ):
+        """Delete a role assignment."""
+        exhibition_id = await self._create_exhibition(
+            auth_client, test_organizer["organization_id"], "delete-role"
+        )
+
+        # Assign role
+        create_resp = await auth_client.post(
+            f"/api/v1/exhibitions/{exhibition_id}/roles",
+            json={"user_id": test_user["id"], "role": "ORGANIZER"},
+        )
+        role_id = create_resp.json()["id"]
+
+        # Delete it
+        response = await auth_client.delete(
+            f"/api/v1/exhibitions/{exhibition_id}/roles/{role_id}"
+        )
+
+        assert response.status_code == 204
+
+        # Verify it's gone
+        list_resp = await auth_client.get(
+            f"/api/v1/exhibitions/{exhibition_id}/roles"
+        )
+        role_ids = [r["id"] for r in list_resp.json()]
+        assert role_id not in role_ids
+
+    async def test_cannot_remove_last_organizer(
+        self, auth_client: AsyncClient, test_organizer: dict
+    ):
+        """Cannot remove the last ORGANIZER from an exhibition."""
+        exhibition_id = await self._create_exhibition(
+            auth_client, test_organizer["organization_id"], "last-organizer"
+        )
+
+        # Get the creator's role
+        list_resp = await auth_client.get(
+            f"/api/v1/exhibitions/{exhibition_id}/roles"
+        )
+        role_id = list_resp.json()[0]["id"]
+
+        # Try to delete it
+        response = await auth_client.delete(
+            f"/api/v1/exhibitions/{exhibition_id}/roles/{role_id}"
+        )
+
+        assert response.status_code == 400
+        assert "last organizer" in response.json()["detail"]
+
+    async def test_roles_unauthorized(
+        self, client: AsyncClient, test_organizer: dict, auth_client: AsyncClient
+    ):
+        """Role endpoints require authentication."""
+        exhibition_id = await self._create_exhibition(
+            auth_client, test_organizer["organization_id"], "unauth-roles"
+        )
+
+        # List without auth
+        response = await client.get(f"/api/v1/exhibitions/{exhibition_id}/roles")
+        assert response.status_code == 401
+
+    async def test_roles_forbidden_for_regular_user(
+        self, client: AsyncClient, auth_client: AsyncClient,
+        test_organizer: dict, test_user: dict
+    ):
+        """Regular user cannot manage roles."""
+        exhibition_id = await self._create_exhibition(
+            auth_client, test_organizer["organization_id"], "forbidden-roles"
+        )
+
+        # Try to list as regular user
+        response = await client.get(
+            f"/api/v1/exhibitions/{exhibition_id}/roles",
+            headers={"X-User-ID": test_user["id"]},
+        )
+
+        assert response.status_code == 403
