@@ -472,6 +472,39 @@
       "confirmActivateMessage": "Activate {name}? They will be able to log in again.",
       "roleUpdated": "Role updated successfully",
       "statusUpdated": "Status updated successfully"
+    },
+    "exhibitionManagement": {
+      "title": "Exhibition Management",
+      "createNew": "Create Exhibition",
+      "allStatuses": "All statuses",
+      "noExhibitions": "No exhibitions yet",
+      "exhibitionTitle": "Title",
+      "dates": "Dates",
+      "location": "Location",
+      "status": "Status",
+      "actions": "Actions",
+      "view": "View",
+      "manage": "Manage"
+    },
+    "createExhibition": {
+      "title": "Create New Exhibition",
+      "basicInfo": "Basic Information",
+      "titleLabel": "Title",
+      "slugLabel": "Slug",
+      "slugHelper": "URL-friendly identifier (auto-generated from title)",
+      "descriptionLabel": "Description",
+      "startDate": "Start date",
+      "endDate": "End date",
+      "location": "Location",
+      "locationName": "Venue name",
+      "city": "City",
+      "country": "Country code",
+      "settings": "Settings",
+      "timezone": "Timezone",
+      "language": "Primary language",
+      "gracePeriod": "Grace period (minutes)",
+      "create": "Create Exhibition",
+      "createSuccess": "Exhibition created successfully"
     }
   }
 }

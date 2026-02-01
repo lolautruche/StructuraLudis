@@ -472,6 +472,39 @@
       "confirmActivateMessage": "Activer {name} ? Cette personne pourra à nouveau se connecter.",
       "roleUpdated": "Rôle mis à jour avec succès",
       "statusUpdated": "Statut mis à jour avec succès"
+    },
+    "exhibitionManagement": {
+      "title": "Gestion des événements",
+      "createNew": "Créer un événement",
+      "allStatuses": "Tous les statuts",
+      "noExhibitions": "Aucun événement",
+      "exhibitionTitle": "Titre",
+      "dates": "Dates",
+      "location": "Lieu",
+      "status": "Statut",
+      "actions": "Actions",
+      "view": "Voir",
+      "manage": "Gérer"
+    },
+    "createExhibition": {
+      "title": "Créer un nouvel événement",
+      "basicInfo": "Informations générales",
+      "titleLabel": "Titre",
+      "slugLabel": "Slug",
+      "slugHelper": "Identifiant URL (généré automatiquement à partir du titre)",
+      "descriptionLabel": "Description",
+      "startDate": "Date de début",
+      "endDate": "Date de fin",
+      "location": "Lieu",
+      "locationName": "Nom du lieu",
+      "city": "Ville",
+      "country": "Code pays",
+      "settings": "Paramètres",
+      "timezone": "Fuseau horaire",
+      "language": "Langue principale",
+      "gracePeriod": "Délai de grâce (minutes)",
+      "create": "Créer l'événement",
+      "createSuccess": "Événement créé avec succès"
     }
   }
 }
