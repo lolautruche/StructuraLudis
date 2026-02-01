@@ -85,9 +85,10 @@ This document tracks prioritization decisions and project progress.
 
 ## Technical Debt
 
-| Item | Priority | Notes |
-|------|----------|-------|
-| Migrate passlib to libpass | Low | passlib uses deprecated `crypt` module (removed in Python 3.13). The warning is harmless with bcrypt installed. Migrate to [libpass](https://pypi.org/project/libpass/) when upgrading to Python 3.13. |
+| Issue | Item | Priority | Notes |
+|-------|------|----------|-------|
+| [#81](https://github.com/lolautruche/StructuraLudis/issues/81) | Migrate passlib to libpass | Low | passlib uses deprecated `crypt` module (removed in Python 3.13). Warning is harmless with bcrypt. Migrate to [libpass](https://pypi.org/project/libpass/) when upgrading to Python 3.13. |
+| [#82](https://github.com/lolautruche/StructuraLudis/issues/82) | Upgrade Next.js 14 → 16 | Medium | Current: 14.2.0, Latest: 16.x. Major version jump with potential breaking changes (async APIs, React 19, caching). |
 
 ---
 
