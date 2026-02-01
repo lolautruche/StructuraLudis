@@ -66,7 +66,7 @@ async def list_exhibitions(
     # Check if user is admin (can see all)
     is_admin = (
         current_user
-        and current_user.global_role in [GlobalRole.SUPER_ADMIN, GlobalRole.ADMIN]
+        and current_user.global_role == GlobalRole.SUPER_ADMIN
     )
 
     # Add can_manage flag and filter based on permissions
