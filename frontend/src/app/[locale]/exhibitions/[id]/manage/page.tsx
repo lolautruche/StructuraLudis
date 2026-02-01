@@ -7,7 +7,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from '@/i18n/routing';
 import { exhibitionsApi, Exhibition } from '@/lib/api';
 import { Card } from '@/components/ui';
-import { ExhibitionSettingsForm } from '@/components/admin';
+import { ExhibitionSettingsForm, TimeSlotList } from '@/components/admin';
 
 type TabId = 'settings' | 'slots' | 'zones';
 
@@ -153,9 +153,7 @@ export default function ManageExhibitionPage() {
             />
           )}
           {activeTab === 'slots' && (
-            <div className="text-center py-8" style={{ color: 'var(--color-text-muted)' }}>
-              {t('comingSoon')}
-            </div>
+            <TimeSlotList exhibitionId={exhibition.id} />
           )}
           {activeTab === 'zones' && (
             <div className="text-center py-8" style={{ color: 'var(--color-text-muted)' }}>

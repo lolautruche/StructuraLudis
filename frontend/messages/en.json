@@ -313,7 +313,22 @@
     "primaryLanguage": "Primary language",
     "saving": "Saving...",
     "settingsSaved": "Settings saved successfully",
-    "saveError": "Failed to save settings"
+    "saveError": "Failed to save settings",
+    "addSlot": "Add time slot",
+    "editSlot": "Edit time slot",
+    "noSlots": "No time slots configured",
+    "slotName": "Slot name",
+    "slotNamePlaceholder": "e.g. Saturday Morning",
+    "startTime": "Start time",
+    "endTime": "End time",
+    "maxDuration": "Max session duration (minutes)",
+    "maxDurationHelper": "Maximum duration for sessions in this slot",
+    "bufferTime": "Buffer time (minutes)",
+    "bufferTimeHelper": "Setup time between sessions",
+    "maxDurationValue": "Max: {duration}",
+    "bufferTimeValue": "Buffer: {duration}",
+    "confirmDeleteSlotTitle": "Delete time slot?",
+    "confirmDeleteSlotMessage": "Are you sure you want to delete \"{name}\"? This action cannot be undone."
   },
   "SessionForm": {
     "pageTitle": "Propose a session",
