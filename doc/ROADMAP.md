@@ -13,7 +13,6 @@ This document tracks prioritization decisions and project progress.
 
 | Issue | Title | Job Stories | Notes |
 |-------|-------|-------------|-------|
-| [#8](https://github.com/lolautruche/StructuraLudis/issues/8) | Proposer: Session Submission Form | JS.B1-B5 | Submission form (partially done) |
 | [#7](https://github.com/lolautruche/StructuraLudis/issues/7) | Admin: Event Configuration | JS.A2, JS.A3, JS.A5 | Slots/zones admin config |
 | [#13](https://github.com/lolautruche/StructuraLudis/issues/13) | SuperAdmin Portal | JS.01-04 | Global admin |
 | [#10](https://github.com/lolautruche/StructuraLudis/issues/10) | Partner Zone Management | JS.D1 | Partner zone management |
@@ -57,6 +56,7 @@ This document tracks prioritization decisions and project progress.
 
 | Issue | Title | Job Stories | Date |
 |-------|-------|-------------|------|
+| [#8](https://github.com/lolautruche/StructuraLudis/issues/8) | Proposer: Session Submission Form | JS.B1-B5 | 2026-02-01 |
 | [#60](https://github.com/lolautruche/StructuraLudis/issues/60) | User Settings & Profile Page | JS.X2, JS.E2, JS.E5 | 2026-02-01 |
 | [#73](https://github.com/lolautruche/StructuraLudis/issues/73) | Email verification on registration | JS.E1 | 2026-01-31 |
 | [#61](https://github.com/lolautruche/StructuraLudis/issues/61) | Session Detail & Booking Flow | JS.C1, JS.C2, JS.C4, JS.C8, JS.C9 | 2026-01-31 |
