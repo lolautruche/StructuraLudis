@@ -22,15 +22,41 @@ To provide a universal event management ecosystem for all forms of tabletop gami
 ### EPIC 0: Global Administration (Super Admin)
 *Objective: Manage the platform's multi-event lifecycle and global user permissions.*
 
+#### Role Architecture
+
+The platform uses two types of roles:
+
+**Global Roles** (platform-wide):
+| Role | Description |
+|------|-------------|
+| SUPER_ADMIN | Platform owner. Full access. Can promote/demote ADMINs. |
+| ADMIN | Platform administrator. Admin access but cannot manage other admins. |
+| USER | Regular user. |
+
+**Event-Scoped Roles** (per exhibition):
+| Role | Description |
+|------|-------------|
+| ORGANIZER | Manages a specific exhibition (config, moderation, zones). |
+| PARTNER | Delegated access to specific zone(s) within an exhibition. |
+
+*Note: A user can have different event-scoped roles across exhibitions (e.g., ORGANIZER of one event, simple participant in another).*
+
+#### Job Stories
+
 * **JS.01 - Multi-Event Orchestration**
     * **When** I am a Global Administrator (Super Admin),
     * **I want** to create a new Event entity with its specific start and end dates,
     * **so that** I can prepare several conventions or editions on the same platform instance without data overlap.
 
-* **JS.02 - User Promotion & Role Management**
+* **JS.02 - Admin Promotion**
     * **When** I am a Super Admin,
-    * **I want** to promote a standard user to the rank of "Organizer" or "Partner",
-    * **so that** I can delegate the management of a specific event or a specific zone to the right person.
+    * **I want** to promote a standard user to Admin role (or revoke it),
+    * **so that** I can delegate platform-wide administration tasks.
+
+* **JS.02b - Event Role Assignment**
+    * **When** I am a Super Admin or Admin,
+    * **I want** to assign a user as Organizer or Partner for a specific event,
+    * **so that** I can delegate the management of that event or specific zones to the right person.
 
 * **JS.03 - Global Event Configuration**
     * **When** creating or editing an event,
