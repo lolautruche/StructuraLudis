@@ -200,8 +200,11 @@ export interface NotificationListResponse {
 /**
  * Exhibition types.
  */
+export type ExhibitionStatus = 'DRAFT' | 'PUBLISHED' | 'ARCHIVED';
+
 export interface Exhibition {
   id: string;
+  organization_id: string;
   title: string;
   slug: string;
   description: string | null;
@@ -211,9 +214,39 @@ export interface Exhibition {
   location_name: string | null;
   city: string | null;
   country_code: string | null;
-  status: 'DRAFT' | 'PUBLISHED' | 'ARCHIVED';
+  address: string | null;
+  status: ExhibitionStatus;
+  settings: Record<string, unknown> | null;
+  grace_period_minutes: number;
   is_registration_open: boolean;
+  registration_opens_at: string | null;
+  registration_closes_at: string | null;
   primary_language: string;
+  secondary_languages: string[] | null;
+  title_i18n: Record<string, string> | null;
+  description_i18n: Record<string, string> | null;
+  created_at: string;
+  updated_at: string | null;
+}
+
+export interface ExhibitionUpdate {
+  title?: string;
+  description?: string;
+  start_date?: string;
+  end_date?: string;
+  location_name?: string;
+  city?: string;
+  country_code?: string;
+  timezone?: string;
+  grace_period_minutes?: number;
+  status?: ExhibitionStatus;
+  is_registration_open?: boolean;
+  registration_opens_at?: string | null;
+  registration_closes_at?: string | null;
+  primary_language?: string;
+  secondary_languages?: string[];
+  title_i18n?: Record<string, string>;
+  description_i18n?: Record<string, string>;
 }
 
 /**
@@ -328,6 +361,87 @@ export interface TimeSlot {
   buffer_time_minutes: number;
   created_at: string;
   updated_at: string | null;
+}
+
+export interface TimeSlotCreate {
+  name: string;
+  start_time: string;
+  end_time: string;
+  max_duration_minutes?: number;
+  buffer_time_minutes?: number;
+}
+
+export interface TimeSlotUpdate {
+  name?: string;
+  start_time?: string;
+  end_time?: string;
+  max_duration_minutes?: number;
+  buffer_time_minutes?: number;
+}
+
+/**
+ * Zone types.
+ */
+export type ZoneType = 'RPG' | 'BOARD_GAME' | 'WARGAME' | 'TCG' | 'DEMO' | 'MIXED';
+
+export interface Zone {
+  id: string;
+  exhibition_id: string;
+  name: string;
+  description: string | null;
+  type: ZoneType;
+  delegated_to_group_id: string | null;
+  name_i18n: Record<string, string> | null;
+  description_i18n: Record<string, string> | null;
+  created_at: string;
+  updated_at: string | null;
+}
+
+export interface ZoneCreate {
+  exhibition_id: string;
+  name: string;
+  description?: string;
+  type?: ZoneType;
+  delegated_to_group_id?: string;
+}
+
+export interface ZoneUpdate {
+  name?: string;
+  description?: string;
+  type?: ZoneType;
+}
+
+/**
+ * Physical table types.
+ */
+export type PhysicalTableStatus = 'AVAILABLE' | 'OCCUPIED' | 'RESERVED' | 'MAINTENANCE';
+
+export interface PhysicalTable {
+  id: string;
+  zone_id: string;
+  label: string;
+  capacity: number;
+  status: PhysicalTableStatus;
+  created_at: string;
+  updated_at: string | null;
+}
+
+export interface PhysicalTableUpdate {
+  label?: string;
+  capacity?: number;
+  status?: PhysicalTableStatus;
+}
+
+export interface BatchTablesCreate {
+  prefix?: string;
+  count: number;
+  starting_number?: number;
+  capacity?: number;
+}
+
+export interface BatchTablesResponse {
+  created_count: number;
+  tables: PhysicalTable[];
 }
 
 /**
