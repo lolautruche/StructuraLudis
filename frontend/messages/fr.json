@@ -274,7 +274,8 @@
     "pastEvents": "Événements passés",
     "noEvents": "Aucun événement",
     "noEventsDescription": "Il n'y a pas d'événement programmé pour le moment.",
-    "proposeSession": "Proposer une session"
+    "proposeSession": "Proposer une session",
+    "manage": "Gérer"
   },
   "SafetyTools": {
     "xCard": "X-Card",

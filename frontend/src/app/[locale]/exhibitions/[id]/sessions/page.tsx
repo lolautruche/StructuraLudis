@@ -25,7 +25,10 @@ export default function ExhibitionSessionsPage() {
   const searchParams = useSearchParams();
 
   const exhibitionId = params.id as string;
-  const { isAuthenticated } = useAuth();
+  const { user, isAuthenticated } = useAuth();
+
+  // Check if user can manage this exhibition
+  const canManage = user?.global_role === 'SUPER_ADMIN' || user?.global_role === 'ORGANIZER';
 
   const [exhibition, setExhibition] = useState<Exhibition | null>(null);
   const [sessions, setSessions] = useState<GameSession[]>([]);
@@ -140,13 +143,22 @@ export default function ExhibitionSessionsPage() {
                 )}
               </div>
             </div>
-            {isAuthenticated && (
-              <Link href={`/my/sessions/new?exhibition=${exhibitionId}`}>
-                <Button variant="primary">
-                  {tExhibition('proposeSession')}
-                </Button>
-              </Link>
-            )}
+            <div className="flex gap-2">
+              {canManage && (
+                <Link href={`/exhibitions/${exhibitionId}/manage`}>
+                  <Button variant="secondary">
+                    {tExhibition('manage')}
+                  </Button>
+                </Link>
+              )}
+              {isAuthenticated && (
+                <Link href={`/my/sessions/new?exhibition=${exhibitionId}`}>
+                  <Button variant="primary">
+                    {tExhibition('proposeSession')}
+                  </Button>
+                </Link>
+              )}
+            </div>
           </div>
           {exhibition.description && (
             <p className="text-slate-600 dark:text-slate-400 mt-3">{exhibition.description}</p>
