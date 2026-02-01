@@ -444,6 +444,34 @@
     },
     "recentExhibitions": "Événements récents",
     "viewAll": "Voir tout",
-    "noExhibitions": "Aucun événement"
+    "noExhibitions": "Aucun événement",
+    "userManagement": {
+      "title": "Gestion des utilisateurs",
+      "searchPlaceholder": "Rechercher par nom ou email...",
+      "allRoles": "Tous les rôles",
+      "allStatuses": "Tous les statuts",
+      "activeUsers": "Actifs",
+      "inactiveUsers": "Inactifs",
+      "name": "Nom",
+      "email": "Email",
+      "role": "Rôle",
+      "status": "Statut",
+      "lastLogin": "Dernière connexion",
+      "actions": "Actions",
+      "noUsers": "Aucun utilisateur trouvé",
+      "unverified": "non vérifié",
+      "active": "Actif",
+      "inactive": "Inactif",
+      "activate": "Activer",
+      "deactivate": "Désactiver",
+      "confirmRoleChangeTitle": "Modifier le rôle ?",
+      "confirmRoleChangeMessage": "Modifier le rôle de {name} en {role} ?",
+      "confirmDeactivateTitle": "Désactiver l'utilisateur ?",
+      "confirmDeactivateMessage": "Désactiver {name} ? Cette personne ne pourra plus se connecter.",
+      "confirmActivateTitle": "Activer l'utilisateur ?",
+      "confirmActivateMessage": "Activer {name} ? Cette personne pourra à nouveau se connecter.",
+      "roleUpdated": "Rôle mis à jour avec succès",
+      "statusUpdated": "Statut mis à jour avec succès"
+    }
   }
 }

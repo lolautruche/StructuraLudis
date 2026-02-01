@@ -444,6 +444,34 @@
     },
     "recentExhibitions": "Recent Exhibitions",
     "viewAll": "View all",
-    "noExhibitions": "No exhibitions yet"
+    "noExhibitions": "No exhibitions yet",
+    "userManagement": {
+      "title": "User Management",
+      "searchPlaceholder": "Search by name or email...",
+      "allRoles": "All roles",
+      "allStatuses": "All statuses",
+      "activeUsers": "Active",
+      "inactiveUsers": "Inactive",
+      "name": "Name",
+      "email": "Email",
+      "role": "Role",
+      "status": "Status",
+      "lastLogin": "Last login",
+      "actions": "Actions",
+      "noUsers": "No users found",
+      "unverified": "unverified",
+      "active": "Active",
+      "inactive": "Inactive",
+      "activate": "Activate",
+      "deactivate": "Deactivate",
+      "confirmRoleChangeTitle": "Change user role?",
+      "confirmRoleChangeMessage": "Change {name}'s role to {role}?",
+      "confirmDeactivateTitle": "Deactivate user?",
+      "confirmDeactivateMessage": "Deactivate {name}? They will not be able to log in.",
+      "confirmActivateTitle": "Activate user?",
+      "confirmActivateMessage": "Activate {name}? They will be able to log in again.",
+      "roleUpdated": "Role updated successfully",
+      "statusUpdated": "Status updated successfully"
+    }
   }
 }
