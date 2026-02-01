@@ -11,3 +11,4 @@ export { userApi } from './endpoints/user';
 export { exhibitionsApi } from './endpoints/exhibitions';
 export { gamesApi } from './endpoints/games';
 export { zonesApi } from './endpoints/zones';
+export { adminApi } from './endpoints/admin';

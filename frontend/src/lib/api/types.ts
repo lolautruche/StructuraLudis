@@ -492,3 +492,44 @@ export interface SessionUpdateRequest {
   scheduled_start?: string;
   scheduled_end?: string;
 }
+
+/**
+ * Admin types (SuperAdmin portal).
+ */
+export type GlobalRole = 'SUPER_ADMIN' | 'ORGANIZER' | 'PARTNER' | 'USER';
+
+export interface AdminUser {
+  id: string;
+  email: string;
+  full_name: string | null;
+  global_role: GlobalRole;
+  is_active: boolean;
+  email_verified: boolean;
+  created_at: string;
+  last_login: string | null;
+}
+
+export interface PlatformStats {
+  users: {
+    total: number;
+    by_role: Record<string, number>;
+  };
+  exhibitions: {
+    total: number;
+    by_status: Record<string, number>;
+  };
+}
+
+export interface ExhibitionCreate {
+  title: string;
+  slug: string;
+  description?: string;
+  start_date: string;
+  end_date: string;
+  location_name?: string;
+  city?: string;
+  country_code?: string;
+  timezone: string;
+  primary_language: string;
+  grace_period_minutes?: number;
+}

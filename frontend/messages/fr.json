@@ -428,5 +428,22 @@
     "submitting": "Soumission...",
     "submitError": "Session créée mais la soumission a échoué. Veuillez réessayer depuis votre tableau de bord.",
     "genericError": "Une erreur est survenue. Veuillez réessayer."
+  },
+  "SuperAdmin": {
+    "title": "Portail Admin",
+    "dashboard": "Tableau de bord",
+    "users": "Utilisateurs",
+    "exhibitions": "Événements",
+    "stats": {
+      "totalUsers": "Total utilisateurs",
+      "organizers": "Organisateurs",
+      "partners": "Partenaires",
+      "draftExhibitions": "Brouillon",
+      "publishedExhibitions": "Publiés",
+      "archivedExhibitions": "Archivés"
+    },
+    "recentExhibitions": "Événements récents",
+    "viewAll": "Voir tout",
+    "noExhibitions": "Aucun événement"
   }
 }

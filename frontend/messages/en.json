@@ -428,5 +428,22 @@
     "submitting": "Submitting...",
     "submitError": "Session created but submission failed. Please try again from your dashboard.",
     "genericError": "An error occurred. Please try again."
+  },
+  "SuperAdmin": {
+    "title": "Admin Portal",
+    "dashboard": "Dashboard",
+    "users": "Users",
+    "exhibitions": "Exhibitions",
+    "stats": {
+      "totalUsers": "Total Users",
+      "organizers": "Organizers",
+      "partners": "Partners",
+      "draftExhibitions": "Draft",
+      "publishedExhibitions": "Published",
+      "archivedExhibitions": "Archived"
+    },
+    "recentExhibitions": "Recent Exhibitions",
+    "viewAll": "View all",
+    "noExhibitions": "No exhibitions yet"
   }
 }
