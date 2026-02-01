@@ -8,14 +8,7 @@ import { useTranslations } from 'next-intl';
 import { Zone, ZoneCreate, ZoneType } from '@/lib/api';
 import { Button, Input, Select, Textarea } from '@/components/ui';
 
-const ZONE_TYPES: { value: ZoneType; label: string }[] = [
-  { value: 'MIXED', label: 'Mixed' },
-  { value: 'RPG', label: 'RPG' },
-  { value: 'BOARD_GAME', label: 'Board Game' },
-  { value: 'WARGAME', label: 'Wargame' },
-  { value: 'TCG', label: 'TCG' },
-  { value: 'DEMO', label: 'Demo' },
-];
+const ZONE_TYPE_VALUES: ZoneType[] = ['MIXED', 'RPG', 'BOARD_GAME', 'WARGAME', 'TCG', 'DEMO'];
 
 const zoneSchema = z.object({
   name: z.string().min(1).max(100),
@@ -102,7 +95,10 @@ export function ZoneForm({
       <Select
         {...register('type')}
         label={t('zoneType')}
-        options={ZONE_TYPES}
+        options={ZONE_TYPE_VALUES.map((type) => ({
+          value: type,
+          label: t(`zoneTypes.${type}`),
+        }))}
         error={errors.type?.message}
       />
 

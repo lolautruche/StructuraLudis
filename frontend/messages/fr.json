@@ -337,6 +337,19 @@
     "zoneNamePlaceholder": "ex. Espace JDR",
     "zoneDescription": "Description",
     "zoneType": "Type de zone",
+    "zoneTypes": {
+      "RPG": "JDR",
+      "BOARD_GAME": "Jeux de Plateau",
+      "WARGAME": "Figurines",
+      "TCG": "TCG",
+      "DEMO": "Démo",
+      "MIXED": "Mixte"
+    },
+    "statuses": {
+      "DRAFT": "Brouillon",
+      "PUBLISHED": "Publié",
+      "ARCHIVED": "Archivé"
+    },
     "tables": "Tables",
     "addTables": "Ajouter des tables",
     "noTables": "Aucune table dans cette zone",

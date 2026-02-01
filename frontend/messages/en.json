@@ -337,6 +337,19 @@
     "zoneNamePlaceholder": "e.g. RPG Hall",
     "zoneDescription": "Description",
     "zoneType": "Zone type",
+    "zoneTypes": {
+      "RPG": "RPG",
+      "BOARD_GAME": "Board Games",
+      "WARGAME": "Miniatures",
+      "TCG": "TCG",
+      "DEMO": "Demo",
+      "MIXED": "Mixed"
+    },
+    "statuses": {
+      "DRAFT": "Draft",
+      "PUBLISHED": "Published",
+      "ARCHIVED": "Archived"
+    },
     "tables": "Tables",
     "addTables": "Add tables",
     "noTables": "No tables in this zone",

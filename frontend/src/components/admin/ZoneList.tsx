@@ -257,7 +257,7 @@ export function ZoneList({ exhibitionId }: ZoneListProps) {
                     </div>
                     <div className="flex items-center gap-3">
                       <Badge variant={ZONE_TYPE_COLORS[zone.type]}>
-                        {zone.type}
+                        {t(`zoneTypes.${zone.type}`)}
                       </Badge>
                       <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
                         <Button
