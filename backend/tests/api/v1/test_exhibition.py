@@ -371,6 +371,132 @@ class TestTimeSlots:
         data = response.json()
         assert len(data) == 3
 
+    async def test_update_slot_success(
+        self, auth_client: AsyncClient, test_organizer: dict
+    ):
+        """Update time slot returns 200 with updated data."""
+        # Create exhibition
+        exhibition_payload = {
+            "title": "Update Slot Test",
+            "slug": "update-slot-test",
+            "start_date": "2026-07-01T08:00:00Z",
+            "end_date": "2026-07-03T22:00:00Z",
+            "organization_id": test_organizer["organization_id"],
+        }
+        create_resp = await auth_client.post("/api/v1/exhibitions/", json=exhibition_payload)
+        exhibition_id = create_resp.json()["id"]
+
+        # Create a slot
+        slot_payload = {
+            "name": "Morning",
+            "start_time": "2026-07-01T09:00:00Z",
+            "end_time": "2026-07-01T13:00:00Z",
+            "max_duration_minutes": 240,
+            "buffer_time_minutes": 15,
+        }
+        slot_resp = await auth_client.post(
+            f"/api/v1/exhibitions/{exhibition_id}/slots", json=slot_payload
+        )
+        slot_id = slot_resp.json()["id"]
+
+        # Update the slot
+        update_payload = {
+            "name": "Early Morning",
+            "buffer_time_minutes": 30,
+        }
+        response = await auth_client.put(
+            f"/api/v1/exhibitions/{exhibition_id}/slots/{slot_id}",
+            json=update_payload,
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["name"] == "Early Morning"
+        assert data["buffer_time_minutes"] == 30
+        assert data["max_duration_minutes"] == 240  # Unchanged
+
+    async def test_update_slot_not_found(
+        self, auth_client: AsyncClient, test_organizer: dict
+    ):
+        """Update non-existent slot returns 404."""
+        # Create exhibition
+        exhibition_payload = {
+            "title": "Update Slot 404 Test",
+            "slug": "update-slot-404",
+            "start_date": "2026-07-01T08:00:00Z",
+            "end_date": "2026-07-03T22:00:00Z",
+            "organization_id": test_organizer["organization_id"],
+        }
+        create_resp = await auth_client.post("/api/v1/exhibitions/", json=exhibition_payload)
+        exhibition_id = create_resp.json()["id"]
+
+        fake_slot_id = "00000000-0000-0000-0000-000000000000"
+        response = await auth_client.put(
+            f"/api/v1/exhibitions/{exhibition_id}/slots/{fake_slot_id}",
+            json={"name": "Whatever"},
+        )
+
+        assert response.status_code == 404
+
+    async def test_delete_slot_success(
+        self, auth_client: AsyncClient, test_organizer: dict
+    ):
+        """Delete time slot returns 204."""
+        # Create exhibition
+        exhibition_payload = {
+            "title": "Delete Slot Test",
+            "slug": "delete-slot-test",
+            "start_date": "2026-07-01T08:00:00Z",
+            "end_date": "2026-07-03T22:00:00Z",
+            "organization_id": test_organizer["organization_id"],
+        }
+        create_resp = await auth_client.post("/api/v1/exhibitions/", json=exhibition_payload)
+        exhibition_id = create_resp.json()["id"]
+
+        # Create a slot
+        slot_payload = {
+            "name": "To Delete",
+            "start_time": "2026-07-01T09:00:00Z",
+            "end_time": "2026-07-01T13:00:00Z",
+            "max_duration_minutes": 240,
+        }
+        slot_resp = await auth_client.post(
+            f"/api/v1/exhibitions/{exhibition_id}/slots", json=slot_payload
+        )
+        slot_id = slot_resp.json()["id"]
+
+        # Delete the slot
+        response = await auth_client.delete(
+            f"/api/v1/exhibitions/{exhibition_id}/slots/{slot_id}"
+        )
+        assert response.status_code == 204
+
+        # Verify it's gone
+        list_resp = await auth_client.get(f"/api/v1/exhibitions/{exhibition_id}/slots")
+        assert len(list_resp.json()) == 0
+
+    async def test_delete_slot_not_found(
+        self, auth_client: AsyncClient, test_organizer: dict
+    ):
+        """Delete non-existent slot returns 404."""
+        # Create exhibition
+        exhibition_payload = {
+            "title": "Delete Slot 404 Test",
+            "slug": "delete-slot-404",
+            "start_date": "2026-07-01T08:00:00Z",
+            "end_date": "2026-07-03T22:00:00Z",
+            "organization_id": test_organizer["organization_id"],
+        }
+        create_resp = await auth_client.post("/api/v1/exhibitions/", json=exhibition_payload)
+        exhibition_id = create_resp.json()["id"]
+
+        fake_slot_id = "00000000-0000-0000-0000-000000000000"
+        response = await auth_client.delete(
+            f"/api/v1/exhibitions/{exhibition_id}/slots/{fake_slot_id}"
+        )
+
+        assert response.status_code == 404
+
 
 class TestDashboard:
     """Tests for GET /api/v1/exhibitions/{id}/status (dashboard)."""

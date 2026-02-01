@@ -690,3 +690,241 @@ class TestPartnerPermissions:
         )
 
         assert response.status_code == 403
+
+
+class TestDeleteZone:
+    """Tests for DELETE /api/v1/zones/{zone_id}"""
+
+    async def test_delete_zone_success(
+        self, auth_client: AsyncClient, test_organizer: dict
+    ):
+        """Delete existing zone returns 204."""
+        # Create exhibition and zone
+        exhibition_payload = {
+            "title": "Delete Zone Test",
+            "slug": "delete-zone-test",
+            "start_date": "2026-07-01T08:00:00Z",
+            "end_date": "2026-07-03T22:00:00Z",
+            "organization_id": test_organizer["organization_id"],
+        }
+        create_resp = await auth_client.post("/api/v1/exhibitions/", json=exhibition_payload)
+        exhibition_id = create_resp.json()["id"]
+
+        zone_payload = {"name": "Zone To Delete", "exhibition_id": exhibition_id}
+        zone_resp = await auth_client.post("/api/v1/zones/", json=zone_payload)
+        zone_id = zone_resp.json()["id"]
+
+        # Delete
+        response = await auth_client.delete(f"/api/v1/zones/{zone_id}")
+
+        assert response.status_code == 204
+
+        # Verify deleted
+        get_resp = await auth_client.get(f"/api/v1/zones/{zone_id}")
+        assert get_resp.status_code == 404
+
+    async def test_delete_zone_not_found(self, auth_client: AsyncClient):
+        """Delete non-existent zone returns 404."""
+        fake_id = "00000000-0000-0000-0000-000000000000"
+
+        response = await auth_client.delete(f"/api/v1/zones/{fake_id}")
+
+        assert response.status_code == 404
+        assert response.json()["detail"] == "Zone not found"
+
+    async def test_delete_zone_unauthorized(self, client: AsyncClient):
+        """Delete without auth returns 401."""
+        fake_id = "00000000-0000-0000-0000-000000000000"
+
+        response = await client.delete(f"/api/v1/zones/{fake_id}")
+
+        assert response.status_code == 401
+
+    async def test_delete_zone_forbidden_user_role(
+        self, auth_client: AsyncClient, client: AsyncClient, test_user: dict, test_organizer: dict
+    ):
+        """Delete with USER role returns 403."""
+        # Create exhibition and zone first
+        exhibition_payload = {
+            "title": "Forbidden Delete Test",
+            "slug": "forbidden-delete-test",
+            "start_date": "2026-07-01T08:00:00Z",
+            "end_date": "2026-07-03T22:00:00Z",
+            "organization_id": test_organizer["organization_id"],
+        }
+        create_resp = await auth_client.post("/api/v1/exhibitions/", json=exhibition_payload)
+        exhibition_id = create_resp.json()["id"]
+
+        zone_payload = {"name": "Forbidden Delete Zone", "exhibition_id": exhibition_id}
+        zone_resp = await auth_client.post("/api/v1/zones/", json=zone_payload)
+        zone_id = zone_resp.json()["id"]
+
+        response = await client.delete(
+            f"/api/v1/zones/{zone_id}",
+            headers={"X-User-ID": test_user["id"]},
+        )
+
+        assert response.status_code == 403
+
+
+class TestUpdateTable:
+    """Tests for PUT /api/v1/zones/{zone_id}/tables/{table_id}"""
+
+    async def test_update_table_success(
+        self, auth_client: AsyncClient, test_organizer: dict
+    ):
+        """Update table returns 200 with updated data."""
+        # Create exhibition, zone, and table
+        exhibition_payload = {
+            "title": "Update Table Test",
+            "slug": "update-table-test",
+            "start_date": "2026-07-01T08:00:00Z",
+            "end_date": "2026-07-03T22:00:00Z",
+            "organization_id": test_organizer["organization_id"],
+        }
+        create_resp = await auth_client.post("/api/v1/exhibitions/", json=exhibition_payload)
+        exhibition_id = create_resp.json()["id"]
+
+        zone_payload = {"name": "Update Table Zone", "exhibition_id": exhibition_id}
+        zone_resp = await auth_client.post("/api/v1/zones/", json=zone_payload)
+        zone_id = zone_resp.json()["id"]
+
+        # Create a table
+        tables_resp = await auth_client.post(
+            f"/api/v1/zones/{zone_id}/batch-tables",
+            json={"prefix": "T", "count": 1, "capacity": 4},
+        )
+        table_id = tables_resp.json()["tables"][0]["id"]
+
+        # Update the table
+        response = await auth_client.put(
+            f"/api/v1/zones/{zone_id}/tables/{table_id}",
+            json={"label": "VIP-1", "capacity": 8, "status": "RESERVED"},
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["label"] == "VIP-1"
+        assert data["capacity"] == 8
+        assert data["status"] == "RESERVED"
+
+    async def test_update_table_not_found(
+        self, auth_client: AsyncClient, test_organizer: dict
+    ):
+        """Update non-existent table returns 404."""
+        # Create exhibition and zone
+        exhibition_payload = {
+            "title": "Update Table Not Found",
+            "slug": "update-table-not-found",
+            "start_date": "2026-07-01T08:00:00Z",
+            "end_date": "2026-07-03T22:00:00Z",
+            "organization_id": test_organizer["organization_id"],
+        }
+        create_resp = await auth_client.post("/api/v1/exhibitions/", json=exhibition_payload)
+        exhibition_id = create_resp.json()["id"]
+
+        zone_payload = {"name": "Not Found Zone", "exhibition_id": exhibition_id}
+        zone_resp = await auth_client.post("/api/v1/zones/", json=zone_payload)
+        zone_id = zone_resp.json()["id"]
+
+        fake_table_id = "00000000-0000-0000-0000-000000000000"
+
+        response = await auth_client.put(
+            f"/api/v1/zones/{zone_id}/tables/{fake_table_id}",
+            json={"label": "Updated"},
+        )
+
+        assert response.status_code == 404
+        assert response.json()["detail"] == "Physical table not found"
+
+    async def test_update_table_unauthorized(self, client: AsyncClient):
+        """Update without auth returns 401."""
+        fake_zone_id = "00000000-0000-0000-0000-000000000000"
+        fake_table_id = "00000000-0000-0000-0000-000000000001"
+
+        response = await client.put(
+            f"/api/v1/zones/{fake_zone_id}/tables/{fake_table_id}",
+            json={"label": "Updated"},
+        )
+
+        assert response.status_code == 401
+
+
+class TestDeleteTable:
+    """Tests for DELETE /api/v1/zones/{zone_id}/tables/{table_id}"""
+
+    async def test_delete_table_success(
+        self, auth_client: AsyncClient, test_organizer: dict
+    ):
+        """Delete table returns 204."""
+        # Create exhibition, zone, and table
+        exhibition_payload = {
+            "title": "Delete Table Test",
+            "slug": "delete-table-test",
+            "start_date": "2026-07-01T08:00:00Z",
+            "end_date": "2026-07-03T22:00:00Z",
+            "organization_id": test_organizer["organization_id"],
+        }
+        create_resp = await auth_client.post("/api/v1/exhibitions/", json=exhibition_payload)
+        exhibition_id = create_resp.json()["id"]
+
+        zone_payload = {"name": "Delete Table Zone", "exhibition_id": exhibition_id}
+        zone_resp = await auth_client.post("/api/v1/zones/", json=zone_payload)
+        zone_id = zone_resp.json()["id"]
+
+        # Create a table
+        tables_resp = await auth_client.post(
+            f"/api/v1/zones/{zone_id}/batch-tables",
+            json={"prefix": "T", "count": 1},
+        )
+        table_id = tables_resp.json()["tables"][0]["id"]
+
+        # Delete the table
+        response = await auth_client.delete(
+            f"/api/v1/zones/{zone_id}/tables/{table_id}"
+        )
+
+        assert response.status_code == 204
+
+        # Verify deleted
+        tables_resp = await auth_client.get(f"/api/v1/zones/{zone_id}/tables")
+        assert len(tables_resp.json()) == 0
+
+    async def test_delete_table_not_found(
+        self, auth_client: AsyncClient, test_organizer: dict
+    ):
+        """Delete non-existent table returns 404."""
+        # Create exhibition and zone
+        exhibition_payload = {
+            "title": "Delete Table Not Found",
+            "slug": "delete-table-not-found",
+            "start_date": "2026-07-01T08:00:00Z",
+            "end_date": "2026-07-03T22:00:00Z",
+            "organization_id": test_organizer["organization_id"],
+        }
+        create_resp = await auth_client.post("/api/v1/exhibitions/", json=exhibition_payload)
+        exhibition_id = create_resp.json()["id"]
+
+        zone_payload = {"name": "Delete Not Found Zone", "exhibition_id": exhibition_id}
+        zone_resp = await auth_client.post("/api/v1/zones/", json=zone_payload)
+        zone_id = zone_resp.json()["id"]
+
+        fake_table_id = "00000000-0000-0000-0000-000000000000"
+
+        response = await auth_client.delete(
+            f"/api/v1/zones/{zone_id}/tables/{fake_table_id}"
+        )
+
+        assert response.status_code == 404
+        assert response.json()["detail"] == "Physical table not found"
+
+    async def test_delete_table_unauthorized(self, client: AsyncClient):
+        """Delete without auth returns 401."""
+        fake_zone_id = "00000000-0000-0000-0000-000000000000"
+        fake_table_id = "00000000-0000-0000-0000-000000000001"
+
+        response = await client.delete(
+            f"/api/v1/zones/{fake_zone_id}/tables/{fake_table_id}"
+        )
+
+        assert response.status_code == 401

@@ -19,6 +19,7 @@ from app.domain.exhibition.schemas import (
     ZoneDelegate,
     ZoneRead,
     PhysicalTableRead,
+    PhysicalTableUpdate,
     BatchTablesCreate,
     BatchTablesResponse,
 )
@@ -187,6 +188,39 @@ async def delegate_zone(
     return zone
 
 
+@router.delete("/{zone_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_zone(
+    zone_id: UUID,
+    current_user: User = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Delete a zone.
+
+    Only organizers or SUPER_ADMIN can delete zones.
+    Deleting a zone will also delete all physical tables in it.
+    """
+    result = await db.execute(
+        select(Zone).where(Zone.id == zone_id)
+    )
+    zone = result.scalar_one_or_none()
+
+    if not zone:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Zone not found",
+        )
+
+    # Only organizers can delete zones
+    if current_user.global_role not in [GlobalRole.SUPER_ADMIN, GlobalRole.ORGANIZER]:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only organizers can delete zones",
+        )
+
+    await db.delete(zone)
+
+
 # =============================================================================
 # Physical Tables
 # =============================================================================
@@ -245,3 +279,75 @@ async def batch_create_tables(
         created_count=len(tables),
         tables=tables,
     )
+
+
+@router.put(
+    "/{zone_id}/tables/{table_id}",
+    response_model=PhysicalTableRead,
+)
+async def update_table(
+    zone_id: UUID,
+    table_id: UUID,
+    table_in: PhysicalTableUpdate,
+    current_user: User = Depends(require_zone_manager),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Update a physical table.
+
+    Requires: Zone manager (organizer, SUPER_ADMIN, or delegated partner).
+    """
+    result = await db.execute(
+        select(PhysicalTable).where(
+            PhysicalTable.id == table_id,
+            PhysicalTable.zone_id == zone_id,
+        )
+    )
+    table = result.scalar_one_or_none()
+
+    if not table:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Physical table not found",
+        )
+
+    update_data = table_in.model_dump(exclude_unset=True)
+    for field, value in update_data.items():
+        setattr(table, field, value)
+
+    await db.flush()
+    await db.refresh(table)
+
+    return table
+
+
+@router.delete(
+    "/{zone_id}/tables/{table_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+async def delete_table(
+    zone_id: UUID,
+    table_id: UUID,
+    current_user: User = Depends(require_zone_manager),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Delete a physical table.
+
+    Requires: Zone manager (organizer, SUPER_ADMIN, or delegated partner).
+    """
+    result = await db.execute(
+        select(PhysicalTable).where(
+            PhysicalTable.id == table_id,
+            PhysicalTable.zone_id == zone_id,
+        )
+    )
+    table = result.scalar_one_or_none()
+
+    if not table:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Physical table not found",
+        )
+
+    await db.delete(table)

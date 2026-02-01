@@ -20,6 +20,7 @@ from app.domain.exhibition.schemas import (
     ExhibitionDashboard,
     TimeSlotCreate,
     TimeSlotRead,
+    TimeSlotUpdate,
     SafetyToolCreate,
     SafetyToolRead,
     SafetyToolUpdate,
@@ -196,6 +197,97 @@ async def create_time_slot(
     """
     service = ExhibitionService(db)
     return await service.create_time_slot(exhibition_id, slot_in)
+
+
+@router.put(
+    "/{exhibition_id}/slots/{slot_id}",
+    response_model=TimeSlotRead,
+)
+async def update_time_slot(
+    exhibition_id: UUID,
+    slot_id: UUID,
+    slot_in: TimeSlotUpdate,
+    current_user: User = Depends(require_exhibition_organizer),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Update a time slot.
+
+    Requires: Exhibition organizer or SUPER_ADMIN.
+    """
+    result = await db.execute(
+        select(TimeSlot).where(
+            TimeSlot.id == slot_id,
+            TimeSlot.exhibition_id == exhibition_id,
+        )
+    )
+    slot = result.scalar_one_or_none()
+
+    if not slot:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Time slot not found",
+        )
+
+    update_data = slot_in.model_dump(exclude_unset=True)
+
+    # If updating times, validate consistency
+    start_time = update_data.get("start_time", slot.start_time)
+    end_time = update_data.get("end_time", slot.end_time)
+    max_duration = update_data.get("max_duration_minutes", slot.max_duration_minutes)
+
+    if start_time >= end_time:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="start_time must be before end_time",
+        )
+
+    slot_duration = (end_time - start_time).total_seconds() / 60
+    if max_duration > slot_duration:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"max_duration_minutes ({max_duration}) cannot exceed slot duration ({int(slot_duration)} minutes)",
+        )
+
+    for field, value in update_data.items():
+        setattr(slot, field, value)
+
+    await db.flush()
+    await db.refresh(slot)
+
+    return slot
+
+
+@router.delete(
+    "/{exhibition_id}/slots/{slot_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+async def delete_time_slot(
+    exhibition_id: UUID,
+    slot_id: UUID,
+    current_user: User = Depends(require_exhibition_organizer),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Delete a time slot.
+
+    Requires: Exhibition organizer or SUPER_ADMIN.
+    """
+    result = await db.execute(
+        select(TimeSlot).where(
+            TimeSlot.id == slot_id,
+            TimeSlot.exhibition_id == exhibition_id,
+        )
+    )
+    slot = result.scalar_one_or_none()
+
+    if not slot:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Time slot not found",
+        )
+
+    await db.delete(slot)
 
 
 # =============================================================================
