@@ -17,6 +17,7 @@ This document tracks prioritization decisions and project progress.
 | [#62](https://github.com/lolautruche/StructuraLudis/issues/62) | Notification Center & Bell | JS.C2, JS.C3 | In-app notifications |
 | [#77](https://github.com/lolautruche/StructuraLudis/issues/77) | Player registration to exhibitions | - | Exhibition registration flow |
 | [#38](https://github.com/lolautruche/StructuraLudis/issues/38) | Smart check-in reminders | JS.C3 | Automated reminders |
+| [#92](https://github.com/lolautruche/StructuraLudis/issues/92) | Self-service event creation | JS.06, JS.07 | User submits event, admin validates |
 
 #### Waitlist
 

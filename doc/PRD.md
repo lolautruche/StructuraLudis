@@ -47,6 +47,16 @@ To provide a universal event management ecosystem for all forms of tabletop gami
     * **I want** to import and synchronize game references from external databases (GROG for RPGs, BGG for board games),
     * **so that** users benefit from autocomplete and pre-filled metadata when creating sessions.
 
+* **JS.06 - Self-Service Event Creation**
+    * **When** I am a potential event organizer,
+    * **I want** to submit an event request with details (title, dates, location, organization info),
+    * **so that** I can propose my convention for inclusion on the platform.
+
+* **JS.07 - Event Request Review**
+    * **When** I am a Super Admin and receive an event creation request,
+    * **I want** to review, approve, or reject it (with optional feedback message),
+    * **so that** I can control which events are hosted while enabling self-service submissions.
+
 ### EPIC A: The Organizer's Setup
 
 * **JS.A0 - Simplified Topology (Zones)**
