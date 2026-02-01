@@ -6,6 +6,7 @@ import { useSearchParams } from 'next/navigation';
 import { adminApi, AdminUser, GlobalRole } from '@/lib/api';
 import { Card, Input, Select, Badge, Button, ConfirmDialog } from '@/components/ui';
 import { useToast } from '@/contexts/ToastContext';
+import { useAuth } from '@/contexts/AuthContext';
 
 const ROLES: GlobalRole[] = ['SUPER_ADMIN', 'ORGANIZER', 'PARTNER', 'USER'];
 
@@ -15,6 +16,7 @@ export default function AdminUsersPage() {
   const tCommon = useTranslations('Common');
   const searchParams = useSearchParams();
   const { showSuccess, showError } = useToast();
+  const { user: currentUser } = useAuth();
 
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -284,13 +286,22 @@ export default function AdminUsersPage() {
                         </span>
                       </td>
                       <td className="p-4 text-right">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleStatusToggle(user)}
-                        >
-                          {user.is_active ? t('deactivate') : t('activate')}
-                        </Button>
+                        {user.id === currentUser?.id ? (
+                          <span
+                            className="text-sm"
+                            style={{ color: 'var(--color-text-muted)' }}
+                          >
+                            {t('currentUser')}
+                          </span>
+                        ) : (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleStatusToggle(user)}
+                          >
+                            {user.is_active ? t('deactivate') : t('activate')}
+                          </Button>
+                        )}
                       </td>
                     </tr>
                   ))}

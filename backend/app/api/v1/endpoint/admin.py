@@ -60,7 +60,7 @@ async def list_users(
     if is_active is not None:
         query = query.where(User.is_active == is_active)
 
-    query = query.order_by(User.created_at.desc()).offset(skip).limit(limit)
+    query = query.order_by(User.full_name.asc(), User.email.asc()).offset(skip).limit(limit)
     result = await db.execute(query)
     return result.scalars().all()
 

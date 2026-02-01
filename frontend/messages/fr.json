@@ -503,7 +503,8 @@
       "confirmActivateTitle": "Activer l'utilisateur ?",
       "confirmActivateMessage": "Activer {name} ? Cette personne pourra à nouveau se connecter.",
       "roleUpdated": "Rôle mis à jour avec succès",
-      "statusUpdated": "Statut mis à jour avec succès"
+      "statusUpdated": "Statut mis à jour avec succès",
+      "currentUser": "(vous)"
     },
     "exhibitionManagement": {
       "title": "Gestion des événements",

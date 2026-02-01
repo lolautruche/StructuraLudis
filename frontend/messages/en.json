@@ -503,7 +503,8 @@
       "confirmActivateTitle": "Activate user?",
       "confirmActivateMessage": "Activate {name}? They will be able to log in again.",
       "roleUpdated": "Role updated successfully",
-      "statusUpdated": "Status updated successfully"
+      "statusUpdated": "Status updated successfully",
+      "currentUser": "(you)"
     },
     "exhibitionManagement": {
       "title": "Exhibition Management",
