@@ -68,6 +68,10 @@ class AuthService:
         if not user.is_active:
             raise AccountDeactivatedError()
 
+        # Update last_login timestamp
+        user.last_login = datetime.now(timezone.utc)
+        await self.db.flush()
+
         # Use longer expiration for "remember me"
         expires_delta = None
         if data.remember_me:

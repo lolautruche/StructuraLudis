@@ -531,6 +531,7 @@
     "exhibitionStatuses": {
       "DRAFT": "Draft",
       "PUBLISHED": "Published",
+      "SUSPENDED": "Suspended",
       "ARCHIVED": "Archived"
     },
     "createExhibition": {

@@ -8,7 +8,7 @@ import { adminApi, exhibitionsApi, Exhibition, ExhibitionStatus } from '@/lib/ap
 import { Card, Select, Button, ConfirmDialog } from '@/components/ui';
 import { useToast } from '@/contexts/ToastContext';
 
-const STATUS_OPTIONS: ExhibitionStatus[] = ['DRAFT', 'PUBLISHED', 'ARCHIVED'];
+const STATUS_OPTIONS: ExhibitionStatus[] = ['DRAFT', 'PUBLISHED', 'SUSPENDED', 'ARCHIVED'];
 
 export default function AdminExhibitionsPage() {
   const t = useTranslations('SuperAdmin.exhibitionManagement');

@@ -200,7 +200,7 @@ export interface NotificationListResponse {
 /**
  * Exhibition types.
  */
-export type ExhibitionStatus = 'DRAFT' | 'PUBLISHED' | 'ARCHIVED';
+export type ExhibitionStatus = 'DRAFT' | 'PUBLISHED' | 'SUSPENDED' | 'ARCHIVED';
 
 export interface Exhibition {
   id: string;
