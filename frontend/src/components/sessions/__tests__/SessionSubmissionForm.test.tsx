@@ -165,10 +165,11 @@ describe('SessionSubmissionForm', () => {
       expect(screen.getByText('sectionSchedule')).toBeInTheDocument();
     });
 
-    // Check time slot select exists by looking for the placeholder option
-    expect(screen.getByText('selectTimeSlot')).toBeInTheDocument();
-    // Check slot options are rendered
+    // Check time slot selector label exists
+    expect(screen.getByText('availableSlots')).toBeInTheDocument();
+    // Check slot cards are rendered with slot names as badges
     expect(screen.getByText(/Morning/)).toBeInTheDocument();
+    expect(screen.getByText(/Afternoon/)).toBeInTheDocument();
   });
 
   it('renders safety tools with required tools pre-checked', async () => {

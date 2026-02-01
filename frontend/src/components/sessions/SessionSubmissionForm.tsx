@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useTranslations } from 'next-intl';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -13,28 +13,91 @@ import { SafetyToolsSelector } from './SafetyToolsSelector';
 import { exhibitionsApi, sessionsApi } from '@/lib/api';
 import type { Game, TimeSlot, SafetyTool } from '@/lib/api/types';
 
-// Form validation schema
-const sessionFormSchema = z.object({
-  game_id: z.string().uuid('Select a game'),
-  time_slot_id: z.string().uuid('Select a time slot'),
-  scheduled_start: z.string().min(1, 'Start time is required'),
-  scheduled_end: z.string().min(1, 'End time is required'),
-  title: z.string().min(1, 'Title is required').max(255, 'Title is too long'),
-  description: z.string().max(5000, 'Description is too long').optional(),
-  language: z.string().min(2).max(10),
-  max_players_count: z.number().int().min(1, 'At least 1 player').max(100, 'Max 100 players'),
-  min_age: z.number().int().min(0).max(99).optional().nullable(),
-  is_accessible_disability: z.boolean(),
-  safety_tools: z.array(z.string()),
-}).refine((data) => {
-  if (!data.scheduled_start || !data.scheduled_end) return true;
-  return new Date(data.scheduled_end) > new Date(data.scheduled_start);
-}, {
-  message: 'End time must be after start time',
-  path: ['scheduled_end'],
-});
+// Schema factory that accepts timeSlots for cross-field validation
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function createSessionFormSchema(timeSlots: TimeSlot[], t: (key: string, params?: any) => string) {
+  return z.object({
+    game_id: z.string().uuid('Select a game'),
+    time_slot_id: z.string().uuid('Select a time slot'),
+    scheduled_start: z.string().min(1, 'Start time is required'),
+    scheduled_end: z.string().min(1, 'End time is required'),
+    title: z.string().min(1, 'Title is required').max(255, 'Title is too long'),
+    description: z.string().max(5000, 'Description is too long').optional(),
+    language: z.string().min(2).max(10),
+    max_players_count: z.number().int().min(1, 'At least 1 player').max(100, 'Max 100 players'),
+    min_age: z.number().int().min(0).max(99).optional().nullable(),
+    is_accessible_disability: z.boolean(),
+    safety_tools: z.array(z.string()),
+  })
+  .refine((data) => {
+    if (!data.scheduled_start || !data.scheduled_end) return true;
+    return new Date(data.scheduled_end) > new Date(data.scheduled_start);
+  }, {
+    message: 'End time must be after start time',
+    path: ['scheduled_end'],
+  })
+  .superRefine((data, ctx) => {
+    // Find the selected time slot
+    const slot = timeSlots.find(s => s.id === data.time_slot_id);
+    if (!slot || !data.scheduled_start || !data.scheduled_end) return;
 
-type SessionFormData = z.infer<typeof sessionFormSchema>;
+    const start = new Date(data.scheduled_start);
+    const end = new Date(data.scheduled_end);
+    const slotStart = new Date(slot.start_time);
+    const slotEnd = new Date(slot.end_time);
+
+    // Validation 1: Start cannot be before slot start
+    if (start < slotStart) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: t('startBeforeSlot'),
+        path: ['scheduled_start'],
+      });
+    }
+
+    // Validation 2: End cannot be after slot end
+    if (end > slotEnd) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: t('endAfterSlot'),
+        path: ['scheduled_end'],
+      });
+    }
+
+    // Validation 3: Duration must not exceed max
+    const durationMinutes = (end.getTime() - start.getTime()) / 60000;
+    if (durationMinutes > slot.max_duration_minutes) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: t('durationExceedsMax', { max: slot.max_duration_minutes }),
+        path: ['scheduled_end'],
+      });
+    }
+
+    // Validation 4: Duration must be at least 30 minutes
+    if (durationMinutes > 0 && durationMinutes < 30) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: t('durationTooShort'),
+        path: ['scheduled_end'],
+      });
+    }
+  });
+}
+
+type SessionFormData = {
+  game_id: string;
+  time_slot_id: string;
+  scheduled_start: string;
+  scheduled_end: string;
+  title: string;
+  description?: string;
+  language: string;
+  max_players_count: number;
+  min_age?: number | null;
+  is_accessible_disability: boolean;
+  safety_tools: string[];
+};
 
 interface SessionSubmissionFormProps {
   exhibitionId: string;
@@ -61,6 +124,11 @@ export function SessionSubmissionForm({
   // Submission states
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+
+  // Create schema dynamically when timeSlots are loaded
+  const sessionFormSchema = useMemo(() => {
+    return createSessionFormSchema(timeSlots, t);
+  }, [timeSlots, t]);
 
   // Form setup
   const {
