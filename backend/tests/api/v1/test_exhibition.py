@@ -964,3 +964,165 @@ class TestEventConfiguration:
 
         response = await auth_client.post("/api/v1/exhibitions/", json=payload)
         assert response.status_code == 422
+
+
+class TestCanManagePermission:
+    """Tests for can_manage field in exhibition responses."""
+
+    async def test_organizer_can_manage_own_exhibition(
+        self, auth_client: AsyncClient, test_organizer: dict
+    ):
+        """Organizer sees can_manage=true for their own exhibition."""
+        # Create exhibition
+        payload = {
+            "title": "My Exhibition",
+            "slug": "my-exhibition",
+            "start_date": "2026-07-01T10:00:00Z",
+            "end_date": "2026-07-03T18:00:00Z",
+            "organization_id": test_organizer["organization_id"],
+        }
+        create_resp = await auth_client.post("/api/v1/exhibitions/", json=payload)
+        assert create_resp.status_code == 201
+        exhibition_id = create_resp.json()["id"]
+
+        # Get exhibition with auth
+        response = await auth_client.get(f"/api/v1/exhibitions/{exhibition_id}")
+
+        assert response.status_code == 200
+        assert response.json()["can_manage"] is True
+
+    async def test_anonymous_cannot_manage(
+        self, client: AsyncClient, auth_client: AsyncClient, test_organizer: dict
+    ):
+        """Anonymous user sees can_manage=false."""
+        # Create exhibition (with auth)
+        payload = {
+            "title": "Public Exhibition",
+            "slug": "public-exhibition",
+            "start_date": "2026-07-01T10:00:00Z",
+            "end_date": "2026-07-03T18:00:00Z",
+            "organization_id": test_organizer["organization_id"],
+        }
+        create_resp = await auth_client.post("/api/v1/exhibitions/", json=payload)
+        exhibition_id = create_resp.json()["id"]
+
+        # Get without auth
+        response = await client.get(f"/api/v1/exhibitions/{exhibition_id}")
+
+        assert response.status_code == 200
+        assert response.json()["can_manage"] is False
+
+    async def test_regular_user_cannot_manage(
+        self, client: AsyncClient, auth_client: AsyncClient,
+        test_organizer: dict, test_user: dict
+    ):
+        """Regular user sees can_manage=false."""
+        # Create exhibition (with organizer auth)
+        payload = {
+            "title": "Organizer Exhibition",
+            "slug": "organizer-exhibition",
+            "start_date": "2026-07-01T10:00:00Z",
+            "end_date": "2026-07-03T18:00:00Z",
+            "organization_id": test_organizer["organization_id"],
+        }
+        create_resp = await auth_client.post("/api/v1/exhibitions/", json=payload)
+        exhibition_id = create_resp.json()["id"]
+
+        # Get with regular user auth
+        response = await client.get(
+            f"/api/v1/exhibitions/{exhibition_id}",
+            headers={"X-User-ID": test_user["id"]},
+        )
+
+        assert response.status_code == 200
+        assert response.json()["can_manage"] is False
+
+    async def test_super_admin_can_manage_all(
+        self, client: AsyncClient, auth_client: AsyncClient,
+        test_organizer: dict, test_super_admin: dict
+    ):
+        """Super admin sees can_manage=true for all exhibitions."""
+        # Create exhibition (with organizer auth)
+        payload = {
+            "title": "Any Exhibition",
+            "slug": "any-exhibition",
+            "start_date": "2026-07-01T10:00:00Z",
+            "end_date": "2026-07-03T18:00:00Z",
+            "organization_id": test_organizer["organization_id"],
+        }
+        create_resp = await auth_client.post("/api/v1/exhibitions/", json=payload)
+        exhibition_id = create_resp.json()["id"]
+
+        # Get with super admin auth
+        response = await client.get(
+            f"/api/v1/exhibitions/{exhibition_id}",
+            headers={"X-User-ID": test_super_admin["id"]},
+        )
+
+        assert response.status_code == 200
+        assert response.json()["can_manage"] is True
+
+    async def test_list_exhibitions_with_can_manage(
+        self, auth_client: AsyncClient, test_organizer: dict
+    ):
+        """List exhibitions includes can_manage for each."""
+        # Create exhibition
+        payload = {
+            "title": "List Test",
+            "slug": "list-test-manage",
+            "start_date": "2026-07-01T10:00:00Z",
+            "end_date": "2026-07-03T18:00:00Z",
+            "organization_id": test_organizer["organization_id"],
+        }
+        await auth_client.post("/api/v1/exhibitions/", json=payload)
+
+        # List with auth
+        response = await auth_client.get("/api/v1/exhibitions/")
+
+        assert response.status_code == 200
+        data = response.json()
+        assert len(data) >= 1
+        # Organizer should be able to manage their own exhibition
+        assert any(e["can_manage"] is True for e in data)
+
+    async def test_organizer_cannot_manage_other_org_exhibition(
+        self, client: AsyncClient, db_session, test_organizer: dict
+    ):
+        """Organizer sees can_manage=false for another organization's exhibition."""
+        from uuid import uuid4
+        from app.domain.organization import Organization
+        from app.domain.exhibition import Exhibition
+        from app.domain.shared.entity import ExhibitionStatus
+        from datetime import datetime, timezone
+
+        # Create another organization
+        other_org = Organization(
+            id=uuid4(),
+            name="Other Convention",
+            slug="other-convention",
+            contact_email="other@example.com",
+        )
+        db_session.add(other_org)
+        await db_session.commit()
+
+        # Create exhibition for other org
+        other_exhibition = Exhibition(
+            id=uuid4(),
+            organization_id=other_org.id,
+            title="Other Org Exhibition",
+            slug="other-org-exhibition",
+            start_date=datetime(2026, 7, 1, 10, 0, 0, tzinfo=timezone.utc),
+            end_date=datetime(2026, 7, 3, 18, 0, 0, tzinfo=timezone.utc),
+            status=ExhibitionStatus.DRAFT,
+        )
+        db_session.add(other_exhibition)
+        await db_session.commit()
+
+        # Get with organizer auth (not member of other org)
+        response = await client.get(
+            f"/api/v1/exhibitions/{other_exhibition.id}",
+            headers={"X-User-ID": test_organizer["id"]},
+        )
+
+        assert response.status_code == 200
+        assert response.json()["can_manage"] is False
