@@ -56,8 +56,20 @@ async def test_game(db_session: AsyncSession, test_game_category: dict) -> dict:
 
 
 @pytest.fixture
-async def test_exhibition_with_slot(auth_client: AsyncClient, test_organizer: dict) -> dict:
-    """Create an exhibition with a time slot."""
+async def test_exhibition_with_slot(
+    auth_client: AsyncClient,
+    test_organizer: dict,
+    second_organizer: dict,
+    db_session,
+) -> dict:
+    """Create an exhibition with a time slot.
+
+    Both test_organizer and second_organizer get ORGANIZER roles for the exhibition.
+    """
+    from uuid import uuid4
+    from app.domain.user.entity import UserExhibitionRole
+    from app.domain.shared.entity import ExhibitionRole
+
     exhibition_payload = {
         "title": "User Test Convention",
         "slug": "user-test-convention",
@@ -67,6 +79,16 @@ async def test_exhibition_with_slot(auth_client: AsyncClient, test_organizer: di
     }
     exhibition_resp = await auth_client.post("/api/v1/exhibitions/", json=exhibition_payload)
     exhibition_id = exhibition_resp.json()["id"]
+
+    # Add second_organizer as ORGANIZER for this exhibition (#99)
+    second_organizer_role = UserExhibitionRole(
+        id=uuid4(),
+        user_id=second_organizer["id"],
+        exhibition_id=exhibition_id,
+        role=ExhibitionRole.ORGANIZER,
+    )
+    db_session.add(second_organizer_role)
+    await db_session.commit()
 
     slot_payload = {
         "name": "Afternoon",
