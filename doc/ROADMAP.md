@@ -19,6 +19,9 @@ This document tracks prioritization decisions and project progress.
 | [#38](https://github.com/lolautruche/StructuraLudis/issues/38) | Smart check-in reminders | JS.C3 | Automated reminders |
 | [#92](https://github.com/lolautruche/StructuraLudis/issues/92) | Self-service event creation | JS.06, JS.07 | User submits event, admin validates |
 | [#93](https://github.com/lolautruche/StructuraLudis/issues/93) | Zone-level table prefix | JS.A0 | Smart numbering option |
+| [#94](https://github.com/lolautruche/StructuraLudis/issues/94) | Event region field | JS.A10 | Predefined region list |
+| [#95](https://github.com/lolautruche/StructuraLudis/issues/95) | Event list filters | JS.C10 | Region, date, status filters |
+| [#96](https://github.com/lolautruche/StructuraLudis/issues/96) | My Events overview | JS.C11 | Organized + registered events |
 
 #### Waitlist
 
