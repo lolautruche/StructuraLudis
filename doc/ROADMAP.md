@@ -58,6 +58,7 @@ This document tracks prioritization decisions and project progress.
 | [#55](https://github.com/lolautruche/StructuraLudis/issues/55) | External Game Database Sync | JS.05 | GROG/BGG import |
 | [#56](https://github.com/lolautruche/StructuraLudis/issues/56) | Game Autocomplete & Metadata | JS.B3, JS.B9 | Enrich game metadata |
 | [#41](https://github.com/lolautruche/StructuraLudis/issues/41) | Multi-language email templates | JS.A8 | i18n for emails |
+| [#97](https://github.com/lolautruche/StructuraLudis/issues/97) | Pagination for admin lists | - | Users, exhibitions lists |
 
 ---
 
