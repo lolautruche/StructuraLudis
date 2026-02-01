@@ -56,6 +56,18 @@ const ERROR_TRANSLATIONS: Record<string, Record<string, string>> = {
     en: 'End time must be after start time',
     fr: 'L\'heure de fin doit être après l\'heure de début',
   },
+  'already exists in this zone': {
+    en: 'A table with this label already exists in this zone',
+    fr: 'Une table avec ce label existe déjà dans cette zone',
+  },
+  'the string did not match the expected pattern': {
+    en: 'Invalid identifier format',
+    fr: 'Format d\'identifiant invalide',
+  },
+  'value is not a valid uuid': {
+    en: 'Invalid identifier format',
+    fr: 'Format d\'identifiant invalide',
+  },
 };
 
 /**

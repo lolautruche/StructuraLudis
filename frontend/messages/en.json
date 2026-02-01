@@ -350,6 +350,12 @@
       "PUBLISHED": "Published",
       "ARCHIVED": "Archived"
     },
+    "tableStatuses": {
+      "AVAILABLE": "Available",
+      "OCCUPIED": "Occupied",
+      "RESERVED": "Reserved",
+      "MAINTENANCE": "Maintenance"
+    },
     "tables": "Tables",
     "addTables": "Add tables",
     "noTables": "No tables in this zone",
@@ -362,7 +368,11 @@
     "confirmDeleteZoneTitle": "Delete zone?",
     "confirmDeleteZoneMessage": "Are you sure you want to delete \"{name}\"? All tables in this zone will also be deleted.",
     "confirmDeleteTableTitle": "Delete table?",
-    "confirmDeleteTableMessage": "Are you sure you want to delete table \"{label}\"?"
+    "confirmDeleteTableMessage": "Are you sure you want to delete table \"{label}\"?",
+    "tablesCreated": "{count} table(s) created successfully",
+    "tableDeleted": "Table deleted successfully",
+    "tableCreateError": "Failed to create tables",
+    "tableDeleteError": "Failed to delete table"
   },
   "SessionForm": {
     "pageTitle": "Propose a session",

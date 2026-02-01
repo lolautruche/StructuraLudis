@@ -350,6 +350,12 @@
       "PUBLISHED": "Publié",
       "ARCHIVED": "Archivé"
     },
+    "tableStatuses": {
+      "AVAILABLE": "Disponible",
+      "OCCUPIED": "Occupée",
+      "RESERVED": "Réservée",
+      "MAINTENANCE": "Maintenance"
+    },
     "tables": "Tables",
     "addTables": "Ajouter des tables",
     "noTables": "Aucune table dans cette zone",
@@ -362,7 +368,11 @@
     "confirmDeleteZoneTitle": "Supprimer la zone ?",
     "confirmDeleteZoneMessage": "Êtes-vous sûr de vouloir supprimer \"{name}\" ? Toutes les tables de cette zone seront également supprimées.",
     "confirmDeleteTableTitle": "Supprimer la table ?",
-    "confirmDeleteTableMessage": "Êtes-vous sûr de vouloir supprimer la table \"{label}\" ?"
+    "confirmDeleteTableMessage": "Êtes-vous sûr de vouloir supprimer la table \"{label}\" ?",
+    "tablesCreated": "{count} table(s) créée(s) avec succès",
+    "tableDeleted": "Table supprimée avec succès",
+    "tableCreateError": "Échec de la création des tables",
+    "tableDeleteError": "Échec de la suppression de la table"
   },
   "SessionForm": {
     "pageTitle": "Proposer une session",
