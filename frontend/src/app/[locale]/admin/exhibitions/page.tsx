@@ -5,16 +5,10 @@ import { useTranslations } from 'next-intl';
 import { useSearchParams } from 'next/navigation';
 import { Link } from '@/i18n/routing';
 import { adminApi, exhibitionsApi, Exhibition, ExhibitionStatus } from '@/lib/api';
-import { Card, Select, Badge, Button, ConfirmDialog } from '@/components/ui';
+import { Card, Select, Button, ConfirmDialog } from '@/components/ui';
 import { useToast } from '@/contexts/ToastContext';
 
 const STATUS_OPTIONS: ExhibitionStatus[] = ['DRAFT', 'PUBLISHED', 'ARCHIVED'];
-
-const STATUS_COLORS: Record<ExhibitionStatus, 'warning' | 'success' | 'default'> = {
-  DRAFT: 'warning',
-  PUBLISHED: 'success',
-  ARCHIVED: 'default',
-};
 
 export default function AdminExhibitionsPage() {
   const t = useTranslations('SuperAdmin.exhibitionManagement');
