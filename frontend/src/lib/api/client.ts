@@ -44,6 +44,34 @@ function getCurrentLocale(): string {
 }
 
 /**
+ * Map of backend error messages to user-friendly translated messages.
+ * Keys are patterns to match (can be partial), values are translations by locale.
+ */
+const ERROR_TRANSLATIONS: Record<string, Record<string, string>> = {
+  'start_time must be before end_time': {
+    en: 'Start time must be before end time',
+    fr: 'L\'heure de début doit être avant l\'heure de fin',
+  },
+  'end_time must be after start_time': {
+    en: 'End time must be after start time',
+    fr: 'L\'heure de fin doit être après l\'heure de début',
+  },
+};
+
+/**
+ * Translate a backend error message to a user-friendly message.
+ */
+function translateErrorMessage(message: string, locale: string): string {
+  // Check for exact or partial matches in error translations
+  for (const [pattern, translations] of Object.entries(ERROR_TRANSLATIONS)) {
+    if (message.toLowerCase().includes(pattern.toLowerCase())) {
+      return translations[locale] || translations['en'] || message;
+    }
+  }
+  return message;
+}
+
+/**
  * Base fetch wrapper with auth and error handling.
  */
 async function fetchApi<T>(
@@ -103,6 +131,9 @@ async function fetchApi<T>(
           message = data.detail.msg;
         }
       }
+
+      // Translate known error messages to user-friendly versions
+      message = translateErrorMessage(message, locale);
 
       return {
         data: null,
