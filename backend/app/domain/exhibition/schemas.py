@@ -157,6 +157,23 @@ class TimeSlotRead(TimeSlotBase):
     model_config = ConfigDict(from_attributes=True)
 
 
+class TimeSlotUpdate(BaseModel):
+    """Schema for updating a time slot."""
+    name: Optional[str] = Field(None, min_length=1, max_length=100)
+    start_time: Optional[datetime] = None
+    end_time: Optional[datetime] = None
+    max_duration_minutes: Optional[int] = Field(None, ge=30, le=720)
+    buffer_time_minutes: Optional[int] = Field(None, ge=0, le=60)
+
+    @model_validator(mode="after")
+    def validate_times(self):
+        # Only validate if both times are provided
+        if self.start_time is not None and self.end_time is not None:
+            if self.start_time >= self.end_time:
+                raise ValueError("start_time must be before end_time")
+        return self
+
+
 # =============================================================================
 # Zone Schemas
 # =============================================================================
@@ -233,6 +250,13 @@ class PhysicalTableRead(PhysicalTableBase):
     updated_at: Optional[datetime] = None
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class PhysicalTableUpdate(BaseModel):
+    """Schema for updating a physical table."""
+    label: Optional[str] = Field(None, min_length=1, max_length=50)
+    capacity: Optional[int] = Field(None, ge=1, le=20)
+    status: Optional[PhysicalTableStatus] = None
 
 
 class BatchTablesCreate(BaseModel):
