@@ -22,6 +22,7 @@ This document tracks prioritization decisions and project progress.
 | [#94](https://github.com/lolautruche/StructuraLudis/issues/94) | Event region field | JS.A10 | Predefined region list |
 | [#95](https://github.com/lolautruche/StructuraLudis/issues/95) | Event list filters | JS.C10 | Region, date, status filters |
 | [#96](https://github.com/lolautruche/StructuraLudis/issues/96) | My Events overview | JS.C11 | Organized + registered events |
+| [#99](https://github.com/lolautruche/StructuraLudis/issues/99) | Role architecture refactor | JS.01 | Global vs event-scoped roles |
 
 #### Waitlist
 
@@ -58,6 +59,8 @@ This document tracks prioritization decisions and project progress.
 | [#55](https://github.com/lolautruche/StructuraLudis/issues/55) | External Game Database Sync | JS.05 | GROG/BGG import |
 | [#56](https://github.com/lolautruche/StructuraLudis/issues/56) | Game Autocomplete & Metadata | JS.B3, JS.B9 | Enrich game metadata |
 | [#41](https://github.com/lolautruche/StructuraLudis/issues/41) | Multi-language email templates | JS.A8 | i18n for emails |
+| [#97](https://github.com/lolautruche/StructuraLudis/issues/97) | Pagination for admin lists | - | Users, exhibitions lists |
+| [#100](https://github.com/lolautruche/StructuraLudis/issues/100) | Event-scoped user ban | - | Organizers can ban users from their event |
 
 ---
 
