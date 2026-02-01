@@ -18,6 +18,7 @@ This document tracks prioritization decisions and project progress.
 | [#77](https://github.com/lolautruche/StructuraLudis/issues/77) | Player registration to exhibitions | - | Exhibition registration flow |
 | [#38](https://github.com/lolautruche/StructuraLudis/issues/38) | Smart check-in reminders | JS.C3 | Automated reminders |
 | [#92](https://github.com/lolautruche/StructuraLudis/issues/92) | Self-service event creation | JS.06, JS.07 | User submits event, admin validates |
+| [#93](https://github.com/lolautruche/StructuraLudis/issues/93) | Zone-level table prefix | JS.A0 | Smart numbering option |
 
 #### Waitlist
 
