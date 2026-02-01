@@ -13,7 +13,6 @@ This document tracks prioritization decisions and project progress.
 
 | Issue | Title | Job Stories | Notes |
 |-------|-------|-------------|-------|
-| [#7](https://github.com/lolautruche/StructuraLudis/issues/7) | Admin: Event Configuration | JS.A2, JS.A3, JS.A5 | Slots/zones admin config |
 | [#13](https://github.com/lolautruche/StructuraLudis/issues/13) | SuperAdmin Portal | JS.01-04 | Global admin |
 | [#10](https://github.com/lolautruche/StructuraLudis/issues/10) | Partner Zone Management | JS.D1 | Partner zone management |
 | [#62](https://github.com/lolautruche/StructuraLudis/issues/62) | Notification Center & Bell | JS.C2, JS.C3 | In-app notifications |
@@ -40,6 +39,12 @@ This document tracks prioritization decisions and project progress.
 | [#53](https://github.com/lolautruche/StructuraLudis/issues/53) | GDPR Request Management | JS.E7 | Admin tools |
 | [#54](https://github.com/lolautruche/StructuraLudis/issues/54) | Data Anonymization | JS.E8 | Anonymize old data |
 
+#### Infrastructure
+
+| Issue | Title | Notes |
+|-------|-------|-------|
+| [#89](https://github.com/lolautruche/StructuraLudis/issues/89) | Pre-built Docker images | GitHub Actions + ghcr.io registry |
+
 ### Post-MVP
 
 | Issue | Title | Job Stories | Notes |
@@ -56,6 +61,7 @@ This document tracks prioritization decisions and project progress.
 
 | Issue | Title | Job Stories | Date |
 |-------|-------|-------------|------|
+| [#7](https://github.com/lolautruche/StructuraLudis/issues/7) | Admin: Event Configuration | JS.A2, JS.A3, JS.A5 | 2026-02-01 |
 | [#8](https://github.com/lolautruche/StructuraLudis/issues/8) | Proposer: Session Submission Form | JS.B1-B5 | 2026-02-01 |
 | [#60](https://github.com/lolautruche/StructuraLudis/issues/60) | User Settings & Profile Page | JS.X2, JS.E2, JS.E5 | 2026-02-01 |
 | [#73](https://github.com/lolautruche/StructuraLudis/issues/73) | Email verification on registration | JS.E1 | 2026-01-31 |
