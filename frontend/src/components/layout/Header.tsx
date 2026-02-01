@@ -46,6 +46,15 @@ export function Header() {
                 {t('myAgenda')}
               </Link>
             )}
+            {user?.global_role === 'SUPER_ADMIN' && (
+              <Link
+                href="/admin"
+                className="transition-colors font-medium"
+                style={{ color: 'var(--color-primary)' }}
+              >
+                Admin
+              </Link>
+            )}
           </nav>
 
           {/* Right side */}
