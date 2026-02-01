@@ -230,6 +230,11 @@ export default function AdminExhibitionsPage() {
                               {t('view')}
                             </Button>
                           </Link>
+                          <Link href={`/admin/exhibitions/${exhibition.id}/roles`}>
+                            <Button variant="ghost" size="sm">
+                              {t('roles')}
+                            </Button>
+                          </Link>
                           <Link href={`/exhibitions/${exhibition.id}/manage`}>
                             <Button variant="secondary" size="sm">
                               {t('manage')}

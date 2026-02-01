@@ -532,6 +532,17 @@ export interface ExhibitionRoleAssignment {
   updated_at: string | null;
 }
 
+export interface ExhibitionRoleCreate {
+  user_id: string;
+  role: ExhibitionRole;
+  zone_ids?: string[];
+}
+
+export interface ExhibitionRoleUpdate {
+  role?: ExhibitionRole;
+  zone_ids?: string[];
+}
+
 export interface PlatformStats {
   users: {
     total: number;

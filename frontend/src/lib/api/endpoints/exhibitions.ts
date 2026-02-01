@@ -11,6 +11,9 @@ import {
   TimeSlotCreate,
   TimeSlotUpdate,
   SafetyTool,
+  ExhibitionRoleAssignment,
+  ExhibitionRoleCreate,
+  ExhibitionRoleUpdate,
 } from '../types';
 
 export const exhibitionsApi = {
@@ -96,5 +99,54 @@ export const exhibitionsApi = {
    */
   getSafetyTools: async (exhibitionId: string): Promise<ApiResponse<SafetyTool[]>> => {
     return api.get<SafetyTool[]>(`/api/v1/exhibitions/${exhibitionId}/safety-tools`);
+  },
+
+  // ==========================================================================
+  // Exhibition Roles (Issue #99)
+  // ==========================================================================
+
+  /**
+   * List role assignments for an exhibition.
+   * Requires: Exhibition organizer or SUPER_ADMIN/ADMIN.
+   */
+  listRoles: async (exhibitionId: string): Promise<ApiResponse<ExhibitionRoleAssignment[]>> => {
+    return api.get<ExhibitionRoleAssignment[]>(`/api/v1/exhibitions/${exhibitionId}/roles`);
+  },
+
+  /**
+   * Assign a role to a user for an exhibition.
+   * Requires: Exhibition organizer or SUPER_ADMIN/ADMIN.
+   */
+  assignRole: async (
+    exhibitionId: string,
+    data: ExhibitionRoleCreate
+  ): Promise<ApiResponse<ExhibitionRoleAssignment>> => {
+    return api.post<ExhibitionRoleAssignment>(`/api/v1/exhibitions/${exhibitionId}/roles`, data);
+  },
+
+  /**
+   * Update a role assignment.
+   * Requires: Exhibition organizer or SUPER_ADMIN/ADMIN.
+   */
+  updateRole: async (
+    exhibitionId: string,
+    roleId: string,
+    data: ExhibitionRoleUpdate
+  ): Promise<ApiResponse<ExhibitionRoleAssignment>> => {
+    return api.patch<ExhibitionRoleAssignment>(
+      `/api/v1/exhibitions/${exhibitionId}/roles/${roleId}`,
+      data
+    );
+  },
+
+  /**
+   * Remove a role assignment.
+   * Requires: Exhibition organizer or SUPER_ADMIN/ADMIN.
+   */
+  removeRole: async (
+    exhibitionId: string,
+    roleId: string
+  ): Promise<ApiResponse<void>> => {
+    return api.delete<void>(`/api/v1/exhibitions/${exhibitionId}/roles/${roleId}`);
   },
 };

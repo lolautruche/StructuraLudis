@@ -9,12 +9,17 @@
     "myEvents": "Mes événements",
     "settings": "Paramètres",
     "save": "Enregistrer",
+    "saving": "Enregistrement...",
     "cancel": "Annuler",
     "delete": "Supprimer",
     "edit": "Modifier",
     "loading": "Chargement...",
     "error": "Erreur",
-    "success": "Succès"
+    "success": "Succès",
+    "exhibitionRoles": {
+      "ORGANIZER": "Organisateur",
+      "PARTNER": "Partenaire"
+    }
   },
   "Auth": {
     "loginTitle": "Connexion",
@@ -517,19 +522,44 @@
       "actions": "Actions",
       "view": "Voir",
       "manage": "Gérer",
+      "roles": "Rôles",
       "changeStatus": "Changer le statut",
       "confirmStatusChangeTitle": "Modifier le statut ?",
       "confirmStatusChangeMessage": "Modifier le statut de « {title} » en « {status} » ?",
       "statusUpdated": "Statut mis à jour avec succès"
     },
+    "exhibitionRoles": {
+      "title": "Gestion des rôles - {exhibition}",
+      "backToExhibitions": "Retour aux événements",
+      "addRole": "Ajouter un rôle",
+      "assignRole": "Assigner un rôle",
+      "selectUser": "Utilisateur",
+      "searchUserPlaceholder": "Rechercher par nom ou email...",
+      "chooseUser": "Choisir un utilisateur...",
+      "role": "Rôle",
+      "selectZones": "Zones (requis pour Partenaire)",
+      "noZonesAvailable": "Aucune zone créée pour cet événement.",
+      "assign": "Assigner",
+      "currentRoles": "Rôles assignés",
+      "noRoles": "Aucun rôle assigné.",
+      "user": "Utilisateur",
+      "zones": "Zones",
+      "actions": "Actions",
+      "allZones": "Toutes les zones",
+      "editZones": "Modifier",
+      "remove": "Retirer",
+      "roleAssigned": "Rôle assigné avec succès",
+      "roleUpdated": "Rôle mis à jour avec succès",
+      "roleRemoved": "Rôle retiré avec succès",
+      "selectUserRequired": "Veuillez sélectionner un utilisateur",
+      "selectZonesRequired": "Le rôle Partenaire nécessite au moins une zone",
+      "confirmRemoveTitle": "Retirer le rôle ?",
+      "confirmRemoveMessage": "Retirer le rôle {role} de {user} ? Cette personne perdra l'accès à cet événement."
+    },
     "globalRoles": {
       "SUPER_ADMIN": "Super Admin",
       "ADMIN": "Administrateur",
       "USER": "Utilisateur"
-    },
-    "exhibitionRoles": {
-      "ORGANIZER": "Organisateur",
-      "PARTNER": "Partenaire"
     },
     "exhibitionStatuses": {
       "DRAFT": "Brouillon",

@@ -9,12 +9,17 @@
     "myEvents": "My Events",
     "settings": "Settings",
     "save": "Save",
+    "saving": "Saving...",
     "cancel": "Cancel",
     "delete": "Delete",
     "edit": "Edit",
     "loading": "Loading...",
     "error": "Error",
-    "success": "Success"
+    "success": "Success",
+    "exhibitionRoles": {
+      "ORGANIZER": "Organizer",
+      "PARTNER": "Partner"
+    }
   },
   "Auth": {
     "loginTitle": "Login",
@@ -517,19 +522,44 @@
       "actions": "Actions",
       "view": "View",
       "manage": "Manage",
+      "roles": "Roles",
       "changeStatus": "Change status",
       "confirmStatusChangeTitle": "Change status?",
       "confirmStatusChangeMessage": "Change status of \"{title}\" to \"{status}\"?",
       "statusUpdated": "Status updated successfully"
     },
+    "exhibitionRoles": {
+      "title": "Manage Roles - {exhibition}",
+      "backToExhibitions": "Back to exhibitions",
+      "addRole": "Add Role",
+      "assignRole": "Assign Role",
+      "selectUser": "User",
+      "searchUserPlaceholder": "Search by name or email...",
+      "chooseUser": "Choose a user...",
+      "role": "Role",
+      "selectZones": "Zones (required for Partner)",
+      "noZonesAvailable": "No zones created for this exhibition yet.",
+      "assign": "Assign",
+      "currentRoles": "Current Role Assignments",
+      "noRoles": "No roles assigned yet.",
+      "user": "User",
+      "zones": "Zones",
+      "actions": "Actions",
+      "allZones": "All zones",
+      "editZones": "Edit",
+      "remove": "Remove",
+      "roleAssigned": "Role assigned successfully",
+      "roleUpdated": "Role updated successfully",
+      "roleRemoved": "Role removed successfully",
+      "selectUserRequired": "Please select a user",
+      "selectZonesRequired": "Partner role requires at least one zone",
+      "confirmRemoveTitle": "Remove role?",
+      "confirmRemoveMessage": "Remove {role} role from {user}? They will lose access to this exhibition."
+    },
     "globalRoles": {
       "SUPER_ADMIN": "Super Admin",
       "ADMIN": "Administrator",
       "USER": "User"
-    },
-    "exhibitionRoles": {
-      "ORGANIZER": "Organizer",
-      "PARTNER": "Partner"
     },
     "exhibitionStatuses": {
       "DRAFT": "Draft",
