@@ -3,7 +3,7 @@ Exhibition API endpoints.
 
 CRUD operations + TimeSlots + Dashboard.
 """
-from typing import List
+from typing import List, Optional
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -28,7 +28,12 @@ from app.domain.exhibition.schemas import (
     SafetyToolBatchResponse,
 )
 from app.domain.user.entity import User
-from app.api.deps import get_current_active_user, require_exhibition_organizer
+from app.api.deps import (
+    get_current_active_user,
+    get_current_user_optional,
+    can_manage_exhibition,
+    require_exhibition_organizer,
+)
 from app.services.exhibition import ExhibitionService
 
 router = APIRouter()
@@ -41,6 +46,7 @@ router = APIRouter()
 @router.get("", response_model=List[ExhibitionRead])
 @router.get("/", response_model=List[ExhibitionRead])
 async def list_exhibitions(
+    current_user: Optional[User] = Depends(get_current_user_optional),
     db: AsyncSession = Depends(get_db),
     skip: int = 0,
     limit: int = 100,
@@ -48,7 +54,19 @@ async def list_exhibitions(
     """Retrieve all exhibitions with pagination."""
     query = select(Exhibition).offset(skip).limit(limit)
     result = await db.execute(query)
-    return result.scalars().all()
+    exhibitions = result.scalars().all()
+
+    # Add can_manage flag to each exhibition
+    responses = []
+    for exhibition in exhibitions:
+        response = ExhibitionRead.model_validate(exhibition)
+        if current_user:
+            response.can_manage = await can_manage_exhibition(
+                current_user, exhibition, db
+            )
+        responses.append(response)
+
+    return responses
 
 
 @router.post("", response_model=ExhibitionRead, status_code=status.HTTP_201_CREATED)
@@ -71,6 +89,7 @@ async def create_exhibition(
 @router.get("/{exhibition_id}", response_model=ExhibitionRead)
 async def get_exhibition(
     exhibition_id: UUID,
+    current_user: Optional[User] = Depends(get_current_user_optional),
     db: AsyncSession = Depends(get_db),
 ):
     """Retrieve a single exhibition by ID."""
@@ -85,7 +104,16 @@ async def get_exhibition(
             detail="Exhibition not found",
         )
 
-    return exhibition
+    # Check if current user can manage this exhibition
+    user_can_manage = False
+    if current_user:
+        user_can_manage = await can_manage_exhibition(current_user, exhibition, db)
+
+    # Create response with can_manage flag
+    response = ExhibitionRead.model_validate(exhibition)
+    response.can_manage = user_can_manage
+
+    return response
 
 
 @router.put("/{exhibition_id}", response_model=ExhibitionRead)

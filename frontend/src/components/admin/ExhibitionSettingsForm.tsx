@@ -21,11 +21,7 @@ const LANGUAGES = [
   { value: 'fr', label: 'Francais' },
 ];
 
-const STATUS_OPTIONS = [
-  { value: 'DRAFT', label: 'Draft' },
-  { value: 'PUBLISHED', label: 'Published' },
-  { value: 'ARCHIVED', label: 'Archived' },
-];
+const STATUS_VALUES = ['DRAFT', 'PUBLISHED', 'ARCHIVED'] as const;
 
 const settingsSchema = z.object({
   title: z.string().min(1).max(255),
@@ -162,7 +158,10 @@ export function ExhibitionSettingsForm({
         <Select
           {...register('status')}
           label={t('status')}
-          options={STATUS_OPTIONS}
+          options={STATUS_VALUES.map((status) => ({
+            value: status,
+            label: t(`statuses.${status}`),
+          }))}
           error={errors.status?.message}
         />
       </div>

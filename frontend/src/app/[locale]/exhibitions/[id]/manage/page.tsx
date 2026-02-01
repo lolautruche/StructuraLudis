@@ -15,7 +15,7 @@ export default function ManageExhibitionPage() {
   const t = useTranslations('Admin');
   const params = useParams();
   const router = useRouter();
-  const { user, isLoading: authLoading, isAuthenticated } = useAuth();
+  const { isLoading: authLoading, isAuthenticated } = useAuth();
 
   const [exhibition, setExhibition] = useState<Exhibition | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -24,10 +24,6 @@ export default function ManageExhibitionPage() {
 
   const exhibitionId = params.id as string;
 
-  // Check permissions
-  const canManage =
-    user?.global_role === 'SUPER_ADMIN' || user?.global_role === 'ORGANIZER';
-
   // Redirect if not authenticated
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
@@ -35,17 +31,10 @@ export default function ManageExhibitionPage() {
     }
   }, [authLoading, isAuthenticated, router]);
 
-  // Redirect if no permission
-  useEffect(() => {
-    if (!authLoading && isAuthenticated && !canManage) {
-      router.push('/');
-    }
-  }, [authLoading, isAuthenticated, canManage, router]);
-
-  // Load exhibition
+  // Load exhibition and check permissions
   useEffect(() => {
     async function loadExhibition() {
-      if (!exhibitionId || !canManage) return;
+      if (!exhibitionId) return;
 
       setIsLoading(true);
       setError(null);
@@ -55,19 +44,24 @@ export default function ManageExhibitionPage() {
       if (response.error) {
         setError(response.error.message);
       } else if (response.data) {
-        setExhibition(response.data);
+        // Check if user can manage this exhibition
+        if (!response.data.can_manage) {
+          setError(t('noPermission'));
+        } else {
+          setExhibition(response.data);
+        }
       }
 
       setIsLoading(false);
     }
 
-    if (!authLoading && isAuthenticated && canManage) {
+    if (!authLoading && isAuthenticated) {
       loadExhibition();
     }
-  }, [exhibitionId, authLoading, isAuthenticated, canManage]);
+  }, [exhibitionId, authLoading, isAuthenticated, t]);
 
   // Loading states
-  if (authLoading || !isAuthenticated || !canManage) {
+  if (authLoading || !isAuthenticated) {
     return null;
   }
 

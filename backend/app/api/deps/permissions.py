@@ -38,6 +38,44 @@ def require_roles(allowed_roles: List[GlobalRole]) -> Callable:
     return check_roles
 
 
+async def can_manage_exhibition(
+    user: User,
+    exhibition: Exhibition,
+    db: AsyncSession,
+) -> bool:
+    """
+    Check if user can manage the specified exhibition.
+
+    Returns True if:
+    - User is SUPER_ADMIN
+    - User is ORGANIZER and belongs to the exhibition's organization
+    """
+    if not user or not user.is_active:
+        return False
+
+    # SUPER_ADMIN can do anything
+    if user.global_role == GlobalRole.SUPER_ADMIN:
+        return True
+
+    # Check if user is ORGANIZER
+    if user.global_role != GlobalRole.ORGANIZER:
+        return False
+
+    # Check if user belongs to the exhibition's organization
+    membership = await db.execute(
+        select(UserGroupMembership)
+        .join(UserGroupMembership.user_group)
+        .where(
+            UserGroupMembership.user_id == user.id,
+            UserGroupMembership.user_group.has(
+                organization_id=exhibition.organization_id
+            ),
+        )
+    )
+
+    return membership.scalar_one_or_none() is not None
+
+
 async def require_exhibition_organizer(
     exhibition_id: UUID,
     current_user: User = Depends(get_current_active_user),
@@ -50,10 +88,6 @@ async def require_exhibition_organizer(
     - User is SUPER_ADMIN
     - User is ORGANIZER and belongs to the exhibition's organization
     """
-    # SUPER_ADMIN can do anything
-    if current_user.global_role == GlobalRole.SUPER_ADMIN:
-        return current_user
-
     # Get the exhibition
     result = await db.execute(
         select(Exhibition).where(Exhibition.id == exhibition_id)
@@ -66,29 +100,10 @@ async def require_exhibition_organizer(
             detail="Exhibition not found",
         )
 
-    # Check if user is ORGANIZER
-    if current_user.global_role != GlobalRole.ORGANIZER:
+    if not await can_manage_exhibition(current_user, exhibition, db):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Only organizers can manage exhibitions",
-        )
-
-    # Check if user belongs to the exhibition's organization
-    membership = await db.execute(
-        select(UserGroupMembership)
-        .join(UserGroupMembership.user_group)
-        .where(
-            UserGroupMembership.user_id == current_user.id,
-            UserGroupMembership.user_group.has(
-                organization_id=exhibition.organization_id
-            ),
-        )
-    )
-
-    if not membership.scalar_one_or_none():
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="You are not a member of this exhibition's organization",
+            detail="You do not have permission to manage this exhibition",
         )
 
     return current_user

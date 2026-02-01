@@ -44,6 +44,77 @@ function getCurrentLocale(): string {
 }
 
 /**
+ * Map of backend error messages to user-friendly translated messages.
+ * Keys are patterns to match (can be partial), values are translations by locale.
+ */
+const ERROR_TRANSLATIONS: Record<string, Record<string, string>> = {
+  // Time slot validations
+  'start_time must be before end_time': {
+    en: 'Start time must be before end time',
+    fr: 'L\'heure de début doit être avant l\'heure de fin',
+  },
+  'end_time must be after start_time': {
+    en: 'End time must be after start time',
+    fr: 'L\'heure de fin doit être après l\'heure de début',
+  },
+  // Zone/table validations
+  'already exists in this zone': {
+    en: 'A table with this label already exists in this zone',
+    fr: 'Une table avec ce label existe déjà dans cette zone',
+  },
+  'physical table not found': {
+    en: 'Table not found',
+    fr: 'Table non trouvée',
+  },
+  'zone not found': {
+    en: 'Zone not found',
+    fr: 'Zone non trouvée',
+  },
+  // UUID/identifier validation errors (multiple patterns for different Pydantic/FastAPI versions)
+  'string does not match regex': {
+    en: 'Invalid identifier format',
+    fr: 'Format d\'identifiant invalide',
+  },
+  'the string did not match the expected pattern': {
+    en: 'Invalid identifier format',
+    fr: 'Format d\'identifiant invalide',
+  },
+  'did not match the expected pattern': {
+    en: 'Invalid identifier format',
+    fr: 'Format d\'identifiant invalide',
+  },
+  'not a valid uuid': {
+    en: 'Invalid identifier format',
+    fr: 'Format d\'identifiant invalide',
+  },
+  'input should be a valid uuid': {
+    en: 'Invalid identifier format',
+    fr: 'Format d\'identifiant invalide',
+  },
+  'invalid character': {
+    en: 'Invalid identifier format',
+    fr: 'Format d\'identifiant invalide',
+  },
+  'uuid_parsing': {
+    en: 'Invalid identifier format',
+    fr: 'Format d\'identifiant invalide',
+  },
+};
+
+/**
+ * Translate a backend error message to a user-friendly message.
+ */
+function translateErrorMessage(message: string, locale: string): string {
+  // Check for exact or partial matches in error translations
+  for (const [pattern, translations] of Object.entries(ERROR_TRANSLATIONS)) {
+    if (message.toLowerCase().includes(pattern.toLowerCase())) {
+      return translations[locale] || translations['en'] || message;
+    }
+  }
+  return message;
+}
+
+/**
  * Base fetch wrapper with auth and error handling.
  */
 async function fetchApi<T>(
@@ -70,6 +141,11 @@ async function fetchApi<T>(
       headers,
     });
 
+    // Handle 204 No Content responses (common for DELETE operations)
+    if (response.status === 204) {
+      return { data: null as T, error: null };
+    }
+
     // Handle non-JSON responses
     const contentType = response.headers.get('content-type');
     if (!contentType?.includes('application/json')) {
@@ -86,14 +162,44 @@ async function fetchApi<T>(
       return { data: null as T, error: null };
     }
 
-    const data = await response.json();
+    // Parse JSON response (handle empty body gracefully)
+    const text = await response.text();
+    const data = text ? JSON.parse(text) : null;
 
     if (!response.ok) {
+      // Handle Pydantic validation errors (detail is an array of error objects)
+      let message = response.statusText;
+      if (data.detail) {
+        if (Array.isArray(data.detail)) {
+          // Extract messages from validation error objects (Pydantic v2 format)
+          // Also check for 'type' field which contains error type like 'uuid_parsing'
+          const messages = data.detail.map((err: { msg?: string; message?: string; type?: string }) => {
+            // First try to translate based on error type
+            if (err.type) {
+              const typeTranslation = translateErrorMessage(err.type, locale);
+              if (typeTranslation !== err.type) {
+                return typeTranslation;
+              }
+            }
+            // Then try message
+            return err.msg || err.message || JSON.stringify(err);
+          });
+          message = messages.join(', ');
+        } else if (typeof data.detail === 'string') {
+          message = data.detail;
+        } else if (typeof data.detail === 'object' && data.detail.msg) {
+          message = data.detail.msg;
+        }
+      }
+
+      // Translate known error messages to user-friendly versions
+      message = translateErrorMessage(message, locale);
+
       return {
         data: null,
         error: {
           status: response.status,
-          message: data.detail || response.statusText,
+          message,
           detail: data.detail,
           errors: data.errors,
         },

@@ -2,7 +2,7 @@
 
 import { useTranslations } from 'next-intl';
 import { Link } from '@/i18n/routing';
-import { Card, Badge } from '@/components/ui';
+import { Card, Badge, Button } from '@/components/ui';
 import type { Exhibition } from '@/lib/api/types';
 
 interface ExhibitionCardProps {
@@ -28,54 +28,63 @@ export function ExhibitionCard({ exhibition, locale = 'fr' }: ExhibitionCardProp
   const isPast = new Date(exhibition.end_date) < new Date();
 
   return (
-    <Link href={`/exhibitions/${exhibition.id}/sessions`}>
-      <Card variant="interactive" className="h-full">
-        <Card.Content className="space-y-4">
-          {/* Header: Title + Status */}
-          <div className="flex items-start justify-between gap-2">
-            <h3 className="text-xl font-bold text-slate-900 dark:text-white line-clamp-2">
+    <Card variant="interactive" className="h-full">
+      <Card.Content className="space-y-4">
+        {/* Header: Title + Status */}
+        <div className="flex items-start justify-between gap-2">
+          <Link href={`/exhibitions/${exhibition.id}/sessions`}>
+            <h3 className="text-xl font-bold text-slate-900 dark:text-white line-clamp-2 hover:text-ludis-primary transition-colors">
               {exhibition.title}
             </h3>
-            {isPast ? (
-              <Badge variant="default" size="sm">{t('past')}</Badge>
-            ) : isOpen ? (
-              <Badge variant="success" size="sm">{t('registrationOpen')}</Badge>
-            ) : (
-              <Badge variant="warning" size="sm">{t('registrationClosed')}</Badge>
-            )}
-          </div>
-
-          {/* Description */}
-          {exhibition.description && (
-            <p className="text-slate-600 dark:text-slate-400 text-sm line-clamp-2">
-              {exhibition.description}
-            </p>
+          </Link>
+          {isPast ? (
+            <Badge variant="default" size="sm">{t('past')}</Badge>
+          ) : isOpen ? (
+            <Badge variant="success" size="sm">{t('registrationOpen')}</Badge>
+          ) : (
+            <Badge variant="warning" size="sm">{t('registrationClosed')}</Badge>
           )}
+        </div>
 
-          {/* Date & Location */}
-          <div className="flex flex-col gap-2 text-sm text-slate-600 dark:text-slate-400">
-            <div className="flex items-center gap-2">
-              <span>📅</span>
-              <span>{formatDateRange(exhibition.start_date, exhibition.end_date, locale)}</span>
-            </div>
-            {(exhibition.location_name || exhibition.city) && (
-              <div className="flex items-center gap-2">
-                <span>📍</span>
-                <span>
-                  {[exhibition.location_name, exhibition.city].filter(Boolean).join(', ')}
-                </span>
-              </div>
-            )}
+        {/* Description */}
+        {exhibition.description && (
+          <p className="text-slate-600 dark:text-slate-400 text-sm line-clamp-2">
+            {exhibition.description}
+          </p>
+        )}
+
+        {/* Date & Location */}
+        <div className="flex flex-col gap-2 text-sm text-slate-600 dark:text-slate-400">
+          <div className="flex items-center gap-2">
+            <span>📅</span>
+            <span>{formatDateRange(exhibition.start_date, exhibition.end_date, locale)}</span>
           </div>
+          {(exhibition.location_name || exhibition.city) && (
+            <div className="flex items-center gap-2">
+              <span>📍</span>
+              <span>
+                {[exhibition.location_name, exhibition.city].filter(Boolean).join(', ')}
+              </span>
+            </div>
+          )}
+        </div>
 
-          {/* Footer */}
-          <div className="pt-2 border-t border-slate-200 dark:border-slate-700">
-            <span className="text-sm text-primary-400 font-medium">
+        {/* Footer */}
+        <div className="pt-2 border-t border-slate-200 dark:border-slate-700 flex items-center justify-between">
+          <Link href={`/exhibitions/${exhibition.id}/sessions`}>
+            <span className="text-sm text-primary-400 font-medium hover:text-primary-300 transition-colors">
               {t('viewSessions')} →
             </span>
-          </div>
-        </Card.Content>
-      </Card>
-    </Link>
+          </Link>
+          {exhibition.can_manage && (
+            <Link href={`/exhibitions/${exhibition.id}/manage`}>
+              <Button variant="secondary" size="sm">
+                {t('manage')}
+              </Button>
+            </Link>
+          )}
+        </div>
+      </Card.Content>
+    </Card>
   );
 }

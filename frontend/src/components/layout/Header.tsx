@@ -46,6 +46,15 @@ export function Header() {
                 {t('myAgenda')}
               </Link>
             )}
+            {isAuthenticated && (user?.global_role === 'ORGANIZER' || user?.global_role === 'SUPER_ADMIN') && (
+              <Link
+                href="/my/events"
+                className="transition-colors"
+                style={{ color: 'var(--color-text-secondary)' }}
+              >
+                {t('myEvents')}
+              </Link>
+            )}
             {user?.global_role === 'SUPER_ADMIN' && (
               <Link
                 href="/admin"

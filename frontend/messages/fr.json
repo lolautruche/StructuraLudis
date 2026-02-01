@@ -6,6 +6,7 @@
     "sessions": "Sessions",
     "exhibitions": "Événements",
     "myAgenda": "Mon agenda",
+    "myEvents": "Mes événements",
     "settings": "Paramètres",
     "save": "Enregistrer",
     "cancel": "Annuler",
@@ -191,6 +192,12 @@
     "emailChangeFailedMessage": "Le lien de vérification est invalide ou a expiré.",
     "emailChangeExpired": "Ce lien de vérification a expiré. Veuillez demander un nouveau changement d'email."
   },
+  "MyEvents": {
+    "title": "Mes événements",
+    "subtitle": "Événements que vous pouvez gérer",
+    "noEvents": "Aucun événement à gérer",
+    "noEventsDescription": "Vous n'avez pas encore d'événement assigné."
+  },
   "Agenda": {
     "title": "Mon agenda",
     "mySchedule": "Mon planning",
@@ -274,7 +281,8 @@
     "pastEvents": "Événements passés",
     "noEvents": "Aucun événement",
     "noEventsDescription": "Il n'y a pas d'événement programmé pour le moment.",
-    "proposeSession": "Proposer une session"
+    "proposeSession": "Proposer une session",
+    "manage": "Gérer"
   },
   "SafetyTools": {
     "xCard": "X-Card",
@@ -336,6 +344,25 @@
     "zoneNamePlaceholder": "ex. Espace JDR",
     "zoneDescription": "Description",
     "zoneType": "Type de zone",
+    "zoneTypes": {
+      "RPG": "JDR",
+      "BOARD_GAME": "Jeux de Plateau",
+      "WARGAME": "Figurines",
+      "TCG": "TCG",
+      "DEMO": "Démo",
+      "MIXED": "Mixte"
+    },
+    "statuses": {
+      "DRAFT": "Brouillon",
+      "PUBLISHED": "Publié",
+      "ARCHIVED": "Archivé"
+    },
+    "tableStatuses": {
+      "AVAILABLE": "Disponible",
+      "OCCUPIED": "Occupée",
+      "RESERVED": "Réservée",
+      "MAINTENANCE": "Maintenance"
+    },
     "tables": "Tables",
     "addTables": "Ajouter des tables",
     "noTables": "Aucune table dans cette zone",
@@ -348,7 +375,11 @@
     "confirmDeleteZoneTitle": "Supprimer la zone ?",
     "confirmDeleteZoneMessage": "Êtes-vous sûr de vouloir supprimer \"{name}\" ? Toutes les tables de cette zone seront également supprimées.",
     "confirmDeleteTableTitle": "Supprimer la table ?",
-    "confirmDeleteTableMessage": "Êtes-vous sûr de vouloir supprimer la table \"{label}\" ?"
+    "confirmDeleteTableMessage": "Êtes-vous sûr de vouloir supprimer la table \"{label}\" ?",
+    "tablesCreated": "{count} table(s) créée(s) avec succès",
+    "tableDeleted": "Table supprimée avec succès",
+    "tableCreateError": "Échec de la création des tables",
+    "tableDeleteError": "Échec de la suppression de la table"
   },
   "SessionForm": {
     "pageTitle": "Proposer une session",

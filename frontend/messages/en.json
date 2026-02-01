@@ -6,6 +6,7 @@
     "sessions": "Sessions",
     "exhibitions": "Events",
     "myAgenda": "My Agenda",
+    "myEvents": "My Events",
     "settings": "Settings",
     "save": "Save",
     "cancel": "Cancel",
@@ -191,6 +192,12 @@
     "emailChangeFailedMessage": "The verification link is invalid or has expired.",
     "emailChangeExpired": "This verification link has expired. Please request a new email change."
   },
+  "MyEvents": {
+    "title": "My Events",
+    "subtitle": "Events you can manage",
+    "noEvents": "No events to manage",
+    "noEventsDescription": "You don't have any events assigned to you yet."
+  },
   "Agenda": {
     "title": "My Agenda",
     "mySchedule": "My Schedule",
@@ -274,7 +281,8 @@
     "pastEvents": "Past events",
     "noEvents": "No events",
     "noEventsDescription": "There are no scheduled events at the moment.",
-    "proposeSession": "Propose a session"
+    "proposeSession": "Propose a session",
+    "manage": "Manage"
   },
   "SafetyTools": {
     "xCard": "X-Card",
@@ -336,6 +344,25 @@
     "zoneNamePlaceholder": "e.g. RPG Hall",
     "zoneDescription": "Description",
     "zoneType": "Zone type",
+    "zoneTypes": {
+      "RPG": "RPG",
+      "BOARD_GAME": "Board Games",
+      "WARGAME": "Miniatures",
+      "TCG": "TCG",
+      "DEMO": "Demo",
+      "MIXED": "Mixed"
+    },
+    "statuses": {
+      "DRAFT": "Draft",
+      "PUBLISHED": "Published",
+      "ARCHIVED": "Archived"
+    },
+    "tableStatuses": {
+      "AVAILABLE": "Available",
+      "OCCUPIED": "Occupied",
+      "RESERVED": "Reserved",
+      "MAINTENANCE": "Maintenance"
+    },
     "tables": "Tables",
     "addTables": "Add tables",
     "noTables": "No tables in this zone",
@@ -348,7 +375,11 @@
     "confirmDeleteZoneTitle": "Delete zone?",
     "confirmDeleteZoneMessage": "Are you sure you want to delete \"{name}\"? All tables in this zone will also be deleted.",
     "confirmDeleteTableTitle": "Delete table?",
-    "confirmDeleteTableMessage": "Are you sure you want to delete table \"{label}\"?"
+    "confirmDeleteTableMessage": "Are you sure you want to delete table \"{label}\"?",
+    "tablesCreated": "{count} table(s) created successfully",
+    "tableDeleted": "Table deleted successfully",
+    "tableCreateError": "Failed to create tables",
+    "tableDeleteError": "Failed to delete table"
   },
   "SessionForm": {
     "pageTitle": "Propose a session",

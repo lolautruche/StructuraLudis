@@ -227,6 +227,8 @@ export interface Exhibition {
   description_i18n: Record<string, string> | null;
   created_at: string;
   updated_at: string | null;
+  // Permission flag (computed based on authenticated user)
+  can_manage: boolean;
 }
 
 export interface ExhibitionUpdate {

@@ -74,6 +74,39 @@ async def get_current_user(
     return user
 
 
+async def get_current_user_optional(
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
+    x_user_id: Optional[str] = Header(None, alias="X-User-ID"),
+    db: AsyncSession = Depends(get_db),
+) -> Optional[User]:
+    """
+    Get current authenticated user, or None if not authenticated.
+
+    Same as get_current_user but returns None instead of raising 401.
+    Useful for endpoints that work differently for authenticated vs anonymous users.
+    """
+    user_id: Optional[str] = None
+
+    # Try JWT token first
+    if credentials:
+        user_id = decode_access_token(credentials.credentials)
+        if not user_id:
+            return None  # Invalid token = not authenticated
+    # Fall back to X-User-ID header (for testing)
+    elif x_user_id:
+        user_id = x_user_id
+    else:
+        return None  # No auth provided
+
+    try:
+        uid = UUID(user_id)
+    except ValueError:
+        return None
+
+    result = await db.execute(select(User).where(User.id == uid))
+    return result.scalar_one_or_none()
+
+
 async def get_current_active_user(
     current_user: User = Depends(get_current_user),
 ) -> User:

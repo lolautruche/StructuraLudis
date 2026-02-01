@@ -140,13 +140,22 @@ export default function ExhibitionSessionsPage() {
                 )}
               </div>
             </div>
-            {isAuthenticated && (
-              <Link href={`/my/sessions/new?exhibition=${exhibitionId}`}>
-                <Button variant="primary">
-                  {tExhibition('proposeSession')}
-                </Button>
-              </Link>
-            )}
+            <div className="flex gap-2">
+              {exhibition.can_manage && (
+                <Link href={`/exhibitions/${exhibitionId}/manage`}>
+                  <Button variant="secondary">
+                    {tExhibition('manage')}
+                  </Button>
+                </Link>
+              )}
+              {isAuthenticated && (
+                <Link href={`/my/sessions/new?exhibition=${exhibitionId}`}>
+                  <Button variant="primary">
+                    {tExhibition('proposeSession')}
+                  </Button>
+                </Link>
+              )}
+            </div>
           </div>
           {exhibition.description && (
             <p className="text-slate-600 dark:text-slate-400 mt-3">{exhibition.description}</p>

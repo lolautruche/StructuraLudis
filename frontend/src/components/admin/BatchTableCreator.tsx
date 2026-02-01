@@ -7,6 +7,7 @@ import { z } from 'zod';
 import { useTranslations } from 'next-intl';
 import { zonesApi, PhysicalTable } from '@/lib/api';
 import { Button, Input } from '@/components/ui';
+import { useToast } from '@/contexts/ToastContext';
 
 const batchSchema = z.object({
   prefix: z.string().max(30),
@@ -30,6 +31,7 @@ export function BatchTableCreator({
 }: BatchTableCreatorProps) {
   const t = useTranslations('Admin');
   const tCommon = useTranslations('Common');
+  const { showError } = useToast();
   const [error, setError] = useState<string | null>(null);
 
   const {
@@ -58,6 +60,7 @@ export function BatchTableCreator({
 
     if (response.error) {
       setError(response.error.message);
+      showError(t('tableCreateError'));
     } else if (response.data) {
       onTablesCreated(response.data.tables);
     }

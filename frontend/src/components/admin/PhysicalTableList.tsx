@@ -5,6 +5,7 @@ import { useTranslations } from 'next-intl';
 import { zonesApi, PhysicalTable } from '@/lib/api';
 import { Button, Badge, ConfirmDialog } from '@/components/ui';
 import { BatchTableCreator } from './BatchTableCreator';
+import { useToast } from '@/contexts/ToastContext';
 
 interface PhysicalTableListProps {
   zoneId: string;
@@ -20,6 +21,7 @@ const STATUS_COLORS: Record<string, 'success' | 'warning' | 'danger' | 'default'
 export function PhysicalTableList({ zoneId }: PhysicalTableListProps) {
   const t = useTranslations('Admin');
   const tCommon = useTranslations('Common');
+  const { showSuccess, showError } = useToast();
 
   const [tables, setTables] = useState<PhysicalTable[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -54,23 +56,26 @@ export function PhysicalTableList({ zoneId }: PhysicalTableListProps) {
       [...prev, ...newTables].sort((a, b) => a.label.localeCompare(b.label))
     );
     setShowBatchCreator(false);
+    showSuccess(t('tablesCreated', { count: newTables.length }));
   };
 
   const handleDelete = async () => {
     if (!deleteTable) return;
 
     setIsDeleting(true);
-    setError(null);
 
     const response = await zonesApi.deleteTable(zoneId, deleteTable.id);
 
     if (response.error) {
-      setError(response.error.message);
+      // Show user-friendly error in toast (message should already be translated by API client)
+      showError(`${t('tableDeleteError')}: ${response.error.message}`);
     } else {
       setTables((prev) => prev.filter((t) => t.id !== deleteTable.id));
-      setDeleteTable(null);
+      showSuccess(t('tableDeleted'));
     }
 
+    // Always close the modal and reset loading state
+    setDeleteTable(null);
     setIsDeleting(false);
   };
 
@@ -158,7 +163,7 @@ export function PhysicalTableList({ zoneId }: PhysicalTableListProps) {
               </div>
               <div className="flex items-center gap-2">
                 <Badge variant={STATUS_COLORS[table.status]} size="sm">
-                  {table.status}
+                  {t(`tableStatuses.${table.status}`)}
                 </Badge>
                 <button
                   onClick={() => setDeleteTable(table)}
