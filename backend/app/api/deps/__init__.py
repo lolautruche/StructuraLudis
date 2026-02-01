@@ -1,6 +1,7 @@
-from app.api.deps.auth import get_current_user, get_current_active_user, get_current_verified_user
+from app.api.deps.auth import get_current_user, get_current_user_optional, get_current_active_user, get_current_verified_user
 from app.api.deps.permissions import (
     require_roles,
+    can_manage_exhibition,
     require_exhibition_organizer,
     require_zone_manager,
 )
@@ -12,9 +13,11 @@ from app.api.deps.i18n import (
 
 __all__ = [
     "get_current_user",
+    "get_current_user_optional",
     "get_current_active_user",
     "get_current_verified_user",
     "require_roles",
+    "can_manage_exhibition",
     "require_exhibition_organizer",
     "require_zone_manager",
     "get_locale_context",

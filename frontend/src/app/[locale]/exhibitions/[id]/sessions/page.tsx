@@ -25,10 +25,7 @@ export default function ExhibitionSessionsPage() {
   const searchParams = useSearchParams();
 
   const exhibitionId = params.id as string;
-  const { user, isAuthenticated } = useAuth();
-
-  // Check if user can manage this exhibition
-  const canManage = user?.global_role === 'SUPER_ADMIN' || user?.global_role === 'ORGANIZER';
+  const { isAuthenticated } = useAuth();
 
   const [exhibition, setExhibition] = useState<Exhibition | null>(null);
   const [sessions, setSessions] = useState<GameSession[]>([]);
@@ -144,7 +141,7 @@ export default function ExhibitionSessionsPage() {
               </div>
             </div>
             <div className="flex gap-2">
-              {canManage && (
+              {exhibition.can_manage && (
                 <Link href={`/exhibitions/${exhibitionId}/manage`}>
                   <Button variant="secondary">
                     {tExhibition('manage')}

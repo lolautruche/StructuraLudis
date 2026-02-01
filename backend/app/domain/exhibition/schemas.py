@@ -110,6 +110,8 @@ class ExhibitionRead(ExhibitionBase):
     description_i18n: I18nField = None
     created_at: datetime
     updated_at: Optional[datetime] = None
+    # Permission flag (computed based on authenticated user)
+    can_manage: bool = False
 
     model_config = ConfigDict(from_attributes=True)
 
