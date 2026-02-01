@@ -63,19 +63,19 @@ export function PhysicalTableList({ zoneId }: PhysicalTableListProps) {
     if (!deleteTable) return;
 
     setIsDeleting(true);
-    setError(null);
 
     const response = await zonesApi.deleteTable(zoneId, deleteTable.id);
 
     if (response.error) {
-      setError(response.error.message);
-      showError(t('tableDeleteError'));
+      // Show user-friendly error in toast (message should already be translated by API client)
+      showError(`${t('tableDeleteError')}: ${response.error.message}`);
     } else {
       setTables((prev) => prev.filter((t) => t.id !== deleteTable.id));
-      setDeleteTable(null);
       showSuccess(t('tableDeleted'));
     }
 
+    // Always close the modal and reset loading state
+    setDeleteTable(null);
     setIsDeleting(false);
   };
 

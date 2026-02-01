@@ -48,6 +48,7 @@ function getCurrentLocale(): string {
  * Keys are patterns to match (can be partial), values are translations by locale.
  */
 const ERROR_TRANSLATIONS: Record<string, Record<string, string>> = {
+  // Time slot validations
   'start_time must be before end_time': {
     en: 'Start time must be before end time',
     fr: 'L\'heure de début doit être avant l\'heure de fin',
@@ -56,15 +57,45 @@ const ERROR_TRANSLATIONS: Record<string, Record<string, string>> = {
     en: 'End time must be after start time',
     fr: 'L\'heure de fin doit être après l\'heure de début',
   },
+  // Zone/table validations
   'already exists in this zone': {
     en: 'A table with this label already exists in this zone',
     fr: 'Une table avec ce label existe déjà dans cette zone',
+  },
+  'physical table not found': {
+    en: 'Table not found',
+    fr: 'Table non trouvée',
+  },
+  'zone not found': {
+    en: 'Zone not found',
+    fr: 'Zone non trouvée',
+  },
+  // UUID/identifier validation errors (multiple patterns for different Pydantic/FastAPI versions)
+  'string does not match regex': {
+    en: 'Invalid identifier format',
+    fr: 'Format d\'identifiant invalide',
   },
   'the string did not match the expected pattern': {
     en: 'Invalid identifier format',
     fr: 'Format d\'identifiant invalide',
   },
-  'value is not a valid uuid': {
+  'did not match the expected pattern': {
+    en: 'Invalid identifier format',
+    fr: 'Format d\'identifiant invalide',
+  },
+  'not a valid uuid': {
+    en: 'Invalid identifier format',
+    fr: 'Format d\'identifiant invalide',
+  },
+  'input should be a valid uuid': {
+    en: 'Invalid identifier format',
+    fr: 'Format d\'identifiant invalide',
+  },
+  'invalid character': {
+    en: 'Invalid identifier format',
+    fr: 'Format d\'identifiant invalide',
+  },
+  'uuid_parsing': {
     en: 'Invalid identifier format',
     fr: 'Format d\'identifiant invalide',
   },
@@ -133,10 +164,20 @@ async function fetchApi<T>(
       let message = response.statusText;
       if (data.detail) {
         if (Array.isArray(data.detail)) {
-          // Extract messages from validation error objects
-          message = data.detail
-            .map((err: { msg?: string; message?: string }) => err.msg || err.message || JSON.stringify(err))
-            .join(', ');
+          // Extract messages from validation error objects (Pydantic v2 format)
+          // Also check for 'type' field which contains error type like 'uuid_parsing'
+          const messages = data.detail.map((err: { msg?: string; message?: string; type?: string }) => {
+            // First try to translate based on error type
+            if (err.type) {
+              const typeTranslation = translateErrorMessage(err.type, locale);
+              if (typeTranslation !== err.type) {
+                return typeTranslation;
+              }
+            }
+            // Then try message
+            return err.msg || err.message || JSON.stringify(err);
+          });
+          message = messages.join(', ');
         } else if (typeof data.detail === 'string') {
           message = data.detail;
         } else if (typeof data.detail === 'object' && data.detail.msg) {
