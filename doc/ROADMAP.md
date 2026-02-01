@@ -61,6 +61,7 @@ This document tracks prioritization decisions and project progress.
 | [#41](https://github.com/lolautruche/StructuraLudis/issues/41) | Multi-language email templates | JS.A8 | i18n for emails |
 | [#97](https://github.com/lolautruche/StructuraLudis/issues/97) | Pagination for admin lists | - | Users, exhibitions lists |
 | [#100](https://github.com/lolautruche/StructuraLudis/issues/100) | Event-scoped user ban | - | Organizers can ban users from their event |
+| [#101](https://github.com/lolautruche/StructuraLudis/issues/101) | Sortable columns in admin lists | - | Click headers to sort |
 
 ---
 
