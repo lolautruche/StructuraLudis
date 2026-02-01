@@ -11,6 +11,10 @@ import {
   User,
   EmailVerificationResponse,
   ResendVerificationResponse,
+  ForgotPasswordRequest,
+  ForgotPasswordResponse,
+  ResetPasswordRequest,
+  ResetPasswordResponse,
 } from '../types';
 
 export const authApi = {
@@ -58,5 +62,19 @@ export const authApi = {
    */
   resendVerification: async (): Promise<ApiResponse<ResendVerificationResponse>> => {
     return api.post<ResendVerificationResponse>('/api/v1/auth/resend-verification', {});
+  },
+
+  /**
+   * Request password reset.
+   */
+  forgotPassword: async (data: ForgotPasswordRequest): Promise<ApiResponse<ForgotPasswordResponse>> => {
+    return api.post<ForgotPasswordResponse>('/api/v1/auth/forgot-password', data);
+  },
+
+  /**
+   * Reset password with token.
+   */
+  resetPassword: async (data: ResetPasswordRequest): Promise<ApiResponse<ResetPasswordResponse>> => {
+    return api.post<ResetPasswordResponse>('/api/v1/auth/reset-password', data);
   },
 };

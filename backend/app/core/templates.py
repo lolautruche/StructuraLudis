@@ -110,6 +110,37 @@ EMAIL_STRINGS = {
         "waitlist_cancelled_intro": "You have been removed from the waitlist for the following session.",
         "waitlist_cancelled_action": "Find Other Sessions",
         "waitlist_cancelled_closing": "We hope to see you at another session!",
+
+        # Email change verification
+        "email_change_subject": "Confirm your new email address",
+        "email_change_greeting": "Email Change Request",
+        "email_change_hello": "Hello",
+        "email_change_intro": "You requested to change your email address to this one. Please confirm by clicking the button below.",
+        "email_change_action": "Confirm new email",
+        "email_change_important": "Important",
+        "email_change_expiration": "This link will expire in 7 days. If you did not request this change, you can safely ignore this email.",
+        "email_change_link_instruction": "If the button doesn't work, copy and paste this link into your browser:",
+        "email_change_closing": "Thank you!",
+
+        # Password changed notification
+        "password_changed_subject": "Your password has been changed",
+        "password_changed_greeting": "Password Changed",
+        "password_changed_hello": "Hello",
+        "password_changed_intro": "Your password was successfully changed.",
+        "password_changed_warning": "If you did not make this change, please contact support immediately and secure your account.",
+        "password_changed_when": "Changed at",
+        "password_changed_closing": "The Structura Ludis Team",
+
+        # Password reset request
+        "password_reset_subject": "Reset your password",
+        "password_reset_greeting": "Password Reset Request",
+        "password_reset_hello": "Hello",
+        "password_reset_intro": "We received a request to reset your password. Click the button below to create a new password.",
+        "password_reset_action": "Reset my password",
+        "password_reset_important": "Important",
+        "password_reset_expiration": "This link will expire in 1 hour. If you did not request a password reset, you can safely ignore this email.",
+        "password_reset_link_instruction": "If the button doesn't work, copy and paste this link into your browser:",
+        "password_reset_closing": "The Structura Ludis Team",
     },
     "fr": {
         # Common
@@ -197,6 +228,37 @@ EMAIL_STRINGS = {
         "waitlist_cancelled_intro": "Vous avez été retiré(e) de la liste d'attente pour la session suivante.",
         "waitlist_cancelled_action": "Trouver d'autres sessions",
         "waitlist_cancelled_closing": "Nous espérons vous revoir à une autre session !",
+
+        # Email change verification
+        "email_change_subject": "Confirmez votre nouvelle adresse email",
+        "email_change_greeting": "Demande de changement d'email",
+        "email_change_hello": "Bonjour",
+        "email_change_intro": "Vous avez demandé à changer votre adresse email pour celle-ci. Veuillez confirmer en cliquant sur le bouton ci-dessous.",
+        "email_change_action": "Confirmer le nouvel email",
+        "email_change_important": "Important",
+        "email_change_expiration": "Ce lien expirera dans 7 jours. Si vous n'avez pas demandé ce changement, vous pouvez ignorer cet email.",
+        "email_change_link_instruction": "Si le bouton ne fonctionne pas, copiez et collez ce lien dans votre navigateur :",
+        "email_change_closing": "Merci !",
+
+        # Password changed notification
+        "password_changed_subject": "Votre mot de passe a été modifié",
+        "password_changed_greeting": "Mot de passe modifié",
+        "password_changed_hello": "Bonjour",
+        "password_changed_intro": "Votre mot de passe a été modifié avec succès.",
+        "password_changed_warning": "Si vous n'êtes pas à l'origine de ce changement, veuillez contacter le support immédiatement et sécuriser votre compte.",
+        "password_changed_when": "Modifié le",
+        "password_changed_closing": "L'équipe Structura Ludis",
+
+        # Password reset request
+        "password_reset_subject": "Réinitialisation de votre mot de passe",
+        "password_reset_greeting": "Demande de réinitialisation",
+        "password_reset_hello": "Bonjour",
+        "password_reset_intro": "Nous avons reçu une demande de réinitialisation de votre mot de passe. Cliquez sur le bouton ci-dessous pour créer un nouveau mot de passe.",
+        "password_reset_action": "Réinitialiser mon mot de passe",
+        "password_reset_important": "Important",
+        "password_reset_expiration": "Ce lien expirera dans 1 heure. Si vous n'avez pas demandé de réinitialisation, vous pouvez ignorer cet email.",
+        "password_reset_link_instruction": "Si le bouton ne fonctionne pas, copiez et collez ce lien dans votre navigateur :",
+        "password_reset_closing": "L'équipe Structura Ludis",
     },
 }
 
@@ -543,4 +605,77 @@ def render_waitlist_cancelled(
         intro_text=get_string("waitlist_cancelled_intro", locale),
         action_button_text=get_string("waitlist_cancelled_action", locale),
         closing_text=get_string("waitlist_cancelled_closing", locale),
+    )
+
+
+def render_email_change(
+    locale: str,
+    verification_url: str,
+    user_name: Optional[str] = None,
+) -> tuple[str, str]:
+    """Render email change verification email."""
+    # Reuse the email_verification template with different strings
+    return render_email_template(
+        "email_verification",
+        locale=locale,
+        verification_url=verification_url,
+        user_name=user_name,
+        subject=get_string("email_change_subject", locale),
+        greeting=get_string("email_change_greeting", locale),
+        hello_text=get_string("email_change_hello", locale),
+        intro_text=get_string("email_change_intro", locale),
+        action_button_text=get_string("email_change_action", locale),
+        important_label=get_string("email_change_important", locale),
+        expiration_text=get_string("email_change_expiration", locale),
+        link_instruction=get_string("email_change_link_instruction", locale),
+        closing_text=get_string("email_change_closing", locale),
+    )
+
+
+def render_password_changed(
+    locale: str,
+    changed_at: datetime,
+    user_name: Optional[str] = None,
+) -> tuple[str, str]:
+    """Render password changed notification email."""
+    # Format the datetime
+    date_str, time_str = format_datetime(changed_at, locale)
+    changed_at_str = f"{date_str} {time_str}"
+
+    return render_email_template(
+        "password_changed",
+        locale=locale,
+        user_name=user_name,
+        changed_at=changed_at_str,
+        subject=get_string("password_changed_subject", locale),
+        greeting=get_string("password_changed_greeting", locale),
+        hello_text=get_string("password_changed_hello", locale),
+        intro_text=get_string("password_changed_intro", locale),
+        warning_text=get_string("password_changed_warning", locale),
+        when_label=get_string("password_changed_when", locale),
+        closing_text=get_string("password_changed_closing", locale),
+    )
+
+
+def render_password_reset(
+    locale: str,
+    reset_url: str,
+    user_name: Optional[str] = None,
+) -> tuple[str, str]:
+    """Render password reset request email."""
+    # Reuse the email_verification template with different strings
+    return render_email_template(
+        "email_verification",
+        locale=locale,
+        verification_url=reset_url,
+        user_name=user_name,
+        subject=get_string("password_reset_subject", locale),
+        greeting=get_string("password_reset_greeting", locale),
+        hello_text=get_string("password_reset_hello", locale),
+        intro_text=get_string("password_reset_intro", locale),
+        action_button_text=get_string("password_reset_action", locale),
+        important_label=get_string("password_reset_important", locale),
+        expiration_text=get_string("password_reset_expiration", locale),
+        link_instruction=get_string("password_reset_link_instruction", locale),
+        closing_text=get_string("password_reset_closing", locale),
     )

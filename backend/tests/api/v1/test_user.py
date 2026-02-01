@@ -2,10 +2,13 @@
 Tests for User API endpoints (JS.B6 - Agenda Management).
 """
 import pytest
+from typing import AsyncGenerator
 from uuid import uuid4
-from httpx import AsyncClient
+from httpx import AsyncClient, ASGITransport
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.main import app
+from app.core.database import get_db
 from app.domain.game.entity import GameCategory, Game
 from app.domain.shared.entity import GameComplexity
 
@@ -111,6 +114,134 @@ class TestUserProfile:
         data = response.json()
         assert data["full_name"] == "Updated Name"
         assert data["locale"] == "fr"
+
+    async def test_update_profile_with_birth_date(self, auth_client: AsyncClient):
+        """Update profile including birth_date."""
+        response = await auth_client.put(
+            "/api/v1/users/me",
+            json={"birth_date": "1990-05-15"},
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["birth_date"] == "1990-05-15"
+
+
+class TestPasswordChange:
+    """Tests for password change endpoint."""
+
+    @pytest.fixture
+    async def user_with_password(self, db_session) -> dict:
+        """Create a test user with a known hashed password."""
+        from app.core.security import get_password_hash
+        from app.domain.user.entity import User
+        from app.domain.shared.entity import GlobalRole
+        from uuid import uuid4
+
+        user = User(
+            id=uuid4(),
+            email="pwdtest@example.com",
+            hashed_password=get_password_hash("testpassword"),
+            full_name="Test User",
+            global_role=GlobalRole.USER,
+            is_active=True,
+            email_verified=True,
+        )
+        db_session.add(user)
+        await db_session.commit()
+        await db_session.refresh(user)
+
+        return {
+            "id": str(user.id),
+            "email": user.email,
+            "password": "testpassword",
+        }
+
+    @pytest.fixture
+    async def password_auth_client(
+        self,
+        db_session,
+        user_with_password: dict,
+    ) -> AsyncGenerator[AsyncClient, None]:
+        """Create authenticated client for user with known password."""
+        from httpx import AsyncClient, ASGITransport
+        from app.main import app
+        from app.core.database import get_db
+
+        async def override_get_db():
+            yield db_session
+
+        app.dependency_overrides[get_db] = override_get_db
+
+        async with AsyncClient(
+            transport=ASGITransport(app=app),
+            base_url="http://test",
+            headers={"X-User-ID": user_with_password["id"]},
+        ) as ac:
+            yield ac
+
+        app.dependency_overrides.clear()
+
+    async def test_change_password_success(
+        self,
+        password_auth_client: AsyncClient,
+        user_with_password: dict,
+        db_session,
+    ):
+        """Change password with correct current password."""
+        response = await password_auth_client.put(
+            "/api/v1/users/me/password",
+            json={
+                "current_password": user_with_password["password"],
+                "new_password": "newpassword123",
+            },
+        )
+
+        assert response.status_code == 200
+        assert response.json()["message"] == "Password changed successfully"
+
+        # Verify password was actually changed by checking the hash
+        from sqlalchemy import select
+        from app.domain.user.entity import User
+        from app.core.security import verify_password
+
+        result = await db_session.execute(
+            select(User).where(User.email == user_with_password["email"])
+        )
+        user = result.scalar_one()
+        assert verify_password("newpassword123", user.hashed_password)
+
+    async def test_change_password_wrong_current(
+        self,
+        password_auth_client: AsyncClient,
+    ):
+        """Change password with wrong current password fails."""
+        response = await password_auth_client.put(
+            "/api/v1/users/me/password",
+            json={
+                "current_password": "wrongpassword",
+                "new_password": "newpassword123",
+            },
+        )
+
+        assert response.status_code == 400
+        assert "incorrect" in response.json()["detail"].lower()
+
+    async def test_change_password_too_short(
+        self,
+        password_auth_client: AsyncClient,
+        user_with_password: dict,
+    ):
+        """Change password with too short new password fails."""
+        response = await password_auth_client.put(
+            "/api/v1/users/me/password",
+            json={
+                "current_password": user_with_password["password"],
+                "new_password": "short",
+            },
+        )
+
+        assert response.status_code == 422
 
 
 class TestMySessionsList:

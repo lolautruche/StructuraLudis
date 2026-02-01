@@ -492,3 +492,243 @@ class TestEmailVerification:
 
         assert response.status_code == 200
         assert "access_token" in response.json()
+
+
+class TestRememberMe:
+    """Tests for remember_me functionality."""
+
+    async def test_login_with_remember_me_returns_longer_token(
+        self, client: AsyncClient, db_session: AsyncSession
+    ):
+        """Login with remember_me=true returns token with 30 day expiration."""
+        import base64
+        import json
+
+        password = "password123"
+        user = User(
+            id=uuid4(),
+            email="remember@example.com",
+            hashed_password=get_password_hash(password),
+            full_name="Remember User",
+            global_role=GlobalRole.USER,
+            is_active=True,
+        )
+        db_session.add(user)
+        await db_session.commit()
+
+        response = await client.post(
+            "/api/v1/auth/login",
+            json={"email": user.email, "password": password, "remember_me": True},
+        )
+
+        assert response.status_code == 200
+        token = response.json()["access_token"]
+
+        # Decode token payload to check expiration
+        payload_b64 = token.split(".")[1]
+        # Add padding
+        padding = 4 - len(payload_b64) % 4
+        if padding != 4:
+            payload_b64 += "=" * padding
+        payload = json.loads(base64.urlsafe_b64decode(payload_b64))
+
+        # Token should expire in ~30 days (allow some margin)
+        exp_delta = payload["exp"] - payload["iat"]
+        days = exp_delta / (60 * 60 * 24)
+        assert 29 <= days <= 31  # Should be ~30 days
+
+    async def test_login_without_remember_me_returns_standard_token(
+        self, client: AsyncClient, db_session: AsyncSession
+    ):
+        """Login without remember_me returns token with standard expiration (24h)."""
+        import base64
+        import json
+
+        password = "password123"
+        user = User(
+            id=uuid4(),
+            email="noremember@example.com",
+            hashed_password=get_password_hash(password),
+            full_name="No Remember User",
+            global_role=GlobalRole.USER,
+            is_active=True,
+        )
+        db_session.add(user)
+        await db_session.commit()
+
+        response = await client.post(
+            "/api/v1/auth/login",
+            json={"email": user.email, "password": password},
+        )
+
+        assert response.status_code == 200
+        token = response.json()["access_token"]
+
+        # Decode token payload to check expiration
+        payload_b64 = token.split(".")[1]
+        padding = 4 - len(payload_b64) % 4
+        if padding != 4:
+            payload_b64 += "=" * padding
+        payload = json.loads(base64.urlsafe_b64decode(payload_b64))
+
+        # Token should expire in ~24 hours (allow some margin)
+        exp_delta = payload["exp"] - payload["iat"]
+        hours = exp_delta / (60 * 60)
+        assert 23 <= hours <= 25  # Should be ~24 hours
+
+
+class TestForgotPassword:
+    """Tests for forgot password functionality."""
+
+    async def test_forgot_password_existing_user(
+        self, client: AsyncClient, db_session: AsyncSession
+    ):
+        """Forgot password for existing user returns success and sets token."""
+        user = User(
+            id=uuid4(),
+            email="forgot@example.com",
+            hashed_password=get_password_hash("password123"),
+            full_name="Forgot User",
+            global_role=GlobalRole.USER,
+            is_active=True,
+        )
+        db_session.add(user)
+        await db_session.commit()
+
+        response = await client.post(
+            "/api/v1/auth/forgot-password",
+            json={"email": "forgot@example.com"},
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["success"] is True
+
+        # Check token was set
+        await db_session.refresh(user)
+        assert user.password_reset_token is not None
+        assert user.password_reset_sent_at is not None
+
+    async def test_forgot_password_nonexistent_user(self, client: AsyncClient):
+        """Forgot password for non-existent email still returns success (prevent enumeration)."""
+        response = await client.post(
+            "/api/v1/auth/forgot-password",
+            json={"email": "nonexistent@example.com"},
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["success"] is True
+
+    async def test_forgot_password_invalid_email_format(self, client: AsyncClient):
+        """Forgot password with invalid email format returns 422."""
+        response = await client.post(
+            "/api/v1/auth/forgot-password",
+            json={"email": "not-an-email"},
+        )
+
+        assert response.status_code == 422
+
+
+class TestResetPassword:
+    """Tests for reset password functionality."""
+
+    async def test_reset_password_success(
+        self, client: AsyncClient, db_session: AsyncSession
+    ):
+        """Reset password with valid token succeeds."""
+        test_token = "reset_token_123456789012345678901234567890123456789012345"
+        user = User(
+            id=uuid4(),
+            email="reset@example.com",
+            hashed_password=get_password_hash("oldpassword123"),
+            full_name="Reset User",
+            global_role=GlobalRole.USER,
+            is_active=True,
+            password_reset_token=test_token,
+            password_reset_sent_at=datetime.now(timezone.utc),
+        )
+        db_session.add(user)
+        await db_session.commit()
+
+        response = await client.post(
+            "/api/v1/auth/reset-password",
+            json={"token": test_token, "new_password": "newpassword123"},
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["success"] is True
+
+        # Check password was changed and token cleared
+        await db_session.refresh(user)
+        assert user.password_reset_token is None
+        assert user.password_reset_sent_at is None
+
+        # Verify can login with new password
+        login_response = await client.post(
+            "/api/v1/auth/login",
+            json={"email": "reset@example.com", "password": "newpassword123"},
+        )
+        assert login_response.status_code == 200
+
+    async def test_reset_password_invalid_token(self, client: AsyncClient):
+        """Reset password with invalid token returns 400."""
+        response = await client.post(
+            "/api/v1/auth/reset-password",
+            json={"token": "invalid_token", "new_password": "newpassword123"},
+        )
+
+        assert response.status_code == 400
+        assert "invalid" in response.json()["detail"].lower()
+
+    async def test_reset_password_expired_token(
+        self, client: AsyncClient, db_session: AsyncSession
+    ):
+        """Reset password with expired token returns 400."""
+        test_token = "expired_reset_token_12345678901234567890123456789012345"
+        user = User(
+            id=uuid4(),
+            email="expired_reset@example.com",
+            hashed_password=get_password_hash("oldpassword123"),
+            full_name="Expired Reset User",
+            global_role=GlobalRole.USER,
+            is_active=True,
+            password_reset_token=test_token,
+            password_reset_sent_at=datetime.now(timezone.utc) - timedelta(hours=2),  # Expired (> 1 hour)
+        )
+        db_session.add(user)
+        await db_session.commit()
+
+        response = await client.post(
+            "/api/v1/auth/reset-password",
+            json={"token": test_token, "new_password": "newpassword123"},
+        )
+
+        assert response.status_code == 400
+        assert "expired" in response.json()["detail"].lower()
+
+    async def test_reset_password_too_short(
+        self, client: AsyncClient, db_session: AsyncSession
+    ):
+        """Reset password with password < 8 chars returns 422."""
+        test_token = "short_pass_token_123456789012345678901234567890123456"
+        user = User(
+            id=uuid4(),
+            email="shortpass@example.com",
+            hashed_password=get_password_hash("oldpassword123"),
+            full_name="Short Pass User",
+            global_role=GlobalRole.USER,
+            is_active=True,
+            password_reset_token=test_token,
+            password_reset_sent_at=datetime.now(timezone.utc),
+        )
+        db_session.add(user)
+        await db_session.commit()
+
+        response = await client.post(
+            "/api/v1/auth/reset-password",
+            json={"token": test_token, "new_password": "short"},
+        )
+
+        assert response.status_code == 422

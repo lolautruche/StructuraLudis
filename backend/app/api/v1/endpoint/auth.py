@@ -1,15 +1,21 @@
 """
 Authentication API endpoints.
 
-Login, registration, token management, and email verification.
+Login, registration, token management, email verification, and password reset.
 """
+import secrets
+from datetime import datetime, timezone, timedelta
 from fastapi import APIRouter, Depends, Header, HTTPException, Query, status
-from pydantic import BaseModel
+from pydantic import BaseModel, EmailStr, Field
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Optional
 
 from app.core.config import settings
 from app.core.database import get_db
+from app.core.email import EmailMessage, get_email_backend
+from app.core.security import get_password_hash
+from app.core.templates import render_password_reset, render_password_changed
 from app.domain.auth.schemas import LoginRequest, RegisterRequest, Token
 from app.domain.user.entity import User
 from app.domain.user.schemas import UserRead
@@ -198,4 +204,170 @@ async def resend_verification(
         success=True,
         message="Verification email sent. Please check your inbox.",
         seconds_remaining=0,
+    )
+
+
+# =============================================================================
+# Password Reset
+# =============================================================================
+
+# Token expiration: 1 hour
+PASSWORD_RESET_TOKEN_EXPIRATION_HOURS = 1
+
+
+class ForgotPasswordRequest(BaseModel):
+    """Schema for requesting password reset."""
+    email: EmailStr
+
+
+class ForgotPasswordResponse(BaseModel):
+    """Response for password reset request."""
+    success: bool
+    message: str
+
+
+class ResetPasswordRequest(BaseModel):
+    """Schema for resetting password with token."""
+    token: str
+    new_password: str = Field(..., min_length=8)
+
+
+class ResetPasswordResponse(BaseModel):
+    """Response for password reset."""
+    success: bool
+    message: str
+
+
+@router.post("/forgot-password", response_model=ForgotPasswordResponse)
+async def forgot_password(
+    data: ForgotPasswordRequest,
+    db: AsyncSession = Depends(get_db),
+    accept_language: Optional[str] = Header(None, alias="Accept-Language"),
+):
+    """
+    Request a password reset.
+
+    Sends a reset email if the email exists.
+    Always returns success to prevent email enumeration.
+    """
+    # Find user by email
+    result = await db.execute(
+        select(User).where(User.email == data.email.lower())
+    )
+    user = result.scalar_one_or_none()
+
+    if user and user.is_active:
+        # Generate reset token
+        token = secrets.token_urlsafe(48)[:64]
+        now = datetime.now(timezone.utc)
+
+        # Store token
+        user.password_reset_token = token
+        user.password_reset_sent_at = now
+        await db.flush()
+
+        # Build reset URL
+        locale = _parse_locale_from_header(accept_language)
+        frontend_base_url = settings.FRONTEND_URL
+        reset_url = f"{frontend_base_url}/{locale}/auth/reset-password?token={token}"
+
+        # Render and send email
+        subject, html_body = render_password_reset(
+            locale=locale,
+            reset_url=reset_url,
+            user_name=user.full_name,
+        )
+
+        if settings.EMAIL_ENABLED:
+            email_backend = get_email_backend()
+            message = EmailMessage(
+                to_email=user.email,
+                to_name=user.full_name,
+                subject=subject,
+                body_html=html_body,
+            )
+            await email_backend.send(message)
+
+        await db.commit()
+
+    # Always return success to prevent email enumeration
+    return ForgotPasswordResponse(
+        success=True,
+        message="If an account with this email exists, a password reset link has been sent.",
+    )
+
+
+@router.post("/reset-password", response_model=ResetPasswordResponse)
+async def reset_password(
+    data: ResetPasswordRequest,
+    db: AsyncSession = Depends(get_db),
+    accept_language: Optional[str] = Header(None, alias="Accept-Language"),
+):
+    """
+    Reset password using the token from email.
+
+    Validates the token and sets the new password.
+    """
+    if not data.token:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Token is required",
+        )
+
+    # Find user by reset token
+    result = await db.execute(
+        select(User).where(User.password_reset_token == data.token)
+    )
+    user = result.scalar_one_or_none()
+
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid or expired reset token",
+        )
+
+    # Check token expiration
+    if user.password_reset_sent_at:
+        expiration = user.password_reset_sent_at + timedelta(
+            hours=PASSWORD_RESET_TOKEN_EXPIRATION_HOURS
+        )
+        if datetime.now(timezone.utc) > expiration:
+            # Clear expired token
+            user.password_reset_token = None
+            user.password_reset_sent_at = None
+            await db.commit()
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Reset token has expired. Please request a new one.",
+            )
+
+    # Update password
+    user.hashed_password = get_password_hash(data.new_password)
+    user.password_reset_token = None
+    user.password_reset_sent_at = None
+
+    # Send notification email about password change
+    if settings.EMAIL_ENABLED:
+        locale = _parse_locale_from_header(accept_language)
+        changed_at = datetime.now(timezone.utc)
+        subject, html_body = render_password_changed(
+            locale=locale,
+            changed_at=changed_at,
+            user_name=user.full_name,
+        )
+
+        email_backend = get_email_backend()
+        message = EmailMessage(
+            to_email=user.email,
+            to_name=user.full_name,
+            subject=subject,
+            body_html=html_body,
+        )
+        await email_backend.send(message)
+
+    await db.commit()
+
+    return ResetPasswordResponse(
+        success=True,
+        message="Password reset successfully. You can now log in with your new password.",
     )

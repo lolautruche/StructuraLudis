@@ -54,6 +54,23 @@ class User(Base, TimestampMixin):
         DateTime(timezone=True), nullable=True
     )
 
+    # Pending email change (Issue #60)
+    pending_email: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    pending_email_token: Mapped[Optional[str]] = mapped_column(
+        String(64), nullable=True
+    )
+    pending_email_sent_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+
+    # Password reset (Issue #60)
+    password_reset_token: Mapped[Optional[str]] = mapped_column(
+        String(64), nullable=True
+    )
+    password_reset_sent_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+
     def get_age(self) -> Optional[int]:
         """Calculate age from birth_date."""
         if not self.birth_date:

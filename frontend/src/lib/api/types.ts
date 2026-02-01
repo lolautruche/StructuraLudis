@@ -26,6 +26,7 @@ export interface User {
   locale: string;
   is_active: boolean;
   email_verified: boolean;
+  birth_date: string | null;
   last_login: string | null;
   privacy_accepted_at: string | null;
   created_at: string;
@@ -46,6 +47,7 @@ export interface ResendVerificationResponse {
 export interface LoginRequest {
   email: string;
   password: string;
+  remember_me?: boolean;
 }
 
 export interface LoginResponse {
@@ -58,6 +60,51 @@ export interface RegisterRequest {
   password: string;
   full_name?: string;
   accept_privacy_policy: boolean;
+}
+
+export interface UserProfileUpdate {
+  full_name?: string | null;
+  timezone?: string | null;
+  locale?: string | null;
+  birth_date?: string | null;
+}
+
+export interface PasswordChangeRequest {
+  current_password: string;
+  new_password: string;
+}
+
+export interface EmailChangeRequest {
+  new_email: string;
+  password: string;
+}
+
+export interface EmailChangeResponse {
+  message: string;
+}
+
+export interface EmailChangeConfirmResponse {
+  success: boolean;
+  message: string;
+}
+
+export interface ForgotPasswordRequest {
+  email: string;
+}
+
+export interface ForgotPasswordResponse {
+  success: boolean;
+  message: string;
+}
+
+export interface ResetPasswordRequest {
+  token: string;
+  new_password: string;
+}
+
+export interface ResetPasswordResponse {
+  success: boolean;
+  message: string;
 }
 
 /**
