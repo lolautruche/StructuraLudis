@@ -1,7 +1,7 @@
 # Roadmap & Priorities
 
 This document tracks prioritization decisions and project progress.
-**Last updated**: 2026-01-31
+**Last updated**: 2026-02-01
 
 ---
 
@@ -11,7 +11,6 @@ This document tracks prioritization decisions and project progress.
 
 | Issue | Title | Job Stories | Notes |
 |-------|-------|-------------|-------|
-| [#60](https://github.com/lolautruche/StructuraLudis/issues/60) | User Settings & Profile Page | JS.X2, JS.E2, JS.E5 | Profile, preferences, GDPR basics |
 | [#62](https://github.com/lolautruche/StructuraLudis/issues/62) | Notification Center & Bell | JS.C2, JS.C3 | In-app notifications |
 | [#8](https://github.com/lolautruche/StructuraLudis/issues/8) | Proposer: Session Submission Form | JS.B1-B5 | Submission form (partially done) |
 | [#7](https://github.com/lolautruche/StructuraLudis/issues/7) | Admin: Event Configuration | JS.A2, JS.A3, JS.A5 | Slots/zones admin config |
@@ -46,6 +45,7 @@ This document tracks prioritization decisions and project progress.
 
 | Issue | Title | Job Stories | Date |
 |-------|-------|-------------|------|
+| [#60](https://github.com/lolautruche/StructuraLudis/issues/60) | User Settings & Profile Page | JS.X2, JS.E2, JS.E5 | 2026-02-01 |
 | [#73](https://github.com/lolautruche/StructuraLudis/issues/73) | Email verification on registration | JS.E1 | 2026-01-31 |
 | [#61](https://github.com/lolautruche/StructuraLudis/issues/61) | Session Detail & Booking Flow | JS.C1, JS.C2, JS.C4, JS.C8, JS.C9 | 2026-01-31 |
 | [#69](https://github.com/lolautruche/StructuraLudis/issues/69) | Light theme option | - | 2026-01-31 |
@@ -73,6 +73,21 @@ This document tracks prioritization decisions and project progress.
 - PostgreSQL
 - Alembic for migrations
 - Jinja2 email templates with i18n
+
+### User Settings (#60)
+- Profile editing: name, birth date, timezone, locale
+- Password change with email notification
+- Email change with verification (token expires in 7 days)
+- Remember me: 30-day token vs 24h default
+- Forgot password: reset link expires in 1 hour
+
+---
+
+## Technical Debt
+
+| Item | Priority | Notes |
+|------|----------|-------|
+| Migrate passlib to libpass | Low | passlib uses deprecated `crypt` module (removed in Python 3.13). The warning is harmless with bcrypt installed. Migrate to [libpass](https://pypi.org/project/libpass/) when upgrading to Python 3.13. |
 
 ---
 
