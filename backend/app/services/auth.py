@@ -3,13 +3,14 @@ Authentication service layer.
 
 Handles user authentication and registration.
 """
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 from uuid import uuid4
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.config import settings
 from app.core.security import verify_password, get_password_hash, create_access_token
 from app.domain.user.entity import User
 from app.domain.auth.schemas import LoginRequest, RegisterRequest, Token
@@ -51,6 +52,7 @@ class AuthService:
         Login a user and return JWT token.
 
         Returns Token if successful, None if authentication fails.
+        If remember_me is True, token expires in 30 days instead of 24 hours.
         """
         user = await self.authenticate(data.email, data.password)
 
@@ -60,7 +62,15 @@ class AuthService:
         if not user.is_active:
             return None
 
-        access_token = create_access_token(subject=str(user.id))
+        # Use longer expiration for "remember me"
+        expires_delta = None
+        if data.remember_me:
+            expires_delta = timedelta(days=settings.REMEMBER_ME_TOKEN_EXPIRE_DAYS)
+
+        access_token = create_access_token(
+            subject=str(user.id),
+            expires_delta=expires_delta,
+        )
 
         return Token(access_token=access_token)
 

@@ -3,15 +3,22 @@ User API endpoints.
 
 User profile and dashboard (JS.B6).
 """
-from typing import List
+import secrets
+from datetime import datetime, timezone, timedelta
+from typing import List, Optional
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, Header, HTTPException, Query, status
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
+from pydantic import BaseModel, EmailStr, Field
 
+from app.core.config import settings
 from app.core.database import get_db
+from app.core.email import EmailMessage, get_email_backend
+from app.core.templates import render_email_change, render_password_changed
 from app.domain.user.entity import User
+from app.core.security import verify_password, get_password_hash
 from app.domain.user.schemas import (
     UserRead,
     UserProfileUpdate,
@@ -26,6 +33,22 @@ from app.domain.shared.entity import SessionStatus, BookingStatus
 from app.api.deps import get_current_active_user
 
 router = APIRouter()
+
+
+# =============================================================================
+# Helper Functions
+# =============================================================================
+
+
+def _parse_locale_from_header(accept_language: Optional[str]) -> str:
+    """Extract locale from Accept-Language header, defaulting to 'en'."""
+    if not accept_language:
+        return "en"
+    first_lang = accept_language.split(",")[0].split(";")[0].strip()
+    base_lang = first_lang.split("-")[0].lower()
+    if base_lang in ("fr", "en"):
+        return base_lang
+    return "en"
 
 
 # =============================================================================
@@ -55,6 +78,227 @@ async def update_current_user_profile(
     await db.refresh(current_user)
 
     return current_user
+
+
+# =============================================================================
+# Password Change
+# =============================================================================
+
+
+class PasswordChangeRequest(BaseModel):
+    """Schema for changing password."""
+    current_password: str
+    new_password: str = Field(..., min_length=8)
+
+
+@router.put("/me/password")
+async def change_password(
+    data: PasswordChangeRequest,
+    current_user: User = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db),
+    accept_language: Optional[str] = Header(None, alias="Accept-Language"),
+):
+    """Change current user's password."""
+    # Verify current password
+    if not verify_password(data.current_password, current_user.hashed_password):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Current password is incorrect",
+        )
+
+    # Update to new password
+    current_user.hashed_password = get_password_hash(data.new_password)
+    await db.flush()
+
+    # Send notification email
+    if settings.EMAIL_ENABLED:
+        locale = _parse_locale_from_header(accept_language)
+        changed_at = datetime.now(timezone.utc)
+        subject, html_body = render_password_changed(
+            locale=locale,
+            changed_at=changed_at,
+            user_name=current_user.full_name,
+        )
+
+        email_backend = get_email_backend()
+        message = EmailMessage(
+            to_email=current_user.email,
+            to_name=current_user.full_name,
+            subject=subject,
+            body_html=html_body,
+        )
+        await email_backend.send(message)
+
+    return {"message": "Password changed successfully"}
+
+
+# =============================================================================
+# Email Change
+# =============================================================================
+
+# Token expiration: 7 days
+EMAIL_CHANGE_TOKEN_EXPIRATION_DAYS = 7
+
+
+class EmailChangeRequest(BaseModel):
+    """Schema for requesting email change."""
+    new_email: EmailStr
+    password: str = Field(..., description="Current password for verification")
+
+
+class EmailChangeResponse(BaseModel):
+    """Response for email change request."""
+    message: str
+
+
+class EmailChangeConfirmResponse(BaseModel):
+    """Response for email change confirmation."""
+    success: bool
+    message: str
+
+
+@router.put("/me/email", response_model=EmailChangeResponse)
+async def request_email_change(
+    data: EmailChangeRequest,
+    current_user: User = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db),
+    accept_language: Optional[str] = Header(None, alias="Accept-Language"),
+):
+    """
+    Request to change email address.
+
+    Sends a verification email to the new address.
+    The change is not applied until the new email is verified.
+    """
+    # Verify current password
+    if not verify_password(data.password, current_user.hashed_password):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Password is incorrect",
+        )
+
+    # Check if new email is the same as current
+    if data.new_email.lower() == current_user.email.lower():
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="New email must be different from current email",
+        )
+
+    # Check if new email is already in use
+    existing_user = await db.execute(
+        select(User).where(User.email == data.new_email.lower())
+    )
+    if existing_user.scalar_one_or_none():
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="This email address is already in use",
+        )
+
+    # Generate verification token
+    token = secrets.token_urlsafe(48)[:64]
+    now = datetime.now(timezone.utc)
+
+    # Store pending email change
+    current_user.pending_email = data.new_email.lower()
+    current_user.pending_email_token = token
+    current_user.pending_email_sent_at = now
+    await db.flush()
+
+    # Build verification URL
+    locale = _parse_locale_from_header(accept_language)
+    frontend_base_url = settings.FRONTEND_URL
+    verification_url = f"{frontend_base_url}/{locale}/auth/verify-email-change?token={token}"
+
+    # Render and send email to NEW address
+    subject, html_body = render_email_change(
+        locale=locale,
+        verification_url=verification_url,
+        user_name=current_user.full_name,
+    )
+
+    if settings.EMAIL_ENABLED:
+        email_backend = get_email_backend()
+        message = EmailMessage(
+            to_email=data.new_email,
+            to_name=current_user.full_name,
+            subject=subject,
+            body_html=html_body,
+        )
+        await email_backend.send(message)
+
+    await db.commit()
+
+    return EmailChangeResponse(
+        message="Verification email sent to your new address. Please check your inbox."
+    )
+
+
+@router.get("/me/email/verify", response_model=EmailChangeConfirmResponse)
+async def verify_email_change(
+    token: str = Query(..., description="Email change verification token"),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Verify and apply email change.
+
+    Called when user clicks the verification link in the email sent to the new address.
+    """
+    if not token:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Token is required",
+        )
+
+    # Find user by pending email token
+    result = await db.execute(
+        select(User).where(User.pending_email_token == token)
+    )
+    user = result.scalar_one_or_none()
+
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid or expired verification token",
+        )
+
+    # Check token expiration
+    if user.pending_email_sent_at:
+        expiration = user.pending_email_sent_at + timedelta(
+            days=EMAIL_CHANGE_TOKEN_EXPIRATION_DAYS
+        )
+        if datetime.now(timezone.utc) > expiration:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Verification token has expired",
+            )
+
+    # Check that pending email still doesn't exist (race condition)
+    existing_user = await db.execute(
+        select(User).where(User.email == user.pending_email)
+    )
+    if existing_user.scalar_one_or_none():
+        # Clear pending change
+        user.pending_email = None
+        user.pending_email_token = None
+        user.pending_email_sent_at = None
+        await db.commit()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="This email address is now in use by another account",
+        )
+
+    # Apply the email change
+    user.email = user.pending_email
+    user.email_verified = True  # New email is verified by this action
+    user.pending_email = None
+    user.pending_email_token = None
+    user.pending_email_sent_at = None
+    await db.commit()
+
+    return EmailChangeConfirmResponse(
+        success=True,
+        message="Email address changed successfully",
+    )
 
 
 # =============================================================================

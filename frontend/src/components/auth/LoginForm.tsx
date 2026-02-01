@@ -5,7 +5,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useTranslations } from 'next-intl';
-import { useRouter } from '@/i18n/routing';
+import { useRouter, Link } from '@/i18n/routing';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button, Input, Checkbox } from '@/components/ui';
 
@@ -47,6 +47,7 @@ export function LoginForm({ redirectTo = '/my/agenda' }: LoginFormProps) {
     const result = await login({
       email: data.email,
       password: data.password,
+      remember_me: data.rememberMe,
     });
 
     if (result.success) {
@@ -89,12 +90,12 @@ export function LoginForm({ redirectTo = '/my/agenda' }: LoginFormProps) {
 
       <div className="flex items-center justify-between">
         <Checkbox {...register('rememberMe')} label={t('rememberMe')} />
-        <a
-          href="#"
+        <Link
+          href="/auth/forgot-password"
           className="text-sm text-ludis-primary hover:text-ludis-primary/80"
         >
           {t('forgotPassword')}
-        </a>
+        </Link>
       </div>
 
       <Button

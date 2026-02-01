@@ -10,6 +10,7 @@ class LoginRequest(BaseModel):
     """Schema for login request."""
     email: EmailStr
     password: str = Field(..., min_length=1)
+    remember_me: bool = Field(default=False, description="Keep user logged in for longer")
 
 
 class RegisterRequest(BaseModel):
