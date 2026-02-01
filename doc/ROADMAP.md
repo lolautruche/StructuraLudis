@@ -7,13 +7,39 @@ This document tracks prioritization decisions and project progress.
 
 ## Current Priorities
 
-### Next Up (MVP)
+### MVP
+
+#### Core Features
 
 | Issue | Title | Job Stories | Notes |
 |-------|-------|-------------|-------|
-| [#62](https://github.com/lolautruche/StructuraLudis/issues/62) | Notification Center & Bell | JS.C2, JS.C3 | In-app notifications |
 | [#8](https://github.com/lolautruche/StructuraLudis/issues/8) | Proposer: Session Submission Form | JS.B1-B5 | Submission form (partially done) |
 | [#7](https://github.com/lolautruche/StructuraLudis/issues/7) | Admin: Event Configuration | JS.A2, JS.A3, JS.A5 | Slots/zones admin config |
+| [#13](https://github.com/lolautruche/StructuraLudis/issues/13) | SuperAdmin Portal | JS.01-04 | Global admin |
+| [#10](https://github.com/lolautruche/StructuraLudis/issues/10) | Partner Zone Management | JS.D1 | Partner zone management |
+| [#62](https://github.com/lolautruche/StructuraLudis/issues/62) | Notification Center & Bell | JS.C2, JS.C3 | In-app notifications |
+| [#77](https://github.com/lolautruche/StructuraLudis/issues/77) | Player registration to exhibitions | - | Exhibition registration flow |
+| [#38](https://github.com/lolautruche/StructuraLudis/issues/38) | Smart check-in reminders | JS.C3 | Automated reminders |
+
+#### Waitlist
+
+| Issue | Title | Job Stories | Notes |
+|-------|-------|-------------|-------|
+| [#70](https://github.com/lolautruche/StructuraLudis/issues/70) | Waitlist configuration | JS.A9 | Feature issue |
+| [#71](https://github.com/lolautruche/StructuraLudis/issues/71) | Waitlist backend | JS.A9 | Backend implementation |
+| [#72](https://github.com/lolautruche/StructuraLudis/issues/72) | Waitlist frontend | JS.A9 | Frontend UI |
+
+#### GDPR & Privacy
+
+| Issue | Title | Job Stories | Notes |
+|-------|-------|-------------|-------|
+| [#48](https://github.com/lolautruche/StructuraLudis/issues/48) | Data Access (Right of Access) | JS.E2 | Export user data |
+| [#49](https://github.com/lolautruche/StructuraLudis/issues/49) | Account Deletion | JS.E3 | Right to erasure |
+| [#50](https://github.com/lolautruche/StructuraLudis/issues/50) | Data Portability | JS.E4 | Download data |
+| [#51](https://github.com/lolautruche/StructuraLudis/issues/51) | Consent Management | JS.E5 | Manage consents |
+| [#52](https://github.com/lolautruche/StructuraLudis/issues/52) | Data Retention Transparency | JS.E6 | Documentation |
+| [#53](https://github.com/lolautruche/StructuraLudis/issues/53) | GDPR Request Management | JS.E7 | Admin tools |
+| [#54](https://github.com/lolautruche/StructuraLudis/issues/54) | Data Anonymization | JS.E8 | Anonymize old data |
 
 ### Post-MVP
 
@@ -21,23 +47,9 @@ This document tracks prioritization decisions and project progress.
 |-------|-------|-------------|-------|
 | [#74](https://github.com/lolautruche/StructuraLudis/issues/74) | Magic link authentication | JS.X1 variant | Passwordless login |
 | [#75](https://github.com/lolautruche/StructuraLudis/issues/75) | Persist theme preference | JS.X2 | Theme preference in DB |
-| [#70](https://github.com/lolautruche/StructuraLudis/issues/70) | Waitlist configuration | JS.A9 | Waitlist config per event |
 | [#55](https://github.com/lolautruche/StructuraLudis/issues/55) | External Game Database Sync | JS.05 | GROG/BGG import |
 | [#56](https://github.com/lolautruche/StructuraLudis/issues/56) | Game Autocomplete & Metadata | JS.B3, JS.B9 | Enrich game metadata |
-| [#13](https://github.com/lolautruche/StructuraLudis/issues/13) | SuperAdmin Portal | JS.01-04 | Global admin |
-| [#10](https://github.com/lolautruche/StructuraLudis/issues/10) | Partner Zone Management | JS.D1 | Partner zone management |
-
-### GDPR (to be planned)
-
-| Issue | Title | Job Stories |
-|-------|-------|-------------|
-| [#48](https://github.com/lolautruche/StructuraLudis/issues/48) | Data Access (Right of Access) | JS.E2 |
-| [#49](https://github.com/lolautruche/StructuraLudis/issues/49) | Account Deletion | JS.E3 |
-| [#50](https://github.com/lolautruche/StructuraLudis/issues/50) | Data Portability | JS.E4 |
-| [#51](https://github.com/lolautruche/StructuraLudis/issues/51) | Consent Management | JS.E5 |
-| [#52](https://github.com/lolautruche/StructuraLudis/issues/52) | Data Retention Transparency | JS.E6 |
-| [#53](https://github.com/lolautruche/StructuraLudis/issues/53) | GDPR Request Management | JS.E7 |
-| [#54](https://github.com/lolautruche/StructuraLudis/issues/54) | Data Anonymization | JS.E8 |
+| [#41](https://github.com/lolautruche/StructuraLudis/issues/41) | Multi-language email templates | JS.A8 | i18n for emails |
 
 ---
 
