@@ -6,14 +6,17 @@ import { useSearchParams } from 'next/navigation';
 import { adminApi, AdminUser, GlobalRole } from '@/lib/api';
 import { Card, Input, Select, Badge, Button, ConfirmDialog } from '@/components/ui';
 import { useToast } from '@/contexts/ToastContext';
+import { useAuth } from '@/contexts/AuthContext';
 
 const ROLES: GlobalRole[] = ['SUPER_ADMIN', 'ORGANIZER', 'PARTNER', 'USER'];
 
 export default function AdminUsersPage() {
   const t = useTranslations('SuperAdmin.userManagement');
+  const tRoles = useTranslations('SuperAdmin.globalRoles');
   const tCommon = useTranslations('Common');
   const searchParams = useSearchParams();
   const { showSuccess, showError } = useToast();
+  const { user: currentUser } = useAuth();
 
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -116,7 +119,7 @@ export default function AdminUsersPage() {
 
   const roleOptions = [
     { value: '', label: t('allRoles') },
-    ...ROLES.map((role) => ({ value: role, label: role })),
+    ...ROLES.map((role) => ({ value: role, label: tRoles(role) })),
   ];
 
   const statusOptions = [
@@ -261,13 +264,13 @@ export default function AdminUsersPage() {
                         <Select
                           options={ROLES.map((role) => ({
                             value: role,
-                            label: role,
+                            label: tRoles(role),
                           }))}
                           value={user.global_role}
                           onChange={(e) =>
                             handleRoleChange(user, e.target.value as GlobalRole)
                           }
-                          className="w-36"
+                          className="w-40"
                         />
                       </td>
                       <td className="p-4">
@@ -278,18 +281,27 @@ export default function AdminUsersPage() {
                       <td className="p-4">
                         <span style={{ color: 'var(--color-text-muted)' }}>
                           {user.last_login
-                            ? new Date(user.last_login).toLocaleDateString()
+                            ? new Date(user.last_login).toLocaleString()
                             : '-'}
                         </span>
                       </td>
                       <td className="p-4 text-right">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleStatusToggle(user)}
-                        >
-                          {user.is_active ? t('deactivate') : t('activate')}
-                        </Button>
+                        {user.id === currentUser?.id ? (
+                          <span
+                            className="text-sm"
+                            style={{ color: 'var(--color-text-muted)' }}
+                          >
+                            {t('currentUser')}
+                          </span>
+                        ) : (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleStatusToggle(user)}
+                          >
+                            {user.is_active ? t('deactivate') : t('activate')}
+                          </Button>
+                        )}
                       </td>
                     </tr>
                   ))}
@@ -311,7 +323,7 @@ export default function AdminUsersPage() {
         title={t('confirmRoleChangeTitle')}
         message={t('confirmRoleChangeMessage', {
           name: roleChangeUser?.full_name || roleChangeUser?.email || '',
-          role: newRole || '',
+          role: newRole ? tRoles(newRole) : '',
         })}
         confirmLabel={tCommon('save')}
         cancelLabel={tCommon('cancel')}

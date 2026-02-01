@@ -67,9 +67,17 @@ class GroupRole(str, Enum):
 # --- Exhibition ---
 
 class ExhibitionStatus(str, Enum):
-    """Publication status of an exhibition."""
+    """
+    Publication status of an exhibition.
+
+    - DRAFT: Not yet published, only visible to organizers/admins
+    - PUBLISHED: Publicly visible
+    - SUSPENDED: Temporarily hidden from public (e.g., issues to resolve)
+    - ARCHIVED: Past event, kept for reference but not active
+    """
     DRAFT = "DRAFT"
     PUBLISHED = "PUBLISHED"
+    SUSPENDED = "SUSPENDED"
     ARCHIVED = "ARCHIVED"
 
 

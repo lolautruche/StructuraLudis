@@ -34,6 +34,7 @@
     "loginButton": "Se connecter",
     "registerButton": "S'inscrire",
     "invalidCredentials": "Email ou mot de passe invalide",
+    "accountDeactivated": "Votre compte a été désactivé. Contactez l'administrateur.",
     "emailExists": "Cette adresse email est déjà utilisée",
     "passwordTooShort": "Le mot de passe doit contenir au moins 8 caractères",
     "passwordMismatch": "Les mots de passe ne correspondent pas",
@@ -502,7 +503,8 @@
       "confirmActivateTitle": "Activer l'utilisateur ?",
       "confirmActivateMessage": "Activer {name} ? Cette personne pourra à nouveau se connecter.",
       "roleUpdated": "Rôle mis à jour avec succès",
-      "statusUpdated": "Statut mis à jour avec succès"
+      "statusUpdated": "Statut mis à jour avec succès",
+      "currentUser": "(vous)"
     },
     "exhibitionManagement": {
       "title": "Gestion des événements",
@@ -515,7 +517,23 @@
       "status": "Statut",
       "actions": "Actions",
       "view": "Voir",
-      "manage": "Gérer"
+      "manage": "Gérer",
+      "changeStatus": "Changer le statut",
+      "confirmStatusChangeTitle": "Modifier le statut ?",
+      "confirmStatusChangeMessage": "Modifier le statut de « {title} » en « {status} » ?",
+      "statusUpdated": "Statut mis à jour avec succès"
+    },
+    "globalRoles": {
+      "SUPER_ADMIN": "Super Admin",
+      "ORGANIZER": "Organisateur",
+      "PARTNER": "Partenaire",
+      "USER": "Utilisateur"
+    },
+    "exhibitionStatuses": {
+      "DRAFT": "Brouillon",
+      "PUBLISHED": "Publié",
+      "SUSPENDED": "Suspendu",
+      "ARCHIVED": "Archivé"
     },
     "createExhibition": {
       "title": "Créer un nouvel événement",

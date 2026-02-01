@@ -21,7 +21,7 @@ const LANGUAGES = [
   { value: 'fr', label: 'Francais' },
 ];
 
-const STATUS_VALUES = ['DRAFT', 'PUBLISHED', 'ARCHIVED'] as const;
+const STATUS_VALUES = ['DRAFT', 'PUBLISHED', 'SUSPENDED', 'ARCHIVED'] as const;
 
 const settingsSchema = z.object({
   title: z.string().min(1).max(255),
@@ -32,7 +32,7 @@ const settingsSchema = z.object({
   city: z.string().max(100).optional().nullable(),
   timezone: z.string().max(50),
   grace_period_minutes: z.coerce.number().min(0).max(120),
-  status: z.enum(['DRAFT', 'PUBLISHED', 'ARCHIVED']),
+  status: z.enum(['DRAFT', 'PUBLISHED', 'SUSPENDED', 'ARCHIVED']),
   is_registration_open: z.boolean(),
   registration_opens_at: z.string().optional().nullable(),
   registration_closes_at: z.string().optional().nullable(),

@@ -13,6 +13,7 @@ This document tracks prioritization decisions and project progress.
 
 | Issue | Title | Job Stories | Notes |
 |-------|-------|-------------|-------|
+| [#99](https://github.com/lolautruche/StructuraLudis/issues/99) | **Role architecture refactor** | JS.02, JS.02b | **PRIORITY** - Global vs event-scoped roles |
 | [#10](https://github.com/lolautruche/StructuraLudis/issues/10) | Partner Zone Management | JS.D1 | Partner zone management |
 | [#62](https://github.com/lolautruche/StructuraLudis/issues/62) | Notification Center & Bell | JS.C2, JS.C3 | In-app notifications |
 | [#77](https://github.com/lolautruche/StructuraLudis/issues/77) | Player registration to exhibitions | - | Exhibition registration flow |
@@ -22,7 +23,6 @@ This document tracks prioritization decisions and project progress.
 | [#94](https://github.com/lolautruche/StructuraLudis/issues/94) | Event region field | JS.A10 | Predefined region list |
 | [#95](https://github.com/lolautruche/StructuraLudis/issues/95) | Event list filters | JS.C10 | Region, date, status filters |
 | [#96](https://github.com/lolautruche/StructuraLudis/issues/96) | My Events overview | JS.C11 | Organized + registered events |
-| [#99](https://github.com/lolautruche/StructuraLudis/issues/99) | Role architecture refactor | JS.01 | Global vs event-scoped roles |
 
 #### Waitlist
 

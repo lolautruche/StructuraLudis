@@ -4,20 +4,18 @@ import { useState, useEffect, useCallback } from 'react';
 import { useTranslations } from 'next-intl';
 import { useSearchParams } from 'next/navigation';
 import { Link } from '@/i18n/routing';
-import { adminApi, Exhibition, ExhibitionStatus } from '@/lib/api';
-import { Card, Select, Badge, Button } from '@/components/ui';
+import { adminApi, exhibitionsApi, Exhibition, ExhibitionStatus } from '@/lib/api';
+import { Card, Select, Button, ConfirmDialog } from '@/components/ui';
+import { useToast } from '@/contexts/ToastContext';
 
-const STATUS_OPTIONS: ExhibitionStatus[] = ['DRAFT', 'PUBLISHED', 'ARCHIVED'];
-
-const STATUS_COLORS: Record<ExhibitionStatus, 'warning' | 'success' | 'default'> = {
-  DRAFT: 'warning',
-  PUBLISHED: 'success',
-  ARCHIVED: 'default',
-};
+const STATUS_OPTIONS: ExhibitionStatus[] = ['DRAFT', 'PUBLISHED', 'SUSPENDED', 'ARCHIVED'];
 
 export default function AdminExhibitionsPage() {
   const t = useTranslations('SuperAdmin.exhibitionManagement');
+  const tStatuses = useTranslations('SuperAdmin.exhibitionStatuses');
+  const tCommon = useTranslations('Common');
   const searchParams = useSearchParams();
+  const { showSuccess, showError } = useToast();
 
   const [exhibitions, setExhibitions] = useState<Exhibition[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -27,6 +25,11 @@ export default function AdminExhibitionsPage() {
   const [statusFilter, setStatusFilter] = useState<string>(
     searchParams.get('status') || ''
   );
+
+  // Status change dialog
+  const [statusChangeExhibition, setStatusChangeExhibition] = useState<Exhibition | null>(null);
+  const [newStatus, setNewStatus] = useState<ExhibitionStatus | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const loadExhibitions = useCallback(async () => {
     setIsLoading(true);
@@ -52,8 +55,34 @@ export default function AdminExhibitionsPage() {
 
   const statusOptions = [
     { value: '', label: t('allStatuses') },
-    ...STATUS_OPTIONS.map((status) => ({ value: status, label: status })),
+    ...STATUS_OPTIONS.map((status) => ({ value: status, label: tStatuses(status) })),
   ];
+
+  const handleStatusChange = (exhibition: Exhibition, status: ExhibitionStatus) => {
+    if (status === exhibition.status) return;
+    setStatusChangeExhibition(exhibition);
+    setNewStatus(status);
+  };
+
+  const confirmStatusChange = async () => {
+    if (!statusChangeExhibition || !newStatus) return;
+
+    setIsSubmitting(true);
+    const response = await exhibitionsApi.update(statusChangeExhibition.id, { status: newStatus });
+
+    if (response.error) {
+      showError(response.error.message);
+    } else if (response.data) {
+      setExhibitions((prev) =>
+        prev.map((e) => (e.id === statusChangeExhibition.id ? response.data! : e))
+      );
+      showSuccess(t('statusUpdated'));
+    }
+
+    setIsSubmitting(false);
+    setStatusChangeExhibition(null);
+    setNewStatus(null);
+  };
 
   if (error) {
     return (
@@ -182,9 +211,17 @@ export default function AdminExhibitionsPage() {
                         </span>
                       </td>
                       <td className="p-4">
-                        <Badge variant={STATUS_COLORS[exhibition.status]}>
-                          {exhibition.status}
-                        </Badge>
+                        <Select
+                          options={STATUS_OPTIONS.map((status) => ({
+                            value: status,
+                            label: tStatuses(status),
+                          }))}
+                          value={exhibition.status}
+                          onChange={(e) =>
+                            handleStatusChange(exhibition, e.target.value as ExhibitionStatus)
+                          }
+                          className="w-32"
+                        />
                       </td>
                       <td className="p-4 text-right">
                         <div className="flex justify-end gap-2">
@@ -208,6 +245,24 @@ export default function AdminExhibitionsPage() {
           )}
         </Card.Content>
       </Card>
+
+      {/* Status change confirmation */}
+      <ConfirmDialog
+        isOpen={!!statusChangeExhibition && !!newStatus}
+        onClose={() => {
+          setStatusChangeExhibition(null);
+          setNewStatus(null);
+        }}
+        onConfirm={confirmStatusChange}
+        title={t('confirmStatusChangeTitle')}
+        message={t('confirmStatusChangeMessage', {
+          title: statusChangeExhibition?.title || '',
+          status: newStatus ? tStatuses(newStatus) : '',
+        })}
+        confirmLabel={tCommon('save')}
+        cancelLabel={tCommon('cancel')}
+        isLoading={isSubmitting}
+      />
     </div>
   );
 }

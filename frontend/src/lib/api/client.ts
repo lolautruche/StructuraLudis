@@ -48,6 +48,11 @@ function getCurrentLocale(): string {
  * Keys are patterns to match (can be partial), values are translations by locale.
  */
 const ERROR_TRANSLATIONS: Record<string, Record<string, string>> = {
+  // Authentication errors
+  'account deactivated': {
+    en: 'Your account has been deactivated. Contact the administrator.',
+    fr: 'Votre compte a été désactivé. Contactez l\'administrateur.',
+  },
   // Time slot validations
   'start_time must be before end_time': {
     en: 'Start time must be before end time',

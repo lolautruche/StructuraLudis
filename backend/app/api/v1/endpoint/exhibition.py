@@ -12,6 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.domain.exhibition import Exhibition, TimeSlot
+from app.domain.shared.entity import GlobalRole, ExhibitionStatus
 from app.domain.exhibition.entity import SafetyTool
 from app.domain.exhibition.schemas import (
     ExhibitionCreate,
@@ -51,20 +52,35 @@ async def list_exhibitions(
     skip: int = 0,
     limit: int = 100,
 ):
-    """Retrieve all exhibitions with pagination."""
+    """
+    Retrieve all exhibitions with pagination.
+
+    For anonymous users and regular users: only PUBLISHED exhibitions.
+    For admins (SUPER_ADMIN, ADMIN): all exhibitions.
+    For organizers: PUBLISHED + exhibitions they can manage.
+    """
     query = select(Exhibition).offset(skip).limit(limit)
     result = await db.execute(query)
-    exhibitions = result.scalars().all()
+    all_exhibitions = result.scalars().all()
 
-    # Add can_manage flag to each exhibition
+    # Check if user is admin (can see all)
+    is_admin = (
+        current_user
+        and current_user.global_role == GlobalRole.SUPER_ADMIN
+    )
+
+    # Add can_manage flag and filter based on permissions
     responses = []
-    for exhibition in exhibitions:
-        response = ExhibitionRead.model_validate(exhibition)
+    for exhibition in all_exhibitions:
+        can_manage = False
         if current_user:
-            response.can_manage = await can_manage_exhibition(
-                current_user, exhibition, db
-            )
-        responses.append(response)
+            can_manage = await can_manage_exhibition(current_user, exhibition, db)
+
+        # Filter: show if PUBLISHED, or if user is admin, or if user can manage
+        if exhibition.status == ExhibitionStatus.PUBLISHED or is_admin or can_manage:
+            response = ExhibitionRead.model_validate(exhibition)
+            response.can_manage = can_manage
+            responses.append(response)
 
     return responses
 
