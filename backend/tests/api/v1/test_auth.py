@@ -189,7 +189,7 @@ class TestLogin:
     async def test_login_inactive_user(
         self, client: AsyncClient, db_session: AsyncSession
     ):
-        """Login with inactive user returns 401."""
+        """Login with inactive user returns 403 with specific message."""
         password = "password123"
         user = User(
             id=uuid4(),
@@ -209,7 +209,8 @@ class TestLogin:
 
         response = await client.post("/api/v1/auth/login", json=payload)
 
-        assert response.status_code == 401
+        assert response.status_code == 403
+        assert response.json()["detail"] == "Account deactivated"
 
 
 class TestJWTAuthentication:

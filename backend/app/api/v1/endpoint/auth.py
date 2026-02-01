@@ -19,7 +19,7 @@ from app.core.templates import render_password_reset, render_password_changed
 from app.domain.auth.schemas import LoginRequest, RegisterRequest, Token
 from app.domain.user.entity import User
 from app.domain.user.schemas import UserRead
-from app.services.auth import AuthService, PrivacyPolicyNotAcceptedError
+from app.services.auth import AuthService, PrivacyPolicyNotAcceptedError, AccountDeactivatedError
 from app.services.email_verification import EmailVerificationService
 from app.api.deps import get_current_active_user
 
@@ -65,7 +65,14 @@ async def login(
     Note: Login is allowed even if email is not verified.
     """
     service = AuthService(db)
-    token = await service.login(data)
+
+    try:
+        token = await service.login(data)
+    except AccountDeactivatedError:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Account deactivated",
+        )
 
     if not token:
         raise HTTPException(

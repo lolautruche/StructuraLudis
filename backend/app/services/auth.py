@@ -22,6 +22,11 @@ class PrivacyPolicyNotAcceptedError(Exception):
     pass
 
 
+class AccountDeactivatedError(Exception):
+    """Raised when user tries to login but account is deactivated."""
+    pass
+
+
 class AuthService:
     """Service for authentication operations."""
 
@@ -52,6 +57,7 @@ class AuthService:
         Login a user and return JWT token.
 
         Returns Token if successful, None if authentication fails.
+        Raises AccountDeactivatedError if account is deactivated.
         If remember_me is True, token expires in 30 days instead of 24 hours.
         """
         user = await self.authenticate(data.email, data.password)
@@ -60,7 +66,7 @@ class AuthService:
             return None
 
         if not user.is_active:
-            return None
+            raise AccountDeactivatedError()
 
         # Use longer expiration for "remember me"
         expires_delta = None

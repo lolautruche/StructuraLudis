@@ -34,6 +34,7 @@
     "loginButton": "Sign in",
     "registerButton": "Sign up",
     "invalidCredentials": "Invalid email or password",
+    "accountDeactivated": "Your account has been deactivated. Contact the administrator.",
     "emailExists": "This email address is already registered",
     "passwordTooShort": "Password must be at least 8 characters",
     "passwordMismatch": "Passwords do not match",
@@ -515,7 +516,22 @@
       "status": "Status",
       "actions": "Actions",
       "view": "View",
-      "manage": "Manage"
+      "manage": "Manage",
+      "changeStatus": "Change status",
+      "confirmStatusChangeTitle": "Change status?",
+      "confirmStatusChangeMessage": "Change status of \"{title}\" to \"{status}\"?",
+      "statusUpdated": "Status updated successfully"
+    },
+    "globalRoles": {
+      "SUPER_ADMIN": "Super Admin",
+      "ORGANIZER": "Organizer",
+      "PARTNER": "Partner",
+      "USER": "User"
+    },
+    "exhibitionStatuses": {
+      "DRAFT": "Draft",
+      "PUBLISHED": "Published",
+      "ARCHIVED": "Archived"
     },
     "createExhibition": {
       "title": "Create New Exhibition",
