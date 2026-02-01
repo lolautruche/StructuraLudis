@@ -141,6 +141,11 @@ async function fetchApi<T>(
       headers,
     });
 
+    // Handle 204 No Content responses (common for DELETE operations)
+    if (response.status === 204) {
+      return { data: null as T, error: null };
+    }
+
     // Handle non-JSON responses
     const contentType = response.headers.get('content-type');
     if (!contentType?.includes('application/json')) {
@@ -157,7 +162,9 @@ async function fetchApi<T>(
       return { data: null as T, error: null };
     }
 
-    const data = await response.json();
+    // Parse JSON response (handle empty body gracefully)
+    const text = await response.text();
+    const data = text ? JSON.parse(text) : null;
 
     if (!response.ok) {
       // Handle Pydantic validation errors (detail is an array of error objects)
