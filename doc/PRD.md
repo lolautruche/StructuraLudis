@@ -109,6 +109,11 @@ To provide a universal event management ecosystem for all forms of tabletop gami
     * **I want** to enable or disable the waitlist feature, and set a maximum number of waitlists a single player can join simultaneously,
     * **so that** I can control player behavior and prevent them from blocking spots on too many sessions while still allowing flexibility for popular games.
 
+* **JS.A10 - Event Location Details**
+    * **When** configuring my event,
+    * **I want** to select a region from a predefined list (French regions + neighboring countries),
+    * **so that** players can easily filter events by geographic area.
+
 ---
 
 ### EPIC B: The Proposer's Journey
@@ -206,6 +211,16 @@ To provide a universal event management ecosystem for all forms of tabletop gami
     * **When** I join a waitlist for a full session,
     * **I want** to see my position in the queue,
     * **so that** I can estimate my chances of getting a seat and plan accordingly.
+
+* **JS.C10 - Event Discovery Filters**
+    * **When** I browse the event list,
+    * **I want** to filter by region, date range, and registration status,
+    * **so that** I can quickly find conventions near me that are open for registration.
+
+* **JS.C11 - My Events Overview**
+    * **When** I access "My Events",
+    * **I want** to see events I organize (with management access) followed by events I'm registered to,
+    * **so that** I have a unified view of all my convention involvement.
 
 ---
 
