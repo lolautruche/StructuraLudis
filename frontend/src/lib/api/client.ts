@@ -89,11 +89,26 @@ async function fetchApi<T>(
     const data = await response.json();
 
     if (!response.ok) {
+      // Handle Pydantic validation errors (detail is an array of error objects)
+      let message = response.statusText;
+      if (data.detail) {
+        if (Array.isArray(data.detail)) {
+          // Extract messages from validation error objects
+          message = data.detail
+            .map((err: { msg?: string; message?: string }) => err.msg || err.message || JSON.stringify(err))
+            .join(', ');
+        } else if (typeof data.detail === 'string') {
+          message = data.detail;
+        } else if (typeof data.detail === 'object' && data.detail.msg) {
+          message = data.detail.msg;
+        }
+      }
+
       return {
         data: null,
         error: {
           status: response.status,
-          message: data.detail || response.statusText,
+          message,
           detail: data.detail,
           errors: data.errors,
         },
