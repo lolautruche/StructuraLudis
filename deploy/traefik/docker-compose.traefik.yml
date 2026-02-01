@@ -1,0 +1,91 @@
+# =============================================================================
+# Structura Ludis - Traefik Reverse Proxy Configuration
+# =============================================================================
+# This file adds Traefik as a reverse proxy with automatic HTTPS via Let's Encrypt.
+#
+# Usage:
+#   1. Configure your domain in .env (DOMAIN and LETSENCRYPT_EMAIL)
+#   2. Run: docker compose -f docker-compose.prod.yml -f traefik/docker-compose.traefik.yml up -d
+#
+# Traefik will automatically:
+#   - Obtain SSL certificates from Let's Encrypt
+#   - Redirect HTTP to HTTPS
+#   - Route traffic to frontend and API
+
+services:
+  # ---------------------------------------------------------------------------
+  # Traefik Reverse Proxy
+  # ---------------------------------------------------------------------------
+  traefik:
+    image: traefik:v3.0
+    container_name: sl_traefik
+    restart: unless-stopped
+    command:
+      # API and Dashboard
+      - "--api.dashboard=true"
+      - "--api.insecure=false"
+      # Docker provider
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--providers.docker.network=sl-external"
+      # Entrypoints
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.websecure.address=:443"
+      # HTTP to HTTPS redirect
+      - "--entrypoints.web.http.redirections.entryPoint.to=websecure"
+      - "--entrypoints.web.http.redirections.entryPoint.scheme=https"
+      # Let's Encrypt
+      - "--certificatesresolvers.letsencrypt.acme.tlschallenge=true"
+      - "--certificatesresolvers.letsencrypt.acme.email=${LETSENCRYPT_EMAIL}"
+      - "--certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json"
+      # Uncomment for staging (testing) certificates:
+      # - "--certificatesresolvers.letsencrypt.acme.caserver=https://acme-staging-v02.api.letsencrypt.org/directory"
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - traefik_letsencrypt:/letsencrypt
+    networks:
+      - sl-external
+    labels:
+      # Dashboard (optional, accessible at traefik.${DOMAIN})
+      - "traefik.enable=true"
+      - "traefik.http.routers.traefik.rule=Host(`traefik.${DOMAIN}`)"
+      - "traefik.http.routers.traefik.entrypoints=websecure"
+      - "traefik.http.routers.traefik.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.traefik.service=api@internal"
+      # Basic auth for dashboard (generate with: htpasswd -nb admin password)
+      # - "traefik.http.routers.traefik.middlewares=traefik-auth"
+      # - "traefik.http.middlewares.traefik-auth.basicauth.users=admin:$$apr1$$..."
+
+  # ---------------------------------------------------------------------------
+  # Override frontend with Traefik labels
+  # ---------------------------------------------------------------------------
+  sl-frontend:
+    labels:
+      - "traefik.enable=true"
+      # Main domain routes to frontend
+      - "traefik.http.routers.frontend.rule=Host(`${DOMAIN}`)"
+      - "traefik.http.routers.frontend.entrypoints=websecure"
+      - "traefik.http.routers.frontend.tls.certresolver=letsencrypt"
+      - "traefik.http.services.frontend.loadbalancer.server.port=3000"
+
+  # ---------------------------------------------------------------------------
+  # Override API with Traefik labels
+  # ---------------------------------------------------------------------------
+  sl-api:
+    labels:
+      - "traefik.enable=true"
+      # API routes (/api/*) go to backend
+      - "traefik.http.routers.api.rule=Host(`${DOMAIN}`) && PathPrefix(`/api`)"
+      - "traefik.http.routers.api.entrypoints=websecure"
+      - "traefik.http.routers.api.tls.certresolver=letsencrypt"
+      - "traefik.http.services.api.loadbalancer.server.port=8000"
+
+# =============================================================================
+# Additional Volumes
+# =============================================================================
+volumes:
+  traefik_letsencrypt:
+    driver: local
