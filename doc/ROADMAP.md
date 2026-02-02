@@ -14,14 +14,19 @@ This document tracks prioritization decisions and project progress.
 | Issue | Title | Job Stories | Notes |
 |-------|-------|-------------|-------|
 | [#10](https://github.com/lolautruche/StructuraLudis/issues/10) | Partner Zone Management | JS.D1 | Partner zone management |
-| [#62](https://github.com/lolautruche/StructuraLudis/issues/62) | Notification Center & Bell | JS.C2, JS.C3 | In-app notifications |
 | [#77](https://github.com/lolautruche/StructuraLudis/issues/77) | Player registration to exhibitions | - | Exhibition registration flow |
-| [#38](https://github.com/lolautruche/StructuraLudis/issues/38) | Smart check-in reminders | JS.C3 | Automated reminders |
 | [#92](https://github.com/lolautruche/StructuraLudis/issues/92) | Self-service event creation | JS.06, JS.07 | User submits event, admin validates |
 | [#93](https://github.com/lolautruche/StructuraLudis/issues/93) | Zone-level table prefix | JS.A0 | Smart numbering option |
 | [#94](https://github.com/lolautruche/StructuraLudis/issues/94) | Event region field | JS.A10 | Predefined region list |
 | [#95](https://github.com/lolautruche/StructuraLudis/issues/95) | Event list filters | JS.C10 | Region, date, status filters |
 | [#96](https://github.com/lolautruche/StructuraLudis/issues/96) | My Events overview | JS.C11 | Organized + registered events |
+
+#### Game Database
+
+| Issue | Title | Job Stories | Notes |
+|-------|-------|-------------|-------|
+| [#55](https://github.com/lolautruche/StructuraLudis/issues/55) | External Game Database Sync | JS.05 | **MVP scope**: Import games from GROG with links. No background worker sync for MVP. |
+| [#56](https://github.com/lolautruche/StructuraLudis/issues/56) | Game Autocomplete & Metadata | JS.B3, JS.B9 | On-demand enrichment when creating sessions |
 
 #### Waitlist
 
@@ -30,6 +35,27 @@ This document tracks prioritization decisions and project progress.
 | [#70](https://github.com/lolautruche/StructuraLudis/issues/70) | Waitlist configuration | JS.A9 | Feature issue |
 | [#71](https://github.com/lolautruche/StructuraLudis/issues/71) | Waitlist backend | JS.A9 | Backend implementation |
 | [#72](https://github.com/lolautruche/StructuraLudis/issues/72) | Waitlist frontend | JS.A9 | Frontend UI |
+
+#### Infrastructure
+
+| Issue | Title | Notes |
+|-------|-------|-------|
+| [#89](https://github.com/lolautruche/StructuraLudis/issues/89) | Pre-built Docker images | GitHub Actions + ghcr.io registry |
+
+### Post-MVP
+
+#### Features
+
+| Issue | Title | Job Stories | Notes |
+|-------|-------|-------------|-------|
+| [#62](https://github.com/lolautruche/StructuraLudis/issues/62) | Notification Center & Bell | JS.C2, JS.C3 | In-app notifications |
+| [#38](https://github.com/lolautruche/StructuraLudis/issues/38) | Smart check-in reminders | JS.C3 | Automated reminders |
+| [#74](https://github.com/lolautruche/StructuraLudis/issues/74) | Magic link authentication | JS.X1 variant | Passwordless login |
+| [#75](https://github.com/lolautruche/StructuraLudis/issues/75) | Persist theme preference | JS.X2 | Theme preference in DB |
+| [#41](https://github.com/lolautruche/StructuraLudis/issues/41) | Multi-language email templates | JS.A8 | i18n for emails |
+| [#97](https://github.com/lolautruche/StructuraLudis/issues/97) | Pagination for admin lists | - | Users, exhibitions lists |
+| [#100](https://github.com/lolautruche/StructuraLudis/issues/100) | Event-scoped user ban | - | Organizers can ban users from their event |
+| [#101](https://github.com/lolautruche/StructuraLudis/issues/101) | Sortable columns in admin lists | - | Click headers to sort |
 
 #### GDPR & Privacy
 
@@ -42,25 +68,6 @@ This document tracks prioritization decisions and project progress.
 | [#52](https://github.com/lolautruche/StructuraLudis/issues/52) | Data Retention Transparency | JS.E6 | Documentation |
 | [#53](https://github.com/lolautruche/StructuraLudis/issues/53) | GDPR Request Management | JS.E7 | Admin tools |
 | [#54](https://github.com/lolautruche/StructuraLudis/issues/54) | Data Anonymization | JS.E8 | Anonymize old data |
-
-#### Infrastructure
-
-| Issue | Title | Notes |
-|-------|-------|-------|
-| [#89](https://github.com/lolautruche/StructuraLudis/issues/89) | Pre-built Docker images | GitHub Actions + ghcr.io registry |
-
-### Post-MVP
-
-| Issue | Title | Job Stories | Notes |
-|-------|-------|-------------|-------|
-| [#74](https://github.com/lolautruche/StructuraLudis/issues/74) | Magic link authentication | JS.X1 variant | Passwordless login |
-| [#75](https://github.com/lolautruche/StructuraLudis/issues/75) | Persist theme preference | JS.X2 | Theme preference in DB |
-| [#55](https://github.com/lolautruche/StructuraLudis/issues/55) | External Game Database Sync | JS.05 | GROG/BGG import |
-| [#56](https://github.com/lolautruche/StructuraLudis/issues/56) | Game Autocomplete & Metadata | JS.B3, JS.B9 | Enrich game metadata |
-| [#41](https://github.com/lolautruche/StructuraLudis/issues/41) | Multi-language email templates | JS.A8 | i18n for emails |
-| [#97](https://github.com/lolautruche/StructuraLudis/issues/97) | Pagination for admin lists | - | Users, exhibitions lists |
-| [#100](https://github.com/lolautruche/StructuraLudis/issues/100) | Event-scoped user ban | - | Organizers can ban users from their event |
-| [#101](https://github.com/lolautruche/StructuraLudis/issues/101) | Sortable columns in admin lists | - | Click headers to sort |
 
 ---
 
