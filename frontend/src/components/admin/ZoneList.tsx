@@ -58,6 +58,7 @@ export function ZoneList({ exhibitionId, partnerMode = false }: ZoneListProps) {
           type: pz.type,
           delegated_to_group_id: null,
           moderation_required: pz.moderation_required,
+          allow_public_proposals: pz.allow_public_proposals ?? false,
           name_i18n: null,
           description_i18n: null,
           created_at: '',

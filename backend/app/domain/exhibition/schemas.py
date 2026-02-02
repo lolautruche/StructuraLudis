@@ -194,6 +194,11 @@ class ZoneBase(BaseModel):
         default=True,
         description="When True, public session proposals require moderation. Partner sessions are always auto-validated."
     )
+    # Public session proposals (Issue #10)
+    allow_public_proposals: bool = Field(
+        default=False,
+        description="When True, public users can propose sessions on tables in this zone."
+    )
 
 
 class ZoneCreate(ZoneBase):
@@ -214,6 +219,11 @@ class ZoneUpdate(BaseModel):
     moderation_required: Optional[bool] = Field(
         None,
         description="When True, public session proposals require moderation. Partner sessions are always auto-validated."
+    )
+    # Public session proposals (Issue #10)
+    allow_public_proposals: Optional[bool] = Field(
+        None,
+        description="When True, public users can propose sessions on tables in this zone."
     )
     # i18n fields (#34)
     name_i18n: I18nField = Field(None, description="Translations for name")

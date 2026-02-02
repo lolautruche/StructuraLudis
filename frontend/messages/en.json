@@ -388,6 +388,8 @@
     "tableDeleted": "Table deleted successfully",
     "tableCreateError": "Failed to create tables",
     "tableDeleteError": "Failed to delete table",
+    "allowPublicProposals": "Allow public session proposals",
+    "allowPublicProposalsHelp": "If enabled, anyone can propose a game session on tables in this zone.",
     "moderationRequired": "Enable moderation for public sessions",
     "moderationRequiredHelp": "If enabled, sessions proposed by the public require validation. Sessions created by the partner are always auto-validated.",
     "roles": {

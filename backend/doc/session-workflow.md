@@ -8,7 +8,7 @@ This document describes the session approval workflows for Issue #10 (Partner Zo
 2. [Partner Session Workflow](#partner-session-workflow)
 3. [Session Status Overview](#session-status-overview)
 4. [Permission Matrix](#permission-matrix)
-5. [Zone Moderation Settings](#zone-moderation-settings)
+5. [Zone Settings](#zone-settings)
 6. [Moderation Comments Flow](#moderation-comments-flow)
 7. [Email Notifications](#email-notifications)
 
@@ -174,25 +174,52 @@ Who can perform which actions:
 
 ---
 
-## Zone Moderation Settings
+## Zone Settings
 
-Each zone has a `moderation_required` flag that controls how **public** session proposals are handled.
+Each zone has two flags that control session proposals:
 
-### moderation_required = true (default)
+```mermaid
+flowchart TD
+    subgraph Zone["Zone Configuration"]
+        APP["allow_public_proposals"]
+        MR["moderation_required"]
+    end
 
-- Public sessions go through DRAFT → PENDING_MODERATION → VALIDATED workflow
-- Organizers and partners can approve, reject, or request changes
-- Email notifications are sent at each moderation step
+    subgraph Flow["Session Creation Flow"]
+        User["Public User"]
+        Partner["Partner/Organizer"]
 
-### moderation_required = false
+        User -->|"wants to propose session"| CheckAPP{allow_public_proposals?}
+        CheckAPP -->|false| Denied["❌ Cannot propose"]
+        CheckAPP -->|true| CheckMR{moderation_required?}
+        CheckMR -->|true| Moderation["DRAFT → PENDING → VALIDATED"]
+        CheckMR -->|false| AutoValidate["DRAFT → VALIDATED"]
 
-- Public sessions are auto-validated upon submission (DRAFT → VALIDATED)
-- No moderation step required
-- Useful for "free play" zones where anyone can propose a session
+        Partner -->|"creates session"| AlwaysValid["Always VALIDATED"]
+    end
+```
+
+### allow_public_proposals (default: false)
+
+Controls whether public users can propose sessions on tables in this zone.
+
+| Value | Behavior |
+|-------|----------|
+| `false` | Only partners and organizers can create sessions in this zone |
+| `true` | Anyone can propose a session on tables in this zone |
+
+### moderation_required (default: true)
+
+Controls whether public session proposals need moderation (only applies when `allow_public_proposals = true`).
+
+| Value | Behavior |
+|-------|----------|
+| `true` | Public sessions go through DRAFT → PENDING_MODERATION → VALIDATED |
+| `false` | Public sessions are auto-validated (DRAFT → VALIDATED) |
 
 ### Partner Sessions (always auto-validated)
 
-Partner sessions created via `/partner/sessions` or `/partner/sessions/batch` are **always** auto-validated, regardless of the zone's `moderation_required` setting. This is because:
+Partner sessions created via `/partner/sessions` or `/partner/sessions/batch` are **always** auto-validated, regardless of zone settings. This is because:
 
 1. Partners are trusted delegates assigned to manage specific zones
 2. Partners should not need to moderate their own sessions

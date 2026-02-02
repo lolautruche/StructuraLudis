@@ -403,6 +403,7 @@ export interface Zone {
   type: ZoneType;
   delegated_to_group_id: string | null;
   moderation_required: boolean;
+  allow_public_proposals: boolean;
   name_i18n: Record<string, string> | null;
   description_i18n: Record<string, string> | null;
   created_at: string;
@@ -415,6 +416,7 @@ export interface ZoneCreate {
   description?: string;
   type?: ZoneType;
   delegated_to_group_id?: string;
+  allow_public_proposals?: boolean;
 }
 
 export interface ZoneUpdate {
@@ -422,6 +424,7 @@ export interface ZoneUpdate {
   description?: string;
   type?: ZoneType;
   moderation_required?: boolean;
+  allow_public_proposals?: boolean;
 }
 
 /**
@@ -594,6 +597,7 @@ export interface PartnerZone {
   description: string | null;
   type: ZoneType;
   moderation_required: boolean;
+  allow_public_proposals: boolean;
   table_count: number;
   pending_sessions_count: number;
   validated_sessions_count: number;

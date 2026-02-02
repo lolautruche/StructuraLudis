@@ -63,6 +63,10 @@ MESSAGES = {
         "en": "You do not have access to zone '{zone_name}'",
         "fr": "Vous n'avez pas accès à la zone « {zone_name} »",
     },
+    "zone_no_public_proposals": {
+        "en": "Zone '{zone_name}' does not accept public session proposals",
+        "fr": "La zone « {zone_name} » n'accepte pas les propositions de sessions publiques",
+    },
 
     # Session errors
     "session_not_found": {

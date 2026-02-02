@@ -606,6 +606,8 @@ async def seed(force: bool = False):
             name_i18n={"fr": "Espace JDR", "en": "RPG Area"},
             type=ZoneType.RPG,
             delegated_to_group_id=club_jdr_lyon.id,
+            allow_public_proposals=True,  # Public can propose sessions
+            moderation_required=True,  # Sessions need moderation
         )
 
         zone_12singes = Zone(
@@ -615,6 +617,8 @@ async def seed(force: bool = False):
             name_i18n={"fr": "Stand XII Singes", "en": "XII Singes Booth"},
             type=ZoneType.RPG,
             delegated_to_group_id=team_12singes.id,
+            allow_public_proposals=False,  # Partner-managed zone
+            moderation_required=False,  # Partner sessions auto-validated anyway
         )
 
         zone_board = Zone(
@@ -623,6 +627,8 @@ async def seed(force: bool = False):
             name="Espace Jeux de Plateau",
             name_i18n={"fr": "Espace Jeux de Plateau", "en": "Board Game Area"},
             type=ZoneType.BOARD_GAME,
+            allow_public_proposals=True,  # Public can propose sessions
+            moderation_required=True,  # Sessions need moderation
         )
 
         session.add_all([zone_rpg, zone_12singes, zone_board])

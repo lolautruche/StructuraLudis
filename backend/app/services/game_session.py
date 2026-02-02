@@ -1267,12 +1267,14 @@ class GameSessionService:
             current_user, session.exhibition_id, [ExhibitionRole.ORGANIZER], self.db
         )
 
+        # Get zone for permission checks (#10)
+        zone_result = await self.db.execute(
+            select(Zone).where(Zone.id == table.zone_id)
+        )
+        zone = zone_result.scalar_one_or_none()
+
         # Check if user is a partner with access to the zone containing this table (#10)
         if not can_assign:
-            zone_result = await self.db.execute(
-                select(Zone).where(Zone.id == table.zone_id)
-            )
-            zone = zone_result.scalar_one_or_none()
             if zone and await can_manage_zone(current_user, zone, self.db):
                 can_assign = True
 
@@ -1281,6 +1283,24 @@ class GameSessionService:
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail=get_message("only_organizers_or_zone_managers", locale),
             )
+
+        # Check if zone allows public proposals (#10)
+        # If the session was created by a regular user (not organizer/partner),
+        # the zone must allow public proposals
+        if zone and session.created_by_user_id:
+            # Get the session creator
+            creator_result = await self.db.execute(
+                select(User).where(User.id == session.created_by_user_id)
+            )
+            creator = creator_result.scalar_one_or_none()
+            if creator:
+                # Check if creator can manage the zone
+                creator_can_manage = await can_manage_zone(creator, zone, self.db)
+                if not creator_can_manage and not zone.allow_public_proposals:
+                    raise HTTPException(
+                        status_code=status.HTTP_403_FORBIDDEN,
+                        detail=get_message("zone_no_public_proposals", locale, zone_name=zone.name),
+                    )
 
         # Get buffer time from time slot
         time_slot = await self._get_time_slot(session.time_slot_id)

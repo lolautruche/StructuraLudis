@@ -15,6 +15,7 @@ const zoneSchema = z.object({
   description: z.string().max(500).optional().nullable(),
   type: z.enum(['RPG', 'BOARD_GAME', 'WARGAME', 'TCG', 'DEMO', 'MIXED']),
   moderation_required: z.boolean(),
+  allow_public_proposals: z.boolean(),
 });
 
 type ZoneFormData = z.infer<typeof zoneSchema>;
@@ -49,6 +50,7 @@ export function ZoneForm({
       description: '',
       type: 'MIXED',
       moderation_required: true,
+      allow_public_proposals: false,
     },
   });
 
@@ -59,6 +61,7 @@ export function ZoneForm({
         description: zone.description || '',
         type: zone.type,
         moderation_required: zone.moderation_required ?? true,
+        allow_public_proposals: zone.allow_public_proposals ?? false,
       });
     } else {
       reset({
@@ -66,16 +69,18 @@ export function ZoneForm({
         description: '',
         type: 'MIXED',
         moderation_required: true,
+        allow_public_proposals: false,
       });
     }
   }, [zone, reset]);
 
   const handleFormSubmit = async (data: ZoneFormData) => {
-    const payload: ZoneCreate & { moderation_required?: boolean } = {
+    const payload: ZoneCreate & { moderation_required?: boolean; allow_public_proposals?: boolean } = {
       exhibition_id: exhibitionId,
       name: data.name,
       description: data.description || undefined,
       type: data.type,
+      allow_public_proposals: data.allow_public_proposals,
     };
     // Include moderation_required when editing (update)
     if (zone) {
@@ -110,7 +115,31 @@ export function ZoneForm({
         error={errors.type?.message}
       />
 
-      {/* Session moderation toggle - only show when editing */}
+      {/* Allow public proposals toggle */}
+      <div className="flex items-start gap-3 py-2">
+        <Checkbox
+          {...register('allow_public_proposals')}
+          id="allow_public_proposals"
+          className="mt-0.5"
+        />
+        <div>
+          <label
+            htmlFor="allow_public_proposals"
+            className="text-sm font-medium cursor-pointer"
+            style={{ color: 'var(--color-text-primary)' }}
+          >
+            {t('allowPublicProposals')}
+          </label>
+          <p
+            className="text-xs mt-0.5"
+            style={{ color: 'var(--color-text-secondary)' }}
+          >
+            {t('allowPublicProposalsHelp')}
+          </p>
+        </div>
+      </div>
+
+      {/* Session moderation toggle - only show when editing and public proposals enabled */}
       {zone && (
         <div className="flex items-start gap-3 py-2">
           <Checkbox

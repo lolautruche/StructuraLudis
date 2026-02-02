@@ -143,6 +143,7 @@ async def list_partner_zones(
             "description": zone.description,
             "type": zone.type,
             "moderation_required": zone.moderation_required,
+            "allow_public_proposals": zone.allow_public_proposals,
             "table_count": table_count,
             "pending_sessions_count": pending_count,
             "validated_sessions_count": validated_count,

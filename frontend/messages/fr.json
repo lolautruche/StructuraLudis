@@ -388,6 +388,8 @@
     "tableDeleted": "Table supprimée avec succès",
     "tableCreateError": "Échec de la création des tables",
     "tableDeleteError": "Échec de la suppression de la table",
+    "allowPublicProposals": "Autoriser les propositions de sessions publiques",
+    "allowPublicProposalsHelp": "Si activé, tout le monde peut proposer une session de jeu sur les tables de cette zone.",
     "moderationRequired": "Activer la modération des sessions publiques",
     "moderationRequiredHelp": "Si activé, les sessions proposées par le public nécessitent une validation. Les sessions créées par le partenaire sont toujours auto-validées.",
     "roles": {
