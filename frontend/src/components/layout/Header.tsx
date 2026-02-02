@@ -46,7 +46,8 @@ export function Header() {
                 {t('myAgenda')}
               </Link>
             )}
-            {isAuthenticated && (user?.global_role === 'ORGANIZER' || user?.global_role === 'SUPER_ADMIN') && (
+            {/* My Events: visible to all authenticated users (they see exhibitions they can manage) */}
+            {isAuthenticated && (
               <Link
                 href="/my/events"
                 className="transition-colors"
@@ -55,7 +56,8 @@ export function Header() {
                 {t('myEvents')}
               </Link>
             )}
-            {user?.global_role === 'SUPER_ADMIN' && (
+            {/* Admin portal: only for SUPER_ADMIN and ADMIN */}
+            {(user?.global_role === 'SUPER_ADMIN' || user?.global_role === 'ADMIN') && (
               <Link
                 href="/admin"
                 className="transition-colors font-medium"

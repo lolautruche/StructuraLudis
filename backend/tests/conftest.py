@@ -12,7 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_asyn
 from app.core.config import settings
 from app.core.database import get_db
 from app.domain.models import Base
-from app.domain.shared.entity import GlobalRole, UserGroupType, GroupRole
+from app.domain.shared.entity import GlobalRole, ExhibitionRole, UserGroupType, GroupRole, ExhibitionStatus
 from app.main import app
 
 # Test database URL (same as dev for now, could be separate)
@@ -57,7 +57,7 @@ async def db_session(test_engine) -> AsyncGenerator[AsyncSession, None]:
         for table in ["moderation_comments", "bookings", "game_sessions", "physical_tables", "zones",
                       "safety_tools", "time_slots", "games", "game_categories",
                       "user_group_memberships", "group_permissions", "user_groups",
-                      "exhibitions", "media", "audit_logs", "users", "organizations"]:
+                      "user_exhibition_roles", "exhibitions", "media", "audit_logs", "users", "organizations"]:
             try:
                 await conn.execute(text(f"TRUNCATE TABLE {table} CASCADE"))
             except Exception:
@@ -131,21 +131,48 @@ async def test_user(db_session: AsyncSession) -> dict:
 
 @pytest.fixture
 async def test_organizer(db_session: AsyncSession, test_organization: dict) -> dict:
-    """Create a test user with ORGANIZER role, linked to test organization."""
-    from app.domain.user.entity import User, UserGroupMembership
+    """Create a test user with ORGANIZER role for a test exhibition (#99)."""
+    from datetime import datetime, timezone
+    from app.domain.user.entity import User, UserGroupMembership, UserExhibitionRole
     from app.domain.organization.entity import UserGroup
+    from app.domain.exhibition.entity import Exhibition
 
-    # Create user
+    # Create user (global role is USER, exhibition role is ORGANIZER)
     user = User(
         id=uuid4(),
         email="organizer@example.com",
         hashed_password="hashed_test_password",
         full_name="Test Organizer",
-        global_role=GlobalRole.ORGANIZER,
+        global_role=GlobalRole.USER,
         is_active=True,
-        email_verified=True,  # Verified for backward compatibility
+        email_verified=True,
     )
     db_session.add(user)
+
+    # Create test exhibition for this organizer
+    exhibition = Exhibition(
+        id=uuid4(),
+        organization_id=test_organization["id"],
+        title="Test Exhibition",
+        slug="test-exhibition",
+        start_date=datetime.now(timezone.utc),
+        end_date=datetime.now(timezone.utc),
+        location_name="Test Location",
+        city="Test City",
+        country_code="FR",
+        timezone="Europe/Paris",
+        status=ExhibitionStatus.DRAFT,
+    )
+    db_session.add(exhibition)
+
+    # Assign ORGANIZER role for this exhibition
+    organizer_role = UserExhibitionRole(
+        id=uuid4(),
+        user_id=user.id,
+        exhibition_id=exhibition.id,
+        role=ExhibitionRole.ORGANIZER,
+    )
+    db_session.add(organizer_role)
 
     # Create user group for the organization
     group = UserGroup(
@@ -176,6 +203,7 @@ async def test_organizer(db_session: AsyncSession, test_organization: dict) -> d
         "global_role": str(user.global_role),
         "organization_id": test_organization["id"],
         "group_id": str(group.id),
+        "exhibition_id": str(exhibition.id),
     }
 
 
@@ -273,21 +301,48 @@ async def admin_client(
 
 @pytest.fixture
 async def second_organizer(db_session: AsyncSession, test_organization: dict) -> dict:
-    """Create a second organizer for multi-GM tests."""
-    from app.domain.user.entity import User, UserGroupMembership
+    """Create a second organizer for multi-GM tests (#99)."""
+    from datetime import datetime, timezone
+    from app.domain.user.entity import User, UserGroupMembership, UserExhibitionRole
     from app.domain.organization.entity import UserGroup
+    from app.domain.exhibition.entity import Exhibition
 
-    # Create user
+    # Create user (global role is USER, exhibition role is ORGANIZER)
     user = User(
         id=uuid4(),
         email="organizer2@example.com",
         hashed_password="hashed_test_password",
         full_name="Second Organizer",
-        global_role=GlobalRole.ORGANIZER,
+        global_role=GlobalRole.USER,
         is_active=True,
-        email_verified=True,  # Verified for backward compatibility
+        email_verified=True,
     )
     db_session.add(user)
+
+    # Create test exhibition for this organizer
+    exhibition = Exhibition(
+        id=uuid4(),
+        organization_id=test_organization["id"],
+        title="Second Test Exhibition",
+        slug="second-test-exhibition",
+        start_date=datetime.now(timezone.utc),
+        end_date=datetime.now(timezone.utc),
+        location_name="Test Location 2",
+        city="Test City",
+        country_code="FR",
+        timezone="Europe/Paris",
+        status=ExhibitionStatus.DRAFT,
+    )
+    db_session.add(exhibition)
+
+    # Assign ORGANIZER role for this exhibition
+    organizer_role = UserExhibitionRole(
+        id=uuid4(),
+        user_id=user.id,
+        exhibition_id=exhibition.id,
+        role=ExhibitionRole.ORGANIZER,
+    )
+    db_session.add(organizer_role)
 
     # Create user group for the organization
     group = UserGroup(
@@ -317,6 +372,7 @@ async def second_organizer(db_session: AsyncSession, test_organization: dict) ->
         "global_role": str(user.global_role),
         "organization_id": test_organization["id"],
         "group_id": str(group.id),
+        "exhibition_id": str(exhibition.id),
     }
 
 

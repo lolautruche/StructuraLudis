@@ -17,11 +17,19 @@ export interface ApiResponse<T> {
 /**
  * User types (from backend schemas).
  */
+/**
+ * Role types (Issue #99).
+ * GlobalRole: Platform-wide roles (SUPER_ADMIN, ADMIN, USER)
+ * ExhibitionRole: Event-scoped roles (ORGANIZER, PARTNER)
+ */
+export type GlobalRole = 'SUPER_ADMIN' | 'ADMIN' | 'USER';
+export type ExhibitionRole = 'ORGANIZER' | 'PARTNER';
+
 export interface User {
   id: string;
   email: string;
   full_name: string | null;
-  global_role: 'SUPER_ADMIN' | 'ORGANIZER' | 'PARTNER' | 'USER';
+  global_role: GlobalRole;
   timezone: string | null;
   locale: string;
   is_active: boolean;
@@ -498,8 +506,6 @@ export interface SessionUpdateRequest {
 /**
  * Admin types (SuperAdmin portal).
  */
-export type GlobalRole = 'SUPER_ADMIN' | 'ORGANIZER' | 'PARTNER' | 'USER';
-
 export interface AdminUser {
   id: string;
   email: string;
@@ -509,6 +515,39 @@ export interface AdminUser {
   email_verified: boolean;
   created_at: string;
   last_login: string | null;
+}
+
+/**
+ * Exhibition role assignment (Issue #99).
+ */
+export interface ExhibitionRoleAssignment {
+  id: string;
+  user_id: string;
+  user_email: string | null;
+  user_full_name: string | null;
+  exhibition_id: string;
+  role: ExhibitionRole;
+  zone_ids: string[] | null;
+  is_main_organizer: boolean;
+  created_at: string;
+  updated_at: string | null;
+}
+
+export interface ExhibitionRoleCreate {
+  user_id: string;
+  role: ExhibitionRole;
+  zone_ids?: string[];
+}
+
+export interface ExhibitionRoleUpdate {
+  role?: ExhibitionRole;
+  zone_ids?: string[];
+}
+
+export interface UserSearchResult {
+  id: string;
+  email: string;
+  full_name: string | null;
 }
 
 export interface PlatformStats {

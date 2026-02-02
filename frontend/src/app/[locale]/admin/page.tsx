@@ -121,19 +121,19 @@ export default function AdminDashboardPage() {
           href="/admin/users"
         />
         <StatCard
-          label={t('stats.organizers')}
-          value={stats?.users.by_role?.ORGANIZER || 0}
-          href="/admin/users?role=ORGANIZER"
-        />
-        <StatCard
-          label={t('stats.partners')}
-          value={stats?.users.by_role?.PARTNER || 0}
-          href="/admin/users?role=PARTNER"
+          label={t('stats.admins')}
+          value={stats?.users.by_role?.ADMIN || 0}
+          href="/admin/users?role=ADMIN"
         />
         <StatCard
           label={t('stats.publishedExhibitions')}
           value={stats?.exhibitions.by_status?.PUBLISHED || 0}
           href="/admin/exhibitions?status=PUBLISHED"
+        />
+        <StatCard
+          label={t('stats.draftExhibitions')}
+          value={stats?.exhibitions.by_status?.DRAFT || 0}
+          href="/admin/exhibitions?status=DRAFT"
         />
       </div>
 

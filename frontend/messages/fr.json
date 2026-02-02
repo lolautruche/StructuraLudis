@@ -9,12 +9,17 @@
     "myEvents": "Mes événements",
     "settings": "Paramètres",
     "save": "Enregistrer",
+    "saving": "Enregistrement...",
     "cancel": "Annuler",
     "delete": "Supprimer",
     "edit": "Modifier",
     "loading": "Chargement...",
     "error": "Erreur",
-    "success": "Succès"
+    "success": "Succès",
+    "exhibitionRoles": {
+      "ORGANIZER": "Organisateur",
+      "PARTNER": "Partenaire"
+    }
   },
   "Auth": {
     "loginTitle": "Connexion",
@@ -380,7 +385,29 @@
     "tablesCreated": "{count} table(s) créée(s) avec succès",
     "tableDeleted": "Table supprimée avec succès",
     "tableCreateError": "Échec de la création des tables",
-    "tableDeleteError": "Échec de la suppression de la table"
+    "tableDeleteError": "Échec de la suppression de la table",
+    "roles": {
+      "tab": "Équipe",
+      "addRole": "Ajouter un membre",
+      "assignRole": "Ajouter un membre à l'équipe",
+      "selectUser": "Utilisateur",
+      "searchUserPlaceholder": "Rechercher par nom ou email (min. 3 car.)...",
+      "searching": "Recherche...",
+      "minChars": "Tapez au moins 3 caractères pour rechercher",
+      "userSelected": "Sélectionné : {email}",
+      "role": "Rôle",
+      "selectZones": "Zones (requis pour Partenaire)",
+      "noZonesAvailable": "Aucune zone créée pour cet événement.",
+      "assign": "Ajouter",
+      "noRoles": "Aucun membre dans l'équipe. Ajoutez des organisateurs ou partenaires pour gérer cet événement.",
+      "remove": "Retirer",
+      "selectUserRequired": "Veuillez sélectionner un utilisateur",
+      "selectZonesRequired": "Le rôle Partenaire nécessite au moins une zone",
+      "confirmRemoveTitle": "Retirer le membre ?",
+      "confirmRemoveMessage": "Retirer le rôle {role} de {user} ? Cette personne perdra l'accès à la gestion de cet événement.",
+      "mainOrganizer": "Créateur",
+      "cannotRemoveSelf": "Demandez à l'organisateur principal de vous retirer"
+    }
   },
   "SessionForm": {
     "pageTitle": "Proposer une session",
@@ -468,8 +495,7 @@
     "exhibitions": "Événements",
     "stats": {
       "totalUsers": "Total utilisateurs",
-      "organizers": "Organisateurs",
-      "partners": "Partenaires",
+      "admins": "Administrateurs",
       "draftExhibitions": "Brouillon",
       "publishedExhibitions": "Publiés",
       "archivedExhibitions": "Archivés"
@@ -518,15 +544,45 @@
       "actions": "Actions",
       "view": "Voir",
       "manage": "Gérer",
+      "roles": "Rôles",
       "changeStatus": "Changer le statut",
       "confirmStatusChangeTitle": "Modifier le statut ?",
       "confirmStatusChangeMessage": "Modifier le statut de « {title} » en « {status} » ?",
       "statusUpdated": "Statut mis à jour avec succès"
     },
+    "exhibitionRoles": {
+      "title": "Gestion des rôles - {exhibition}",
+      "backToExhibitions": "Retour aux événements",
+      "addRole": "Ajouter un rôle",
+      "assignRole": "Assigner un rôle",
+      "selectUser": "Utilisateur",
+      "searchUserPlaceholder": "Rechercher par nom ou email (min. 3 car.)...",
+      "searching": "Recherche...",
+      "minChars": "Tapez au moins 3 caractères pour rechercher",
+      "userSelected": "Sélectionné : {email}",
+      "role": "Rôle",
+      "selectZones": "Zones (requis pour Partenaire)",
+      "noZonesAvailable": "Aucune zone créée pour cet événement.",
+      "assign": "Assigner",
+      "currentRoles": "Rôles assignés",
+      "noRoles": "Aucun rôle assigné.",
+      "user": "Utilisateur",
+      "zones": "Zones",
+      "actions": "Actions",
+      "allZones": "Toutes les zones",
+      "editZones": "Modifier",
+      "remove": "Retirer",
+      "roleAssigned": "Rôle assigné avec succès",
+      "roleUpdated": "Rôle mis à jour avec succès",
+      "roleRemoved": "Rôle retiré avec succès",
+      "selectUserRequired": "Veuillez sélectionner un utilisateur",
+      "selectZonesRequired": "Le rôle Partenaire nécessite au moins une zone",
+      "confirmRemoveTitle": "Retirer le rôle ?",
+      "confirmRemoveMessage": "Retirer le rôle {role} de {user} ? Cette personne perdra l'accès à cet événement."
+    },
     "globalRoles": {
       "SUPER_ADMIN": "Super Admin",
-      "ORGANIZER": "Organisateur",
-      "PARTNER": "Partenaire",
+      "ADMIN": "Administrateur",
       "USER": "Utilisateur"
     },
     "exhibitionStatuses": {

@@ -20,21 +20,21 @@ class TestListUsers:
         assert len(data) >= 3
 
     async def test_list_users_filter_by_role(
-        self, admin_client: AsyncClient, test_organizer: dict
+        self, admin_client: AsyncClient, test_user: dict
     ):
-        """Can filter users by role."""
+        """Can filter users by role (#99)."""
         response = await admin_client.get(
-            "/api/v1/admin/users", params={"role": "ORGANIZER"}
+            "/api/v1/admin/users", params={"role": "USER"}
         )
 
         assert response.status_code == 200
         data = response.json()
-        assert all(u["global_role"] == "ORGANIZER" for u in data)
+        assert all(u["global_role"] == "USER" for u in data)
 
-    async def test_list_users_forbidden_for_organizer(
+    async def test_list_users_forbidden_for_non_admin(
         self, auth_client: AsyncClient
     ):
-        """Organizer cannot access admin endpoints."""
+        """Non-admin users cannot access admin endpoints (#99)."""
         response = await auth_client.get("/api/v1/admin/users")
 
         assert response.status_code == 403
@@ -72,17 +72,17 @@ class TestGetUser:
 class TestUpdateUserRole:
     """Tests for PATCH /api/v1/admin/users/{id}/role"""
 
-    async def test_promote_to_organizer(
+    async def test_promote_to_admin(
         self, admin_client: AsyncClient, test_user: dict
     ):
-        """Super admin can promote user to ORGANIZER."""
+        """Super admin can promote user to ADMIN (#99)."""
         response = await admin_client.patch(
             f"/api/v1/admin/users/{test_user['id']}/role",
-            json={"global_role": "ORGANIZER"},
+            json={"global_role": "ADMIN"},
         )
 
         assert response.status_code == 200
-        assert response.json()["global_role"] == "ORGANIZER"
+        assert response.json()["global_role"] == "ADMIN"
 
     async def test_demote_to_user(
         self, admin_client: AsyncClient, test_organizer: dict
@@ -108,13 +108,13 @@ class TestUpdateUserRole:
         assert response.status_code == 400
         assert "yourself" in response.json()["detail"]
 
-    async def test_promote_forbidden_for_organizer(
+    async def test_promote_forbidden_for_non_admin(
         self, auth_client: AsyncClient, test_user: dict
     ):
-        """Organizer cannot change roles."""
+        """Non-admin users cannot change roles (#99)."""
         response = await auth_client.patch(
             f"/api/v1/admin/users/{test_user['id']}/role",
-            json={"global_role": "ORGANIZER"},
+            json={"global_role": "ADMIN"},
         )
 
         assert response.status_code == 403

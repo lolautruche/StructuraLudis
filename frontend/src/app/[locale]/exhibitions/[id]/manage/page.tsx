@@ -7,9 +7,9 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from '@/i18n/routing';
 import { exhibitionsApi, Exhibition } from '@/lib/api';
 import { Card } from '@/components/ui';
-import { ExhibitionSettingsForm, TimeSlotList, ZoneList } from '@/components/admin';
+import { ExhibitionSettingsForm, TimeSlotList, ZoneList, RolesList } from '@/components/admin';
 
-type TabId = 'settings' | 'slots' | 'zones';
+type TabId = 'settings' | 'slots' | 'zones' | 'roles';
 
 export default function ManageExhibitionPage() {
   const t = useTranslations('Admin');
@@ -94,6 +94,7 @@ export default function ManageExhibitionPage() {
     { id: 'settings', label: t('settings') },
     { id: 'slots', label: t('timeSlots') },
     { id: 'zones', label: t('zonesAndTables') },
+    { id: 'roles', label: t('roles.tab') },
   ];
 
   return (
@@ -151,6 +152,9 @@ export default function ManageExhibitionPage() {
           )}
           {activeTab === 'zones' && (
             <ZoneList exhibitionId={exhibition.id} />
+          )}
+          {activeTab === 'roles' && (
+            <RolesList exhibitionId={exhibition.id} />
           )}
         </Card.Content>
       </Card>

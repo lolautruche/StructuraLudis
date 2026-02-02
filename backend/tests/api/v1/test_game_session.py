@@ -53,9 +53,21 @@ async def test_game(db_session: AsyncSession, test_game_category: dict) -> dict:
 
 
 @pytest.fixture
-async def test_exhibition_with_slot(auth_client: AsyncClient, test_organizer: dict) -> dict:
-    """Create an exhibition with a time slot."""
-    # Create exhibition
+async def test_exhibition_with_slot(
+    auth_client: AsyncClient,
+    test_organizer: dict,
+    second_organizer: dict,
+    db_session,
+) -> dict:
+    """Create an exhibition with a time slot.
+
+    Both test_organizer and second_organizer get ORGANIZER roles for the exhibition.
+    """
+    from uuid import uuid4
+    from app.domain.user.entity import UserExhibitionRole
+    from app.domain.shared.entity import ExhibitionRole
+
+    # Create exhibition (test_organizer becomes ORGANIZER via API)
     exhibition_payload = {
         "title": "Session Test Convention",
         "slug": "session-test-convention",
@@ -65,6 +77,16 @@ async def test_exhibition_with_slot(auth_client: AsyncClient, test_organizer: di
     }
     exhibition_resp = await auth_client.post("/api/v1/exhibitions/", json=exhibition_payload)
     exhibition_id = exhibition_resp.json()["id"]
+
+    # Add second_organizer as ORGANIZER for this exhibition (#99)
+    second_organizer_role = UserExhibitionRole(
+        id=uuid4(),
+        user_id=second_organizer["id"],
+        exhibition_id=exhibition_id,
+        role=ExhibitionRole.ORGANIZER,
+    )
+    db_session.add(second_organizer_role)
+    await db_session.commit()
 
     # Create time slot
     slot_payload = {
@@ -2296,46 +2318,44 @@ class TestDelegatedModeration:
         test_organizer: dict,
         db_session,
     ):
-        """Partner managing a zone can moderate sessions on tables in that zone."""
+        """Partner managing a zone can moderate sessions on tables in that zone (#99)."""
         from uuid import uuid4
+        from sqlalchemy import delete
         from app.domain.exhibition.entity import Zone, PhysicalTable
-        from app.domain.organization.entity import UserGroup
-        from app.domain.user.entity import UserGroupMembership
-        from app.domain.shared.entity import ZoneType, PhysicalTableStatus, GroupRole
-
-        # Create a partner group using the actual organization
-        partner_group = UserGroup(
-            id=uuid4(),
-            organization_id=test_organizer["organization_id"],
-            name="Partner Group",
-            type="STAFF",
-            is_public=False,
-        )
-        db_session.add(partner_group)
+        from app.domain.user.entity import UserExhibitionRole
+        from app.domain.shared.entity import ZoneType, PhysicalTableStatus, ExhibitionRole
 
         # Get second organizer's user ID (they will be the partner)
-        # second_auth_client uses second_organizer fixture
         second_organizer_resp = await second_auth_client.get("/api/v1/users/me")
         second_organizer_id = second_organizer_resp.json()["id"]
 
-        # Add second organizer to partner group
-        membership = UserGroupMembership(
-            id=uuid4(),
-            user_id=second_organizer_id,
-            user_group_id=partner_group.id,
-            group_role=GroupRole.MEMBER,
-        )
-        db_session.add(membership)
-
-        # Create a zone delegated to the partner group
+        # Create a zone for this exhibition
         zone = Zone(
             id=uuid4(),
             exhibition_id=test_exhibition_with_slot["exhibition_id"],
             name="Partner Zone",
             type=ZoneType.RPG,
-            delegated_to_group_id=partner_group.id,
         )
         db_session.add(zone)
+        await db_session.flush()
+
+        # Remove existing ORGANIZER role (added by fixture) to test PARTNER-only access
+        await db_session.execute(
+            delete(UserExhibitionRole).where(
+                UserExhibitionRole.user_id == second_organizer_id,
+                UserExhibitionRole.exhibition_id == test_exhibition_with_slot["exhibition_id"],
+            )
+        )
+
+        # Assign second organizer as PARTNER with access to this zone via UserExhibitionRole
+        partner_role = UserExhibitionRole(
+            id=uuid4(),
+            user_id=second_organizer_id,
+            exhibition_id=test_exhibition_with_slot["exhibition_id"],
+            role=ExhibitionRole.PARTNER,
+            zone_ids=[str(zone.id)],
+        )
+        db_session.add(partner_role)
 
         # Create a table in the zone
         table = PhysicalTable(

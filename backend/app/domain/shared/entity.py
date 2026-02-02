@@ -40,11 +40,27 @@ class UUIDMixin:
 # --- Platform-wide ---
 
 class GlobalRole(str, Enum):
-    """Platform-wide roles for users (Issue #12)."""
+    """
+    Platform-wide roles for users (Issue #12, #99).
+
+    - SUPER_ADMIN: Platform owner, can promote/demote ADMIN
+    - ADMIN: Platform administrator, admin access but cannot manage other admins
+    - USER: Regular user
+    """
     SUPER_ADMIN = "SUPER_ADMIN"
+    ADMIN = "ADMIN"
+    USER = "USER"
+
+
+class ExhibitionRole(str, Enum):
+    """
+    Event-scoped roles for users within an exhibition (Issue #99).
+
+    - ORGANIZER: Manages the exhibition (config, moderation, zones)
+    - PARTNER: Delegated access to specific zone(s)
+    """
     ORGANIZER = "ORGANIZER"
     PARTNER = "PARTNER"
-    USER = "USER"
 
 
 # --- Organization & Groups ---

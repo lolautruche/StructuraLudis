@@ -11,6 +11,7 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator, model_valida
 
 from app.domain.shared.entity import (
     ExhibitionStatus as ExhibitionStatusEnum,
+    ExhibitionRole,
     ZoneType,
     PhysicalTableStatus,
 )
@@ -358,5 +359,56 @@ class ExhibitionDashboard(BaseModel):
     sessions_by_status: List[SessionStatusCount]
     total_sessions: int
     total_bookings: int
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+# =============================================================================
+# Exhibition Role Schemas (#99)
+# =============================================================================
+
+class ExhibitionRoleCreate(BaseModel):
+    """Schema for assigning a role to a user for an exhibition."""
+    user_id: UUID = Field(..., description="User to assign the role to")
+    role: ExhibitionRole = Field(..., description="ORGANIZER or PARTNER")
+    zone_ids: Optional[List[UUID]] = Field(
+        None,
+        description="Zone IDs this user can manage (required for PARTNER role)"
+    )
+
+    @model_validator(mode="after")
+    def validate_partner_zones(self) -> "ExhibitionRoleCreate":
+        """PARTNER role requires zone_ids."""
+        if self.role == ExhibitionRole.PARTNER and not self.zone_ids:
+            raise ValueError("PARTNER role requires at least one zone_id")
+        return self
+
+
+class ExhibitionRoleUpdate(BaseModel):
+    """Schema for updating a role assignment."""
+    role: Optional[ExhibitionRole] = Field(None, description="New role")
+    zone_ids: Optional[List[UUID]] = Field(
+        None,
+        description="Updated zone IDs (for PARTNER role)"
+    )
+
+
+class ExhibitionRoleRead(BaseModel):
+    """Schema for reading a role assignment."""
+    id: UUID
+    user_id: UUID
+    exhibition_id: UUID
+    role: ExhibitionRole
+    zone_ids: Optional[List[str]] = Field(None, description="Zone IDs as strings")
+    # User info for display
+    user_email: Optional[str] = None
+    user_full_name: Optional[str] = None
+    # Main organizer flag (cannot be removed by other organizers)
+    is_main_organizer: bool = Field(
+        default=False,
+        description="True if this user is the exhibition creator (main organizer)"
+    )
+    created_at: datetime
+    updated_at: Optional[datetime] = None
 
     model_config = ConfigDict(from_attributes=True)

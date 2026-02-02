@@ -33,11 +33,20 @@ erDiagram
         string email UK
         string hashed_password
         string full_name
-        enum global_role "SUPER_ADMIN|ORGANIZER|PARTNER|USER"
+        enum global_role "SUPER_ADMIN|ADMIN|USER"
         string timezone
         string locale
+        date birth_date "Issue 73 - JS.X2"
         boolean is_active
         datetime privacy_accepted_at "Issue 47 - GDPR consent"
+        boolean email_verified "Issue 73"
+        string email_verification_token "Issue 73"
+        datetime email_verification_sent_at "Issue 73"
+        string pending_email "Issue 60"
+        string pending_email_token "Issue 60"
+        datetime pending_email_sent_at "Issue 60"
+        string password_reset_token "Issue 60"
+        datetime password_reset_sent_at "Issue 60"
         datetime last_login
         datetime created_at
         datetime updated_at
@@ -51,10 +60,21 @@ erDiagram
         datetime joined_at
     }
 
+    UserExhibitionRole {
+        uuid id PK
+        uuid user_id FK
+        uuid exhibition_id FK
+        enum role "ORGANIZER|PARTNER"
+        jsonb zone_ids "Issue 99 - For PARTNER only"
+        datetime created_at
+        datetime updated_at
+    }
+
     %% ===== EXHIBITION DOMAIN =====
     Exhibition {
         uuid id PK
         uuid organization_id FK
+        uuid created_by_id FK "Issue 99 - Main organizer"
         string title
         string slug UK
         text description
@@ -94,7 +114,7 @@ erDiagram
     Zone {
         uuid id PK
         uuid exhibition_id FK
-        uuid delegated_to_group_id FK "nullable - Partner delegation"
+        uuid delegated_to_group_id FK "Deprecated - use UserExhibitionRole"
         string name
         text description
         jsonb name_i18n "Issue 34 - i18n translations"
@@ -244,16 +264,19 @@ erDiagram
 
     UserGroup ||--o{ GroupPermission : "has"
     UserGroup ||--o{ UserGroupMembership : "has members"
-    UserGroup ||--o{ Zone : "manages (delegation)"
+    UserGroup ||--o{ Zone : "manages (deprecated)"
     UserGroup ||--o{ GameSession : "provides"
 
     User ||--o{ UserGroupMembership : "belongs to"
+    User ||--o{ UserExhibitionRole : "has exhibition roles"
+    User ||--o{ Exhibition : "creates (main organizer)"
     User ||--o{ GameSession : "creates"
     User ||--o{ Booking : "books"
     User ||--o{ Media : "uploads"
     User ||--o{ ModerationComment : "writes"
     User ||--o{ Notification : "receives"
 
+    Exhibition ||--o{ UserExhibitionRole : "has role assignments"
     Exhibition ||--o{ TimeSlot : "has"
     Exhibition ||--o{ Zone : "contains"
     Exhibition ||--o{ SafetyTool : "defines"

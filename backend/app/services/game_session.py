@@ -31,8 +31,10 @@ from app.domain.shared.entity import (
     BookingStatus,
     ParticipantRole,
     GlobalRole,
+    ExhibitionRole,
     PhysicalTableStatus,
 )
+from app.api.deps.permissions import has_exhibition_role, can_manage_zone
 
 
 class GameSessionService:
@@ -507,33 +509,22 @@ class GameSessionService:
                 detail="Game session not found",
             )
 
-        # Check moderator permissions
-        # Allowed: SUPER_ADMIN, ORGANIZER, or partner managing the zone (#32)
-        can_moderate = current_user.global_role in [GlobalRole.SUPER_ADMIN, GlobalRole.ORGANIZER]
+        # Check moderator permissions (#99)
+        # Allowed: SUPER_ADMIN, ADMIN, exhibition ORGANIZER, or PARTNER managing the zone
+        can_moderate = await has_exhibition_role(
+            current_user, session.exhibition_id, [ExhibitionRole.ORGANIZER], self.db
+        )
 
-        # Check if user is a partner managing the zone where the session's table is located
+        # Check if user is a partner with access to the zone
         if not can_moderate and session.physical_table_id:
-            from app.domain.user.entity import UserGroupMembership
-
-            # Get the zone's delegated group and check membership
-            zone_check = await self.db.execute(
-                select(Zone.delegated_to_group_id)
+            zone_result = await self.db.execute(
+                select(Zone)
                 .join(PhysicalTable, PhysicalTable.zone_id == Zone.id)
                 .where(PhysicalTable.id == session.physical_table_id)
             )
-            delegated_group_id = zone_check.scalar_one_or_none()
-
-            if delegated_group_id:
-                # Check if current user is a member of this group
-                membership_check = await self.db.execute(
-                    select(UserGroupMembership.id)
-                    .where(
-                        UserGroupMembership.user_group_id == delegated_group_id,
-                        UserGroupMembership.user_id == current_user.id,
-                    )
-                )
-                if membership_check.scalar_one_or_none():
-                    can_moderate = True
+            zone = zone_result.scalar_one_or_none()
+            if zone and await can_manage_zone(current_user, zone, self.db):
+                can_moderate = True
 
         if not can_moderate:
             raise HTTPException(
@@ -589,10 +580,12 @@ class GameSessionService:
                 detail="Game session not found",
             )
 
-        # Check permission - GM, organizers, or super admin
+        # Check permission - GM or exhibition organizers (#99)
         can_cancel = (
             session.created_by_user_id == current_user.id
-            or current_user.global_role in [GlobalRole.SUPER_ADMIN, GlobalRole.ORGANIZER]
+            or await has_exhibition_role(
+                current_user, session.exhibition_id, [ExhibitionRole.ORGANIZER], self.db
+            )
         )
         if not can_cancel:
             raise HTTPException(
@@ -674,10 +667,12 @@ class GameSessionService:
                 detail="Game session not found",
             )
 
-        # Check permission
+        # Check permission (#99)
         can_copy = (
             original.created_by_user_id == current_user.id
-            or current_user.global_role in [GlobalRole.SUPER_ADMIN, GlobalRole.ORGANIZER]
+            or await has_exhibition_role(
+                current_user, original.exhibition_id, [ExhibitionRole.ORGANIZER], self.db
+            )
         )
         if not can_copy:
             raise HTTPException(
@@ -905,11 +900,13 @@ class GameSessionService:
 
         session = await self._get_session(booking.game_session_id)
 
-        # Check permission
+        # Check permission (#99)
         can_check_in = (
             booking.user_id == current_user.id
             or session.created_by_user_id == current_user.id
-            or current_user.global_role in [GlobalRole.SUPER_ADMIN, GlobalRole.ORGANIZER]
+            or await has_exhibition_role(
+                current_user, session.exhibition_id, [ExhibitionRole.ORGANIZER], self.db
+            )
         )
         if not can_check_in:
             raise HTTPException(
@@ -950,10 +947,12 @@ class GameSessionService:
 
         session = await self._get_session(booking.game_session_id)
 
-        # Check permission - only GM or organizers can mark no-show
+        # Check permission - only GM or exhibition organizers can mark no-show (#99)
         can_mark = (
             session.created_by_user_id == current_user.id
-            or current_user.global_role in [GlobalRole.SUPER_ADMIN, GlobalRole.ORGANIZER]
+            or await has_exhibition_role(
+                current_user, session.exhibition_id, [ExhibitionRole.ORGANIZER], self.db
+            )
         )
         if not can_mark:
             raise HTTPException(
@@ -1164,8 +1163,10 @@ class GameSessionService:
                 detail="Game session not found",
             )
 
-        # Check permission
-        if current_user.global_role not in [GlobalRole.SUPER_ADMIN, GlobalRole.ORGANIZER]:
+        # Check permission (#99)
+        if not await has_exhibition_role(
+            current_user, session.exhibition_id, [ExhibitionRole.ORGANIZER], self.db
+        ):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Only organizers can assign tables",
@@ -1233,33 +1234,24 @@ class GameSessionService:
                 detail="Game session not found",
             )
 
-        # Check permission to comment
+        # Check permission to comment (#99)
         can_comment = (
             session.created_by_user_id == current_user.id
-            or current_user.global_role in [GlobalRole.SUPER_ADMIN, GlobalRole.ORGANIZER]
+            or await has_exhibition_role(
+                current_user, session.exhibition_id, [ExhibitionRole.ORGANIZER], self.db
+            )
         )
 
-        # Zone managers can also comment
+        # Zone managers (PARTNER) can also comment
         if not can_comment and session.physical_table_id:
-            from app.domain.user.entity import UserGroupMembership
-
-            zone_check = await self.db.execute(
-                select(Zone.delegated_to_group_id)
+            zone_result = await self.db.execute(
+                select(Zone)
                 .join(PhysicalTable, PhysicalTable.zone_id == Zone.id)
                 .where(PhysicalTable.id == session.physical_table_id)
             )
-            delegated_group_id = zone_check.scalar_one_or_none()
-
-            if delegated_group_id:
-                membership_check = await self.db.execute(
-                    select(UserGroupMembership.id)
-                    .where(
-                        UserGroupMembership.user_group_id == delegated_group_id,
-                        UserGroupMembership.user_id == current_user.id,
-                    )
-                )
-                if membership_check.scalar_one_or_none():
-                    can_comment = True
+            zone = zone_result.scalar_one_or_none()
+            if zone and await can_manage_zone(current_user, zone, self.db):
+                can_comment = True
 
         if not can_comment:
             raise HTTPException(
@@ -1309,32 +1301,24 @@ class GameSessionService:
                 detail="Game session not found",
             )
 
-        # Check permission to view comments
+        # Check permission to view comments (#99)
         can_view = (
             session.created_by_user_id == current_user.id
-            or current_user.global_role in [GlobalRole.SUPER_ADMIN, GlobalRole.ORGANIZER]
+            or await has_exhibition_role(
+                current_user, session.exhibition_id, [ExhibitionRole.ORGANIZER], self.db
+            )
         )
 
+        # Zone managers (PARTNER) can also view
         if not can_view and session.physical_table_id:
-            from app.domain.user.entity import UserGroupMembership
-
-            zone_check = await self.db.execute(
-                select(Zone.delegated_to_group_id)
+            zone_result = await self.db.execute(
+                select(Zone)
                 .join(PhysicalTable, PhysicalTable.zone_id == Zone.id)
                 .where(PhysicalTable.id == session.physical_table_id)
             )
-            delegated_group_id = zone_check.scalar_one_or_none()
-
-            if delegated_group_id:
-                membership_check = await self.db.execute(
-                    select(UserGroupMembership.id)
-                    .where(
-                        UserGroupMembership.user_group_id == delegated_group_id,
-                        UserGroupMembership.user_id == current_user.id,
-                    )
-                )
-                if membership_check.scalar_one_or_none():
-                    can_view = True
+            zone = zone_result.scalar_one_or_none()
+            if zone and await can_manage_zone(current_user, zone, self.db):
+                can_view = True
 
         if not can_view:
             raise HTTPException(
@@ -1391,10 +1375,12 @@ class GameSessionService:
                 detail="Game session not found",
             )
 
-        # Check permissions
+        # Check permissions (#99)
         can_start = (
             session.created_by_user_id == current_user.id
-            or current_user.global_role in [GlobalRole.SUPER_ADMIN, GlobalRole.ORGANIZER]
+            or await has_exhibition_role(
+                current_user, session.exhibition_id, [ExhibitionRole.ORGANIZER], self.db
+            )
         )
 
         if not can_start:
@@ -1451,10 +1437,12 @@ class GameSessionService:
                 detail="Game session not found",
             )
 
-        # Check permissions
+        # Check permissions (#99)
         can_end = (
             session.created_by_user_id == current_user.id
-            or current_user.global_role in [GlobalRole.SUPER_ADMIN, GlobalRole.ORGANIZER]
+            or await has_exhibition_role(
+                current_user, session.exhibition_id, [ExhibitionRole.ORGANIZER], self.db
+            )
         )
 
         if not can_end:

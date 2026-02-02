@@ -7,13 +7,14 @@ from typing import List, Optional
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status
+from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.domain.exhibition import Exhibition, TimeSlot
-from app.domain.shared.entity import GlobalRole, ExhibitionStatus
-from app.domain.exhibition.entity import SafetyTool
+from app.domain.shared.entity import GlobalRole, ExhibitionRole, ExhibitionStatus
+from app.domain.exhibition.entity import SafetyTool, Zone
 from app.domain.exhibition.schemas import (
     ExhibitionCreate,
     ExhibitionRead,
@@ -27,12 +28,15 @@ from app.domain.exhibition.schemas import (
     SafetyToolUpdate,
     SafetyToolBatchCreate,
     SafetyToolBatchResponse,
+    ExhibitionRoleCreate,
+    ExhibitionRoleRead,
+    ExhibitionRoleUpdate,
 )
-from app.domain.user.entity import User
+from app.domain.user.entity import User, UserExhibitionRole
 from app.api.deps import (
     get_current_active_user,
     get_current_user_optional,
-    can_manage_exhibition,
+    has_any_exhibition_role,
     require_exhibition_organizer,
 )
 from app.services.exhibition import ExhibitionService
@@ -74,7 +78,8 @@ async def list_exhibitions(
     for exhibition in all_exhibitions:
         can_manage = False
         if current_user:
-            can_manage = await can_manage_exhibition(current_user, exhibition, db)
+            # Check if user has any role (ORGANIZER or PARTNER) for this exhibition
+            can_manage = await has_any_exhibition_role(current_user, exhibition, db)
 
         # Filter: show if PUBLISHED, or if user is admin, or if user can manage
         if exhibition.status == ExhibitionStatus.PUBLISHED or is_admin or can_manage:
@@ -120,10 +125,10 @@ async def get_exhibition(
             detail="Exhibition not found",
         )
 
-    # Check if current user can manage this exhibition
+    # Check if current user has any role (ORGANIZER or PARTNER) for this exhibition
     user_can_manage = False
     if current_user:
-        user_can_manage = await can_manage_exhibition(current_user, exhibition, db)
+        user_can_manage = await has_any_exhibition_role(current_user, exhibition, db)
 
     # Create response with can_manage flag
     response = ExhibitionRead.model_validate(exhibition)
@@ -530,3 +535,349 @@ async def delete_safety_tool(
         )
 
     await db.delete(tool)
+
+
+# =============================================================================
+# User Search for Role Assignment (#99)
+# =============================================================================
+
+
+class UserSearchResult(BaseModel):
+    """Minimal user info for role assignment search."""
+    id: UUID
+    email: str
+    full_name: Optional[str] = None
+
+
+@router.get("/{exhibition_id}/users/search", response_model=List[UserSearchResult])
+async def search_users_for_role(
+    exhibition_id: UUID,
+    q: str,
+    current_user: User = Depends(require_exhibition_organizer),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Search users by email or name for role assignment.
+
+    Returns users matching the query who don't already have a role for this exhibition.
+    Requires: Exhibition organizer or SUPER_ADMIN/ADMIN.
+
+    Query must be at least 3 characters.
+    """
+    if len(q) < 3:
+        return []
+
+    search_pattern = f"%{q.lower()}%"
+
+    # Get users already assigned to this exhibition
+    existing_users = await db.execute(
+        select(UserExhibitionRole.user_id).where(
+            UserExhibitionRole.exhibition_id == exhibition_id
+        )
+    )
+    existing_user_ids = {row[0] for row in existing_users.fetchall()}
+
+    # Search users by email or name
+    result = await db.execute(
+        select(User)
+        .where(
+            User.is_active == True,
+            (
+                User.email.ilike(search_pattern) |
+                User.full_name.ilike(search_pattern)
+            ),
+            ~User.id.in_(existing_user_ids) if existing_user_ids else True,
+        )
+        .order_by(User.full_name.asc(), User.email.asc())
+        .limit(20)
+    )
+    users = result.scalars().all()
+
+    return [
+        UserSearchResult(id=u.id, email=u.email, full_name=u.full_name)
+        for u in users
+    ]
+
+
+# =============================================================================
+# Exhibition Role Management (#99)
+# =============================================================================
+
+@router.get("/{exhibition_id}/roles", response_model=List[ExhibitionRoleRead])
+async def list_exhibition_roles(
+    exhibition_id: UUID,
+    current_user: User = Depends(require_exhibition_organizer),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    List all role assignments for an exhibition.
+
+    Requires: Exhibition organizer or SUPER_ADMIN/ADMIN.
+    """
+    # Get the exhibition to find the main organizer (creator)
+    exhibition_result = await db.execute(
+        select(Exhibition).where(Exhibition.id == exhibition_id)
+    )
+    exhibition = exhibition_result.scalar_one_or_none()
+    if not exhibition:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Exhibition not found",
+        )
+
+    result = await db.execute(
+        select(UserExhibitionRole, User.email, User.full_name)
+        .join(User, UserExhibitionRole.user_id == User.id)
+        .where(UserExhibitionRole.exhibition_id == exhibition_id)
+        .order_by(UserExhibitionRole.role, User.email)
+    )
+    rows = result.all()
+
+    return [
+        ExhibitionRoleRead(
+            id=role.id,
+            user_id=role.user_id,
+            exhibition_id=role.exhibition_id,
+            role=role.role,
+            zone_ids=role.zone_ids,
+            user_email=email,
+            user_full_name=full_name,
+            is_main_organizer=(
+                role.role == ExhibitionRole.ORGANIZER
+                and exhibition.created_by_id is not None
+                and role.user_id == exhibition.created_by_id
+            ),
+            created_at=role.created_at,
+            updated_at=role.updated_at,
+        )
+        for role, email, full_name in rows
+    ]
+
+
+@router.post(
+    "/{exhibition_id}/roles",
+    response_model=ExhibitionRoleRead,
+    status_code=status.HTTP_201_CREATED,
+)
+async def assign_exhibition_role(
+    exhibition_id: UUID,
+    role_in: ExhibitionRoleCreate,
+    current_user: User = Depends(require_exhibition_organizer),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Assign a role to a user for this exhibition.
+
+    Requires: Exhibition organizer or SUPER_ADMIN/ADMIN.
+
+    For PARTNER role, zone_ids must be specified and all zones must belong
+    to this exhibition.
+    """
+    # Check user exists
+    user_result = await db.execute(
+        select(User).where(User.id == role_in.user_id)
+    )
+    user = user_result.scalar_one_or_none()
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found",
+        )
+
+    # Check no existing role for this user/exhibition
+    existing = await db.execute(
+        select(UserExhibitionRole).where(
+            UserExhibitionRole.user_id == role_in.user_id,
+            UserExhibitionRole.exhibition_id == exhibition_id,
+        )
+    )
+    if existing.scalar_one_or_none():
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="User already has a role for this exhibition",
+        )
+
+    # For PARTNER, validate zone_ids belong to this exhibition
+    zone_ids_str = None
+    if role_in.role == ExhibitionRole.PARTNER and role_in.zone_ids:
+        zones_result = await db.execute(
+            select(Zone.id).where(
+                Zone.id.in_(role_in.zone_ids),
+                Zone.exhibition_id == exhibition_id,
+            )
+        )
+        valid_zones = {row[0] for row in zones_result.all()}
+
+        invalid_zones = set(role_in.zone_ids) - valid_zones
+        if invalid_zones:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Invalid zone IDs for this exhibition: {invalid_zones}",
+            )
+
+        zone_ids_str = [str(z) for z in role_in.zone_ids]
+
+    # Create role assignment
+    role = UserExhibitionRole(
+        user_id=role_in.user_id,
+        exhibition_id=exhibition_id,
+        role=role_in.role,
+        zone_ids=zone_ids_str,
+    )
+    db.add(role)
+    await db.flush()
+    await db.refresh(role)
+
+    return ExhibitionRoleRead(
+        id=role.id,
+        user_id=role.user_id,
+        exhibition_id=role.exhibition_id,
+        role=role.role,
+        zone_ids=role.zone_ids,
+        user_email=user.email,
+        user_full_name=user.full_name,
+        created_at=role.created_at,
+        updated_at=role.updated_at,
+    )
+
+
+@router.patch("/{exhibition_id}/roles/{role_id}", response_model=ExhibitionRoleRead)
+async def update_exhibition_role(
+    exhibition_id: UUID,
+    role_id: UUID,
+    role_in: ExhibitionRoleUpdate,
+    current_user: User = Depends(require_exhibition_organizer),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Update a role assignment (e.g., change role or update PARTNER zone_ids).
+
+    Requires: Exhibition organizer or SUPER_ADMIN/ADMIN.
+    """
+    # Get existing role
+    result = await db.execute(
+        select(UserExhibitionRole, User.email, User.full_name)
+        .join(User, UserExhibitionRole.user_id == User.id)
+        .where(
+            UserExhibitionRole.id == role_id,
+            UserExhibitionRole.exhibition_id == exhibition_id,
+        )
+    )
+    row = result.one_or_none()
+
+    if not row:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Role assignment not found",
+        )
+
+    role, email, full_name = row
+
+    # Update role if provided
+    if role_in.role is not None:
+        role.role = role_in.role
+
+    # Update zone_ids if provided
+    if role_in.zone_ids is not None:
+        # Validate zones belong to exhibition
+        if role_in.zone_ids:
+            zones_result = await db.execute(
+                select(Zone.id).where(
+                    Zone.id.in_(role_in.zone_ids),
+                    Zone.exhibition_id == exhibition_id,
+                )
+            )
+            valid_zones = {row[0] for row in zones_result.all()}
+            invalid_zones = set(role_in.zone_ids) - valid_zones
+            if invalid_zones:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"Invalid zone IDs for this exhibition: {invalid_zones}",
+                )
+            role.zone_ids = [str(z) for z in role_in.zone_ids]
+        else:
+            role.zone_ids = None
+
+    # Validate PARTNER has zones
+    if role.role == ExhibitionRole.PARTNER and not role.zone_ids:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="PARTNER role requires at least one zone_id",
+        )
+
+    await db.flush()
+    await db.refresh(role)
+
+    return ExhibitionRoleRead(
+        id=role.id,
+        user_id=role.user_id,
+        exhibition_id=role.exhibition_id,
+        role=role.role,
+        zone_ids=role.zone_ids,
+        user_email=email,
+        user_full_name=full_name,
+        created_at=role.created_at,
+        updated_at=role.updated_at,
+    )
+
+
+@router.delete(
+    "/{exhibition_id}/roles/{role_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+async def remove_exhibition_role(
+    exhibition_id: UUID,
+    role_id: UUID,
+    current_user: User = Depends(require_exhibition_organizer),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Remove a role assignment from an exhibition.
+
+    Requires: Exhibition organizer or SUPER_ADMIN/ADMIN.
+
+    Restrictions:
+    - Cannot remove yourself
+    - Secondary organizers cannot remove the main organizer (first ORGANIZER by created_at)
+    - SUPER_ADMIN/ADMIN can remove anyone except themselves
+    """
+    # Get the role to remove
+    result = await db.execute(
+        select(UserExhibitionRole).where(
+            UserExhibitionRole.id == role_id,
+            UserExhibitionRole.exhibition_id == exhibition_id,
+        )
+    )
+    role = result.scalar_one_or_none()
+
+    if not role:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Role assignment not found",
+        )
+
+    # Rule 1: Cannot remove yourself
+    if role.user_id == current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Cannot remove yourself from the exhibition",
+        )
+
+    # Rule 2: Secondary organizers cannot remove the main organizer (creator)
+    # SUPER_ADMIN/ADMIN bypass this check
+    if current_user.global_role not in [GlobalRole.SUPER_ADMIN, GlobalRole.ADMIN]:
+        if role.role == ExhibitionRole.ORGANIZER:
+            # Get the exhibition to check created_by_id
+            exhibition_result = await db.execute(
+                select(Exhibition).where(Exhibition.id == exhibition_id)
+            )
+            exhibition = exhibition_result.scalar_one_or_none()
+
+            # If the role belongs to the creator, only the creator themselves can remove it
+            if exhibition and exhibition.created_by_id and role.user_id == exhibition.created_by_id:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Only the main organizer or admins can remove the main organizer",
+                )
+
+    await db.delete(role)

@@ -9,12 +9,17 @@
     "myEvents": "My Events",
     "settings": "Settings",
     "save": "Save",
+    "saving": "Saving...",
     "cancel": "Cancel",
     "delete": "Delete",
     "edit": "Edit",
     "loading": "Loading...",
     "error": "Error",
-    "success": "Success"
+    "success": "Success",
+    "exhibitionRoles": {
+      "ORGANIZER": "Organizer",
+      "PARTNER": "Partner"
+    }
   },
   "Auth": {
     "loginTitle": "Login",
@@ -380,7 +385,29 @@
     "tablesCreated": "{count} table(s) created successfully",
     "tableDeleted": "Table deleted successfully",
     "tableCreateError": "Failed to create tables",
-    "tableDeleteError": "Failed to delete table"
+    "tableDeleteError": "Failed to delete table",
+    "roles": {
+      "tab": "Team",
+      "addRole": "Add member",
+      "assignRole": "Add team member",
+      "selectUser": "User",
+      "searchUserPlaceholder": "Search by name or email (min. 3 chars)...",
+      "searching": "Searching...",
+      "minChars": "Type at least 3 characters to search",
+      "userSelected": "Selected: {email}",
+      "role": "Role",
+      "selectZones": "Zones (required for Partner)",
+      "noZonesAvailable": "No zones created for this exhibition yet.",
+      "assign": "Add",
+      "noRoles": "No team members yet. Add organizers or partners to help manage this exhibition.",
+      "remove": "Remove",
+      "selectUserRequired": "Please select a user",
+      "selectZonesRequired": "Partner role requires at least one zone",
+      "confirmRemoveTitle": "Remove team member?",
+      "confirmRemoveMessage": "Remove {role} role from {user}? They will lose access to manage this exhibition.",
+      "mainOrganizer": "Creator",
+      "cannotRemoveSelf": "Ask the main organizer to remove you"
+    }
   },
   "SessionForm": {
     "pageTitle": "Propose a session",
@@ -468,8 +495,7 @@
     "exhibitions": "Exhibitions",
     "stats": {
       "totalUsers": "Total Users",
-      "organizers": "Organizers",
-      "partners": "Partners",
+      "admins": "Administrators",
       "draftExhibitions": "Draft",
       "publishedExhibitions": "Published",
       "archivedExhibitions": "Archived"
@@ -518,15 +544,45 @@
       "actions": "Actions",
       "view": "View",
       "manage": "Manage",
+      "roles": "Roles",
       "changeStatus": "Change status",
       "confirmStatusChangeTitle": "Change status?",
       "confirmStatusChangeMessage": "Change status of \"{title}\" to \"{status}\"?",
       "statusUpdated": "Status updated successfully"
     },
+    "exhibitionRoles": {
+      "title": "Manage Roles - {exhibition}",
+      "backToExhibitions": "Back to exhibitions",
+      "addRole": "Add Role",
+      "assignRole": "Assign Role",
+      "selectUser": "User",
+      "searchUserPlaceholder": "Search by name or email (min. 3 chars)...",
+      "searching": "Searching...",
+      "minChars": "Type at least 3 characters to search",
+      "userSelected": "Selected: {email}",
+      "role": "Role",
+      "selectZones": "Zones (required for Partner)",
+      "noZonesAvailable": "No zones created for this exhibition yet.",
+      "assign": "Assign",
+      "currentRoles": "Current Role Assignments",
+      "noRoles": "No roles assigned yet.",
+      "user": "User",
+      "zones": "Zones",
+      "actions": "Actions",
+      "allZones": "All zones",
+      "editZones": "Edit",
+      "remove": "Remove",
+      "roleAssigned": "Role assigned successfully",
+      "roleUpdated": "Role updated successfully",
+      "roleRemoved": "Role removed successfully",
+      "selectUserRequired": "Please select a user",
+      "selectZonesRequired": "Partner role requires at least one zone",
+      "confirmRemoveTitle": "Remove role?",
+      "confirmRemoveMessage": "Remove {role} role from {user}? They will lose access to this exhibition."
+    },
     "globalRoles": {
       "SUPER_ADMIN": "Super Admin",
-      "ORGANIZER": "Organizer",
-      "PARTNER": "Partner",
+      "ADMIN": "Administrator",
       "USER": "User"
     },
     "exhibitionStatuses": {

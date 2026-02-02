@@ -16,8 +16,8 @@ from app.domain.exhibition.entity import Exhibition
 from app.domain.exhibition.schemas import PhysicalTableRead
 from app.domain.game.schemas import GameSessionRead, SessionCancellationResult
 from app.domain.user.entity import User
-from app.domain.shared.entity import GlobalRole
-from app.api.deps import get_current_active_user
+from app.domain.shared.entity import GlobalRole, ExhibitionRole
+from app.api.deps import get_current_active_user, has_exhibition_role
 from app.services.operations import OperationsService
 from app.services.notification import (
     NotificationService,
@@ -55,15 +55,9 @@ async def auto_cancel_sessions(
     This endpoint can be called manually by organizers or triggered by a background job.
     Notifies all affected players of the cancellation.
 
-    Requires: Organizer or SUPER_ADMIN.
+    Requires: Organizer or SUPER_ADMIN/ADMIN.
     """
-    if current_user.global_role not in [GlobalRole.SUPER_ADMIN, GlobalRole.ORGANIZER]:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Only organizers can trigger auto-cancellation",
-        )
-
-    # Get exhibition info for notifications
+    # Get exhibition info for notifications and permission check
     exhibition_result = await db.execute(
         select(Exhibition).where(Exhibition.id == exhibition_id)
     )
@@ -72,6 +66,16 @@ async def auto_cancel_sessions(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Exhibition not found",
+        )
+
+    # Check permission
+    can_cancel = await has_exhibition_role(
+        current_user, exhibition_id, [ExhibitionRole.ORGANIZER], db
+    )
+    if not can_cancel:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only organizers can trigger auto-cancellation",
         )
 
     service = OperationsService(db)
@@ -144,11 +148,11 @@ async def gm_check_in(
         )
 
     # Check permission - GM or organizer
-    can_check_in = (
-        session.created_by_user_id == current_user.id
-        or current_user.global_role in [GlobalRole.SUPER_ADMIN, GlobalRole.ORGANIZER]
+    is_gm = session.created_by_user_id == current_user.id
+    is_organizer = await has_exhibition_role(
+        current_user, session.exhibition_id, [ExhibitionRole.ORGANIZER], db
     )
-    if not can_check_in:
+    if not is_gm and not is_organizer:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Only the GM or organizers can check in for a session",
