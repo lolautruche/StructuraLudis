@@ -668,7 +668,11 @@
     "selectTimeSlot": "Créneau horaire",
     "selectTimeSlotPlaceholder": "Sélectionner un créneau",
     "selectTable": "Table",
-    "selectTablePlaceholder": "Sélectionner une table"
+    "selectTablePlaceholder": "Sélectionner une table",
+    "approving": "Approbation...",
+    "sessionApproved": "Session approuvée",
+    "sessionRejected": "Session rejetée",
+    "rejectedByPartner": "Rejetée par le partenaire"
   },
   "Sessions": {
     "status": {

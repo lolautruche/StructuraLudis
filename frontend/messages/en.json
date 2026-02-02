@@ -668,7 +668,11 @@
     "selectTimeSlot": "Time slot",
     "selectTimeSlotPlaceholder": "Select a time slot",
     "selectTable": "Table",
-    "selectTablePlaceholder": "Select a table"
+    "selectTablePlaceholder": "Select a table",
+    "approving": "Approving...",
+    "sessionApproved": "Session approved",
+    "sessionRejected": "Session rejected",
+    "rejectedByPartner": "Rejected by partner"
   },
   "Sessions": {
     "status": {

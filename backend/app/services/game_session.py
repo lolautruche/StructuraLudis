@@ -1165,16 +1165,7 @@ class GameSessionService:
                 detail="Game session not found",
             )
 
-        # Check permission (#99)
-        if not await has_exhibition_role(
-            current_user, session.exhibition_id, [ExhibitionRole.ORGANIZER], self.db
-        ):
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Only organizers can assign tables",
-            )
-
-        # Check table exists
+        # Check table exists first (needed for permission check)
         result = await self.db.execute(
             select(PhysicalTable).where(PhysicalTable.id == table_id)
         )
@@ -1183,6 +1174,27 @@ class GameSessionService:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Physical table not found",
+            )
+
+        # Check permission (#99, #10)
+        # Allowed: SUPER_ADMIN, ADMIN, exhibition ORGANIZER, or PARTNER managing the zone
+        can_assign = await has_exhibition_role(
+            current_user, session.exhibition_id, [ExhibitionRole.ORGANIZER], self.db
+        )
+
+        # Check if user is a partner with access to the zone containing this table (#10)
+        if not can_assign:
+            zone_result = await self.db.execute(
+                select(Zone).where(Zone.id == table.zone_id)
+            )
+            zone = zone_result.scalar_one_or_none()
+            if zone and await can_manage_zone(current_user, zone, self.db):
+                can_assign = True
+
+        if not can_assign:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Only organizers or zone managers can assign tables",
             )
 
         # Get buffer time from time slot

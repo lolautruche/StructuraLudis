@@ -506,6 +506,12 @@ export interface SessionUpdateRequest {
   scheduled_end?: string;
 }
 
+export interface SessionModerateRequest {
+  action: 'approve' | 'reject' | 'request_changes';
+  rejection_reason?: string;
+  comment?: string;
+}
+
 /**
  * Admin types (SuperAdmin portal).
  */

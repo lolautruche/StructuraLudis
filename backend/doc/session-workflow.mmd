@@ -1,0 +1,163 @@
+%% Session Workflow Diagrams (Issue #10, #30)
+%%
+%% This document describes the session approval workflows for:
+%% 1. Public sessions (proposed by players/GMs)
+%% 2. Partner sessions (created by partners in their zones)
+
+%% =============================================================================
+%% Public Session Workflow (Standard)
+%% =============================================================================
+
+---
+title: Public Session Workflow
+---
+stateDiagram-v2
+    [*] --> DRAFT : User creates session
+
+    DRAFT --> PENDING_MODERATION : User submits\n(POST /sessions/{id}/submit)
+    DRAFT --> [*] : User deletes
+
+    PENDING_MODERATION --> VALIDATED : Organizer approves\n(POST /sessions/{id}/moderate)
+    PENDING_MODERATION --> REJECTED : Organizer rejects
+    PENDING_MODERATION --> CHANGES_REQUESTED : Organizer requests changes
+
+    CHANGES_REQUESTED --> PENDING_MODERATION : User resubmits
+    CHANGES_REQUESTED --> [*] : User deletes
+
+    VALIDATED --> IN_PROGRESS : Session starts\n(POST /sessions/{id}/start)
+
+    IN_PROGRESS --> FINISHED : Session ends\n(POST /sessions/{id}/end)
+
+    note right of DRAFT
+        Session is private, only visible to creator.
+        Can be edited freely.
+    end note
+
+    note right of PENDING_MODERATION
+        Awaiting organizer review.
+        Moderation comments enabled.
+    end note
+
+    note right of VALIDATED
+        Session is public and bookable.
+        Players can register.
+    end note
+
+%% =============================================================================
+%% Partner Session Workflow
+%% =============================================================================
+
+---
+title: Partner Session Workflow (Zone with partner_validation_enabled=true)
+---
+stateDiagram-v2
+    [*] --> VALIDATED : Partner creates session\n(POST /partner/sessions)
+
+    note right of VALIDATED
+        Auto-validated: No approval needed
+        when zone.partner_validation_enabled=true
+    end note
+
+    VALIDATED --> IN_PROGRESS : Session starts
+    IN_PROGRESS --> FINISHED : Session ends
+
+---
+title: Partner Session Workflow (Zone with partner_validation_enabled=false)
+---
+stateDiagram-v2
+    [*] --> DRAFT : Partner creates session
+
+    DRAFT --> PENDING_MODERATION : Partner submits
+
+    PENDING_MODERATION --> VALIDATED : Organizer approves
+    PENDING_MODERATION --> REJECTED : Organizer rejects
+    PENDING_MODERATION --> CHANGES_REQUESTED : Organizer requests changes
+
+    CHANGES_REQUESTED --> PENDING_MODERATION : Partner resubmits
+
+    VALIDATED --> IN_PROGRESS : Session starts
+    IN_PROGRESS --> FINISHED : Session ends
+
+%% =============================================================================
+%% Session Status Summary
+%% =============================================================================
+
+---
+title: Session Status Overview
+---
+flowchart TB
+    subgraph Creation["Creation Phase"]
+        DRAFT["DRAFT<br/>Private, editable"]
+    end
+
+    subgraph Moderation["Moderation Phase"]
+        PENDING["PENDING_MODERATION<br/>Awaiting review"]
+        CHANGES["CHANGES_REQUESTED<br/>Needs revision"]
+        REJECTED["REJECTED<br/>Not approved"]
+    end
+
+    subgraph Active["Active Phase"]
+        VALIDATED["VALIDATED<br/>Public, bookable"]
+        IN_PROGRESS["IN_PROGRESS<br/>Currently running"]
+        FINISHED["FINISHED<br/>Completed"]
+        CANCELLED["CANCELLED<br/>Cancelled by GM/organizer"]
+    end
+
+    DRAFT --> PENDING
+    PENDING --> VALIDATED
+    PENDING --> CHANGES
+    PENDING --> REJECTED
+    CHANGES --> PENDING
+    VALIDATED --> IN_PROGRESS
+    VALIDATED --> CANCELLED
+    IN_PROGRESS --> FINISHED
+
+%% =============================================================================
+%% Permission Matrix
+%% =============================================================================
+
+%% Who can do what:
+%%
+%% | Action                | Creator | Organizer | Partner (own zone) | Partner (other zone) |
+%% |-----------------------|---------|-----------|--------------------|--------------------|
+%% | Create session        | ✓       | ✓         | ✓                  | ✗                  |
+%% | Edit DRAFT session    | ✓       | ✓         | ✓ (own sessions)   | ✗                  |
+%% | Submit session        | ✓       | ✓         | ✓ (own sessions)   | ✗                  |
+%% | Moderate session      | ✗       | ✓         | ✓ (if enabled*)    | ✗                  |
+%% | Assign table          | ✗       | ✓         | ✓                  | ✗                  |
+%% | Cancel session        | ✓       | ✓         | ✓ (own sessions)   | ✗                  |
+%% | Start/End session     | ✓       | ✓         | ✓ (own sessions)   | ✗                  |
+%%
+%% * Partner can moderate if zone.partner_validation_enabled = true
+
+%% =============================================================================
+%% Moderation Comments Flow (#30)
+%% =============================================================================
+
+---
+title: Moderation Comments Flow
+---
+sequenceDiagram
+    participant GM as Session Creator
+    participant System as System
+    participant Mod as Organizer/Partner
+
+    GM->>System: Submit session
+    System-->>GM: Status: PENDING_MODERATION
+
+    alt Approved
+        Mod->>System: Approve session
+        System-->>GM: Status: VALIDATED
+    else Request Changes
+        Mod->>System: Request changes + comment
+        System-->>GM: Status: CHANGES_REQUESTED
+        GM->>System: Edit session
+        GM->>System: Add comment (optional)
+        GM->>System: Resubmit
+        System-->>Mod: Status: PENDING_MODERATION
+        Mod->>System: Approve
+        System-->>GM: Status: VALIDATED
+    else Rejected
+        Mod->>System: Reject + reason
+        System-->>GM: Status: REJECTED
+    end

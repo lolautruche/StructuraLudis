@@ -18,6 +18,7 @@ from app.domain.game.schemas import (
     GameSessionRead,
     SeriesCreate,
     SeriesCreateResponse,
+    PartnerSessionCreate,
 )
 from app.domain.user.entity import User, UserExhibitionRole
 from app.domain.shared.entity import (
@@ -250,6 +251,170 @@ async def list_partner_sessions(
 
 
 # =============================================================================
+# Single Session Creation (Partner)
+# =============================================================================
+
+@router.post("/sessions", response_model=GameSessionRead, status_code=status.HTTP_201_CREATED)
+async def create_partner_session(
+    data: PartnerSessionCreate,
+    current_user: User = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Create a single session by a partner (Issue #10).
+
+    Creates a session and assigns the table in one operation.
+    Auto-validates if the zone has partner_validation_enabled.
+
+    Requires: Partner with access to the table's zone, or exhibition organizer.
+    """
+    # Validate exhibition exists
+    exhibition_result = await db.execute(
+        select(Exhibition).where(Exhibition.id == data.exhibition_id)
+    )
+    exhibition = exhibition_result.scalar_one_or_none()
+    if not exhibition:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Exhibition not found",
+        )
+
+    # Validate game exists
+    game_result = await db.execute(
+        select(Game).where(Game.id == data.game_id)
+    )
+    game = game_result.scalar_one_or_none()
+    if not game:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Game not found",
+        )
+
+    # Get table and validate access
+    table_result = await db.execute(
+        select(PhysicalTable, Zone)
+        .join(Zone, PhysicalTable.zone_id == Zone.id)
+        .where(PhysicalTable.id == data.table_id)
+    )
+    table_zone = table_result.one_or_none()
+
+    if not table_zone:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Table not found",
+        )
+
+    table, zone = table_zone
+
+    # Validate user can manage the zone
+    if not await can_manage_zone(current_user, zone, db):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"You do not have access to zone '{zone.name}'",
+        )
+
+    # Validate time slot
+    slot_result = await db.execute(
+        select(TimeSlot).where(
+            TimeSlot.id == data.time_slot_id,
+            TimeSlot.exhibition_id == data.exhibition_id,
+        )
+    )
+    slot = slot_result.scalar_one_or_none()
+
+    if not slot:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Time slot not found or doesn't belong to this exhibition",
+        )
+
+    # Calculate session times
+    session_start = slot.start_time
+    session_end = session_start + timedelta(minutes=data.duration_minutes)
+
+    # Check if session fits within time slot
+    if session_end > slot.end_time:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Session duration exceeds time slot. Max duration: {int((slot.end_time - slot.start_time).total_seconds() / 60)} minutes",
+        )
+
+    # Check for table collision
+    service = GameSessionService(db)
+    collision = await service._check_table_collision(
+        table_id=table.id,
+        scheduled_start=session_start,
+        scheduled_end=session_end,
+        buffer_minutes=slot.buffer_time_minutes,
+    )
+
+    if collision:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"Table '{table.label}' is already booked for '{collision.title}' at this time",
+        )
+
+    # Determine initial status (#10):
+    # Auto-validate if zone has partner_validation_enabled
+    initial_status = (
+        SessionStatus.VALIDATED
+        if zone.partner_validation_enabled
+        else SessionStatus.DRAFT
+    )
+
+    # Create the session
+    session = GameSession(
+        exhibition_id=data.exhibition_id,
+        time_slot_id=data.time_slot_id,
+        game_id=data.game_id,
+        physical_table_id=table.id,
+        provided_by_group_id=data.provided_by_group_id,
+        created_by_user_id=current_user.id,
+        title=data.title,
+        description=data.description,
+        language=data.language,
+        min_age=data.min_age,
+        max_players_count=data.max_players_count,
+        safety_tools=data.safety_tools,
+        is_accessible_disability=data.is_accessible_disability,
+        scheduled_start=session_start,
+        scheduled_end=session_end,
+        status=initial_status,
+    )
+
+    db.add(session)
+    await db.flush()
+    await db.refresh(session)
+
+    return GameSessionRead(
+        id=session.id,
+        exhibition_id=session.exhibition_id,
+        time_slot_id=session.time_slot_id,
+        game_id=session.game_id,
+        physical_table_id=session.physical_table_id,
+        provided_by_group_id=session.provided_by_group_id,
+        provided_by_group_name=None,
+        created_by_user_id=session.created_by_user_id,
+        title=session.title,
+        description=session.description,
+        language=session.language,
+        min_age=session.min_age,
+        max_players_count=session.max_players_count,
+        safety_tools=session.safety_tools or [],
+        is_accessible_disability=session.is_accessible_disability,
+        status=session.status,
+        rejection_reason=session.rejection_reason,
+        gm_checked_in_at=session.gm_checked_in_at,
+        actual_start=session.actual_start,
+        actual_end=session.actual_end,
+        scheduled_start=session.scheduled_start,
+        scheduled_end=session.scheduled_end,
+        created_at=session.created_at,
+        updated_at=session.updated_at,
+    )
+
+
+# =============================================================================
 # Series Creation (Batch Session Creation)
 # =============================================================================
 
@@ -305,12 +470,16 @@ async def create_series(
         )
 
     # Validate user can manage all zones containing the tables
+    # Also track zones with partner_validation_enabled for auto-validation (#10)
+    zones_with_auto_validation = set()
     for table, zone in table_zone_pairs:
         if not await can_manage_zone(current_user, zone, db):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail=f"You do not have access to zone '{zone.name}'",
             )
+        if zone.partner_validation_enabled:
+            zones_with_auto_validation.add(zone.id)
 
     # Validate time slots
     slots_result = await db.execute(
@@ -330,6 +499,8 @@ async def create_series(
     # Create sessions for each combination of slot × table
     created_sessions = []
     warnings = []
+    # Keep table-to-zone mapping for auto-validation (#10)
+    table_to_zone = {table.id: zone for table, zone in table_zone_pairs}
     tables = [table for table, zone in table_zone_pairs]
 
     service = GameSessionService(db)
@@ -366,6 +537,15 @@ async def create_series(
             # Create the session with descriptive title
             session_title = f"{data.title} ({slot.name} - {table.label})"
 
+            # Determine initial status (#10):
+            # Auto-validate if zone has partner_validation_enabled
+            zone = table_to_zone[table.id]
+            initial_status = (
+                SessionStatus.VALIDATED
+                if zone.id in zones_with_auto_validation
+                else SessionStatus.DRAFT
+            )
+
             session = GameSession(
                 exhibition_id=data.exhibition_id,
                 time_slot_id=slot_id,
@@ -382,7 +562,7 @@ async def create_series(
                 is_accessible_disability=data.is_accessible_disability,
                 scheduled_start=session_start,
                 scheduled_end=session_end,
-                status=SessionStatus.DRAFT,
+                status=initial_status,
             )
 
             db.add(session)

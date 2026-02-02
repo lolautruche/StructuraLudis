@@ -7,7 +7,6 @@ import { z } from 'zod';
 import { useTranslations } from 'next-intl';
 import {
   partnerApi,
-  sessionsApi,
   exhibitionsApi,
   gamesApi,
   zonesApi,
@@ -168,19 +167,8 @@ export function SingleSessionCreator({ exhibitionId, onSuccess, onCancel }: Sing
   const handleFormSubmit = async (data: SessionFormData) => {
     setIsSubmitting(true);
 
-    // Find the selected time slot to calculate times
-    const selectedSlot = timeSlots.find(s => s.id === data.time_slot_id);
-    if (!selectedSlot) {
-      showError('Time slot not found');
-      setIsSubmitting(false);
-      return;
-    }
-
-    const scheduledStart = new Date(selectedSlot.start_time);
-    const scheduledEnd = new Date(scheduledStart.getTime() + data.duration_minutes * 60 * 1000);
-
-    // Step 1: Create the session
-    const createResponse = await sessionsApi.create({
+    // Use partner API which handles table assignment and auto-validation
+    const response = await partnerApi.createSession({
       exhibition_id: exhibitionId,
       game_id: data.game_id,
       title: data.title,
@@ -188,23 +176,14 @@ export function SingleSessionCreator({ exhibitionId, onSuccess, onCancel }: Sing
       language: data.language || '',
       max_players_count: data.max_players_count,
       time_slot_id: data.time_slot_id,
-      scheduled_start: scheduledStart.toISOString(),
-      scheduled_end: scheduledEnd.toISOString(),
+      table_id: data.table_id,
+      duration_minutes: data.duration_minutes,
     });
 
-    if (createResponse.error) {
-      showError(createResponse.error.message);
+    if (response.error) {
+      showError(response.error.message);
       setIsSubmitting(false);
       return;
-    }
-
-    // Step 2: Assign the table
-    if (createResponse.data && data.table_id) {
-      const assignResponse = await sessionsApi.assignTable(createResponse.data.id, data.table_id);
-      if (assignResponse.error) {
-        // Session created but table assignment failed - notify but don't fail completely
-        showError(`Session created but table assignment failed: ${assignResponse.error.message}`);
-      }
     }
 
     showSuccess(t('sessionCreated'));

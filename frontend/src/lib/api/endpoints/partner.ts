@@ -7,12 +7,29 @@
 import { api } from '../client';
 import {
   ApiResponse,
+  GameSession,
   PartnerZone,
   PartnerSession,
   SeriesCreateRequest,
   SeriesCreateResponse,
   SessionStatus,
 } from '../types';
+
+export interface PartnerSessionCreateRequest {
+  exhibition_id: string;
+  game_id: string;
+  title: string;
+  description?: string;
+  language?: string;
+  min_age?: number;
+  max_players_count: number;
+  safety_tools?: string[];
+  is_accessible_disability?: boolean;
+  provided_by_group_id?: string;
+  time_slot_id: string;
+  table_id: string;
+  duration_minutes: number;
+}
 
 export const partnerApi = {
   /**
@@ -44,6 +61,16 @@ export const partnerApi = {
     const queryString = params.toString();
     const url = `/api/v1/partner/exhibitions/${exhibitionId}/sessions${queryString ? `?${queryString}` : ''}`;
     return api.get<PartnerSession[]>(url);
+  },
+
+  /**
+   * Create a single session as a partner.
+   * Auto-validates if the zone has partner_validation_enabled.
+   */
+  createSession: async (
+    data: PartnerSessionCreateRequest
+  ): Promise<ApiResponse<GameSession>> => {
+    return api.post<GameSession>('/api/v1/partner/sessions', data);
   },
 
   /**

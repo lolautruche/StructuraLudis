@@ -34,6 +34,7 @@ export function PartnerSessionList({ exhibitionId }: PartnerSessionListProps) {
   const [showSeriesCreator, setShowSeriesCreator] = useState(false);
   const [showSingleSessionCreator, setShowSingleSessionCreator] = useState(false);
   const [submittingSessionId, setSubmittingSessionId] = useState<string | null>(null);
+  const [moderatingSessionId, setModeratingSessionId] = useState<string | null>(null);
   const { showSuccess } = useToast();
 
   const loadSessions = useCallback(async () => {
@@ -121,6 +122,33 @@ export function PartnerSessionList({ exhibitionId }: PartnerSessionListProps) {
       loadSessions();
     }
     setSubmittingSessionId(null);
+  };
+
+  const handleApproveSession = async (sessionId: string) => {
+    setModeratingSessionId(sessionId);
+    const response = await sessionsApi.moderate(sessionId, { action: 'approve' });
+    if (response.error) {
+      showError(response.error.message);
+    } else {
+      showSuccess(t('sessionApproved'));
+      loadSessions();
+    }
+    setModeratingSessionId(null);
+  };
+
+  const handleRejectSession = async (sessionId: string) => {
+    setModeratingSessionId(sessionId);
+    const response = await sessionsApi.moderate(sessionId, {
+      action: 'reject',
+      rejection_reason: t('rejectedByPartner'),
+    });
+    if (response.error) {
+      showError(response.error.message);
+    } else {
+      showSuccess(t('sessionRejected'));
+      loadSessions();
+    }
+    setModeratingSessionId(null);
   };
 
   return (
@@ -264,18 +292,16 @@ export function PartnerSessionList({ exhibitionId }: PartnerSessionListProps) {
                       <Button
                         size="sm"
                         variant="primary"
-                        onClick={() => {
-                          // TODO: Implement approval
-                        }}
+                        disabled={moderatingSessionId === session.id}
+                        onClick={() => handleApproveSession(session.id)}
                       >
-                        {t('approve')}
+                        {moderatingSessionId === session.id ? t('approving') : t('approve')}
                       </Button>
                       <Button
                         size="sm"
                         variant="ghost"
-                        onClick={() => {
-                          // TODO: Implement rejection
-                        }}
+                        disabled={moderatingSessionId === session.id}
+                        onClick={() => handleRejectSession(session.id)}
                       >
                         {t('reject')}
                       </Button>
