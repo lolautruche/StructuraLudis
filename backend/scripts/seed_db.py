@@ -270,7 +270,7 @@ async def seed(force: bool = False):
         club_jdr_lyon = UserGroup(
             id=uuid4(),
             organization_id=org_fdj.id,
-            name="Club JDR Lyon",
+            name="Club JdR Lyon",
             type=UserGroupType.ASSOCIATION,
         )
 
@@ -313,7 +313,7 @@ async def seed(force: bool = False):
                 user_group_id=team_arkhane.id,
                 group_role=GroupRole.OWNER,
             ),
-            # GM1 and GM2 are members of Club JDR Lyon
+            # GM1 and GM2 are members of Club JdR Lyon
             UserGroupMembership(
                 id=uuid4(),
                 user_id=gm1.id,
@@ -487,7 +487,7 @@ async def seed(force: bool = False):
                 title="Chroniques Oubliées Fantasy",
                 external_provider_id="grog-cof",
                 publisher="Black Book Editions",
-                description="JDR med-fan français accessible",
+                description="JdR med-fan français accessible",
                 complexity=GameComplexity.BEGINNER,
                 min_players=2,
                 max_players=6,
@@ -602,8 +602,8 @@ async def seed(force: bool = False):
         zone_rpg = Zone(
             id=uuid4(),
             exhibition_id=exhibition.id,
-            name="Espace JDR",
-            name_i18n={"fr": "Espace JDR", "en": "RPG Area"},
+            name="Espace JdR",
+            name_i18n={"fr": "Espace JdR", "en": "RPG Area"},
             type=ZoneType.RPG,
             delegated_to_group_id=club_jdr_lyon.id,
             allow_public_proposals=True,  # Public can propose sessions
@@ -668,7 +668,7 @@ async def seed(force: bool = False):
             PhysicalTable(
                 id=uuid4(),
                 zone_id=zone_rpg.id,
-                label=f"JDR-{i}",
+                label=f"JdR-{i}",
                 capacity=6,
                 status=PhysicalTableStatus.AVAILABLE,
             )

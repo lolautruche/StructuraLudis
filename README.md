@@ -183,6 +183,8 @@ StructuraLudis/
 
 - [Product Requirements Document (PRD)](doc/PRD.md)
 - [Project Context](doc/PROJECT-CONTEXT.md)
+- [Session Workflow](backend/doc/session-workflow.md) - Session approval workflows and zone settings
+- [Database Schema](backend/doc/database-schema.mmd) - Entity relationship diagram (Mermaid)
 - [API Documentation](http://localhost:8000/docs) (when running)
 
 ---

@@ -349,11 +349,11 @@
     "editZone": "Modifier la zone",
     "noZones": "Aucune zone configurée",
     "zoneName": "Nom de la zone",
-    "zoneNamePlaceholder": "ex. Espace JDR",
+    "zoneNamePlaceholder": "ex. Espace JdR",
     "zoneDescription": "Description",
     "zoneType": "Type de zone",
     "zoneTypes": {
-      "RPG": "JDR",
+      "RPG": "JdR",
       "BOARD_GAME": "Jeux de Plateau",
       "WARGAME": "Figurines",
       "TCG": "TCG",

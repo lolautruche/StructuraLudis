@@ -21,6 +21,7 @@ Eliminate logistical friction between digital planning and physical reality, ens
 |----------|----------|---------|
 | PRD (Requirements) | `doc/PRD.md` | Job stories, epics, business rules |
 | Database Schema | `backend/doc/database-schema.mmd` | ERD visualization |
+| Session Workflow | `backend/doc/session-workflow.md` | Session approval flows, zone settings |
 | AI Instructions | `AGENTS.md` | Coding standards, invariants |
 
 ---

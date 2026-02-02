@@ -38,7 +38,7 @@ class TestCreateOrganization:
     async def test_create_success(self, client: AsyncClient):
         """Create returns 201 with created entity."""
         payload = {
-            "name": "Convention JDR France",
+            "name": "Convention JdR France",
             "slug": "conv-jdr-france",
             "contact_email": "contact@convjdr.fr",
             "legal_registration_number": "SIRET123456",
@@ -48,7 +48,7 @@ class TestCreateOrganization:
 
         assert response.status_code == 201
         data = response.json()
-        assert data["name"] == "Convention JDR France"
+        assert data["name"] == "Convention JdR France"
         assert data["slug"] == "conv-jdr-france"
         assert data["contact_email"] == "contact@convjdr.fr"
         assert "id" in data

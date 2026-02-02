@@ -179,8 +179,8 @@ class TestI18nIntegration:
         zone = ZoneCreate(
             name="RPG Area",
             exhibition_id=uuid4(),
-            name_i18n={"fr": "Espace JDR", "de": "Rollenspielbereich"},
+            name_i18n={"fr": "Espace JdR", "de": "Rollenspielbereich"},
             description_i18n={"fr": "Zone dédiée aux jeux de rôle"}
         )
         assert zone.name == "RPG Area"
-        assert zone.name_i18n["fr"] == "Espace JDR"
+        assert zone.name_i18n["fr"] == "Espace JdR"
