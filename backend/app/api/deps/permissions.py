@@ -43,14 +43,33 @@ async def get_user_exhibition_role(
     exhibition_id: UUID,
     db: AsyncSession,
 ) -> Optional[UserExhibitionRole]:
-    """Get a user's role assignment for a specific exhibition."""
+    """
+    Get a user's role assignment for a specific exhibition.
+
+    If user has multiple roles, returns the highest priority one (ORGANIZER > PARTNER).
+    """
     result = await db.execute(
         select(UserExhibitionRole).where(
             UserExhibitionRole.user_id == user_id,
             UserExhibitionRole.exhibition_id == exhibition_id,
         )
     )
-    return result.scalar_one_or_none()
+    roles = result.scalars().all()
+
+    if not roles:
+        return None
+
+    # If only one role, return it
+    if len(roles) == 1:
+        return roles[0]
+
+    # Multiple roles: prioritize ORGANIZER over PARTNER
+    for role in roles:
+        if role.role == ExhibitionRole.ORGANIZER:
+            return role
+
+    # Return first role if no ORGANIZER found
+    return roles[0]
 
 
 async def has_exhibition_role(
@@ -81,7 +100,7 @@ async def has_exhibition_role(
             UserExhibitionRole.role.in_([r.value for r in roles]),
         )
     )
-    return result.scalar_one_or_none() is not None
+    return result.scalars().first() is not None
 
 
 async def has_any_exhibition_role(

@@ -1225,7 +1225,8 @@ class GameSessionService:
             query = query.where(GameSession.id != exclude_session_id)
 
         result = await self.db.execute(query)
-        return result.scalar_one_or_none()
+        # Use first() instead of scalar_one_or_none() in case multiple sessions conflict
+        return result.scalars().first()
 
     async def assign_table(
         self,

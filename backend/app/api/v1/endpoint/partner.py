@@ -53,30 +53,33 @@ async def _get_partner_zone_ids(
         )
         return list(result.scalars().all())
 
-    # Get user's exhibition role
+    # Get user's exhibition roles (may have multiple)
     result = await db.execute(
         select(UserExhibitionRole).where(
             UserExhibitionRole.user_id == user.id,
             UserExhibitionRole.exhibition_id == exhibition_id,
         )
     )
-    role_assignment = result.scalar_one_or_none()
+    role_assignments = result.scalars().all()
 
-    if not role_assignment:
+    if not role_assignments:
         return []
 
     # Organizers can manage all zones
-    if role_assignment.role == ExhibitionRole.ORGANIZER:
+    if any(r.role == ExhibitionRole.ORGANIZER for r in role_assignments):
         result = await db.execute(
             select(Zone.id).where(Zone.exhibition_id == exhibition_id)
         )
         return list(result.scalars().all())
 
     # Partners can only manage their assigned zones
-    if role_assignment.zone_ids:
-        return [UUID(zone_id) for zone_id in role_assignment.zone_ids]
+    # Combine zone_ids from all PARTNER role assignments
+    all_zone_ids: set[UUID] = set()
+    for role in role_assignments:
+        if role.role == ExhibitionRole.PARTNER and role.zone_ids:
+            all_zone_ids.update(UUID(zone_id) for zone_id in role.zone_ids)
 
-    return []
+    return list(all_zone_ids)
 
 
 @router.get("/exhibitions/{exhibition_id}/zones")
