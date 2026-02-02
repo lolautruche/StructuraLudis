@@ -1,7 +1,7 @@
 # Roadmap & Priorities
 
 This document tracks prioritization decisions and project progress.
-**Last updated**: 2026-02-01
+**Last updated**: 2026-02-02
 
 ---
 
@@ -13,7 +13,6 @@ This document tracks prioritization decisions and project progress.
 
 | Issue | Title | Job Stories | Notes |
 |-------|-------|-------------|-------|
-| [#99](https://github.com/lolautruche/StructuraLudis/issues/99) | **Role architecture refactor** | JS.02, JS.02b | **PRIORITY** - Global vs event-scoped roles |
 | [#10](https://github.com/lolautruche/StructuraLudis/issues/10) | Partner Zone Management | JS.D1 | Partner zone management |
 | [#62](https://github.com/lolautruche/StructuraLudis/issues/62) | Notification Center & Bell | JS.C2, JS.C3 | In-app notifications |
 | [#77](https://github.com/lolautruche/StructuraLudis/issues/77) | Player registration to exhibitions | - | Exhibition registration flow |
@@ -69,6 +68,7 @@ This document tracks prioritization decisions and project progress.
 
 | Issue | Title | Job Stories | Date |
 |-------|-------|-------------|------|
+| [#99](https://github.com/lolautruche/StructuraLudis/issues/99) | Role architecture refactor | JS.02, JS.02b | 2026-02-02 |
 | [#13](https://github.com/lolautruche/StructuraLudis/issues/13) | SuperAdmin Portal | JS.01-04 | 2026-02-01 |
 | [#7](https://github.com/lolautruche/StructuraLudis/issues/7) | Admin: Event Configuration | JS.A2, JS.A3, JS.A5 | 2026-02-01 |
 | [#8](https://github.com/lolautruche/StructuraLudis/issues/8) | Proposer: Session Submission Form | JS.B1-B5 | 2026-02-01 |
@@ -107,6 +107,14 @@ This document tracks prioritization decisions and project progress.
 - Email change with verification (token expires in 7 days)
 - Remember me: 30-day token vs 24h default
 - Forgot password: reset link expires in 1 hour
+
+### Role Architecture (#99)
+- **Global roles**: SUPER_ADMIN, ADMIN, USER (platform-wide)
+- **Event-scoped roles**: ORGANIZER, PARTNER (per exhibition via `UserExhibitionRole`)
+- Exhibition creator tracked via `created_by_id` (main organizer)
+- Main organizer cannot be removed by secondary organizers
+- Users cannot remove themselves from an exhibition
+- Partners see exhibitions in "My Events" with limited management access (their zones only)
 
 ---
 
