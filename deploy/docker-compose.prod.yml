@@ -1,0 +1,132 @@
+# =============================================================================
+# Structura Ludis - Production Docker Compose
+# =============================================================================
+# Usage:
+#   1. Copy .env.example to .env and configure your values
+#   2. Run: docker compose -f docker-compose.prod.yml up -d
+#   3. Run migrations: docker compose -f docker-compose.prod.yml exec sl-api alembic upgrade head
+#   4. (Optional) Seed database: docker compose -f docker-compose.prod.yml exec sl-api python -m scripts.seed_db
+#
+# For Synology NAS / Container Manager:
+#   - Import this file via Container Manager > Project
+#   - Configure environment variables in the UI
+#   - Use with a reverse proxy for HTTPS (see traefik/ folder for example)
+
+services:
+  # ---------------------------------------------------------------------------
+  # PostgreSQL Database
+  # ---------------------------------------------------------------------------
+  sl-db:
+    image: postgres:16-alpine
+    container_name: sl_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-sl_admin}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Database password is required}
+      POSTGRES_DB: ${POSTGRES_DB:-structura_ludis}
+    volumes:
+      - sl_postgres_data:/var/lib/postgresql/data
+    networks:
+      - sl-internal
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-sl_admin} -d ${POSTGRES_DB:-structura_ludis}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    # Security: don't expose database port externally in production
+    # ports:
+    #   - "5432:5432"
+
+  # ---------------------------------------------------------------------------
+  # Backend API (FastAPI)
+  # ---------------------------------------------------------------------------
+  sl-api:
+    image: ghcr.io/lolautruche/structuraludis-api:latest
+    # Or build locally:
+    # build:
+    #   context: ../backend
+    #   dockerfile: Dockerfile.prod
+    container_name: sl_api
+    restart: unless-stopped
+    depends_on:
+      sl-db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-sl_admin}:${POSTGRES_PASSWORD}@sl-db:5432/${POSTGRES_DB:-structura_ludis}
+      SECRET_KEY: ${SECRET_KEY:?Secret key is required}
+      ENVIRONMENT: ${ENVIRONMENT:-production}
+      DEBUG: ${DEBUG:-false}
+      CORS_ORIGINS: ${CORS_ORIGINS:-}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      SMTP_FROM: ${SMTP_FROM:-}
+      SMTP_TLS: ${SMTP_TLS:-true}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
+    networks:
+      - sl-internal
+      - sl-external
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    # Expose for reverse proxy
+    expose:
+      - "8000"
+    # Or direct access (not recommended for production):
+    # ports:
+    #   - "8000:8000"
+
+  # ---------------------------------------------------------------------------
+  # Frontend (Next.js)
+  # ---------------------------------------------------------------------------
+  sl-frontend:
+    image: ghcr.io/lolautruche/structuraludis-frontend:latest
+    # Or build locally:
+    # build:
+    #   context: ../frontend
+    #   dockerfile: Dockerfile.prod
+    container_name: sl_frontend
+    restart: unless-stopped
+    depends_on:
+      - sl-api
+    environment:
+      API_URL: http://sl-api:8000
+      NEXT_PUBLIC_API_URL: ${FRONTEND_URL:-http://localhost:3000}/api
+    networks:
+      - sl-internal
+      - sl-external
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    expose:
+      - "3000"
+    # Or direct access:
+    # ports:
+    #   - "3000:3000"
+
+# =============================================================================
+# Networks
+# =============================================================================
+networks:
+  # Internal network for database communication (not exposed)
+  sl-internal:
+    driver: bridge
+    internal: true
+  # External network for reverse proxy access
+  sl-external:
+    driver: bridge
+
+# =============================================================================
+# Volumes
+# =============================================================================
+volumes:
+  sl_postgres_data:
+    driver: local

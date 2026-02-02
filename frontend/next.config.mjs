@@ -7,6 +7,9 @@ const nextConfig = {
   // Enable strict mode for better development experience
   reactStrictMode: true,
 
+  // Output standalone build for Docker production deployment
+  output: 'standalone',
+
   // Preserve trailing slashes in URLs (required for FastAPI with redirect_slashes=False)
   skipTrailingSlashRedirect: true,
 
