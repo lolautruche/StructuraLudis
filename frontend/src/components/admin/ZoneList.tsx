@@ -358,7 +358,7 @@ export function ZoneList({ exhibitionId, partnerMode = false }: ZoneListProps) {
                           </div>
                           {/* Only show moderation checkbox if public proposals enabled */}
                           {zone.allow_public_proposals && (
-                            <div className="flex items-center gap-3 ml-6">
+                            <div className="flex items-center gap-3">
                               <Checkbox
                                 id={`moderation_${zone.id}`}
                                 checked={zone.moderation_required}
