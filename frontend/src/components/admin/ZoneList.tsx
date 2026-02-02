@@ -24,7 +24,6 @@ const ZONE_TYPE_COLORS: Record<string, 'default' | 'success' | 'warning' | 'dang
 export function ZoneList({ exhibitionId, partnerMode = false }: ZoneListProps) {
   const t = useTranslations('Admin');
   const tCommon = useTranslations('Common');
-  const tPartner = useTranslations('Partner');
 
   const [zones, setZones] = useState<Zone[]>([]);
   const [isLoading, setIsLoading] = useState(true);
