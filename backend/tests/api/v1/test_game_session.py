@@ -2335,7 +2335,7 @@ class TestDelegatedModeration:
             exhibition_id=test_exhibition_with_slot["exhibition_id"],
             name="Partner Zone",
             type=ZoneType.RPG,
-            partner_validation_enabled=True,
+            moderation_required=False,
         )
         db_session.add(zone)
         await db_session.flush()

@@ -11,6 +11,7 @@
     "save": "Enregistrer",
     "saving": "Enregistrement...",
     "cancel": "Annuler",
+    "confirm": "Confirmer",
     "delete": "Supprimer",
     "edit": "Modifier",
     "loading": "Chargement...",
@@ -387,7 +388,8 @@
     "tableDeleted": "Table supprimée avec succès",
     "tableCreateError": "Échec de la création des tables",
     "tableDeleteError": "Échec de la suppression de la table",
-    "partnerValidation": "Permettre aux partenaires de valider les sessions dans cette zone",
+    "moderationRequired": "Activer la modération des sessions publiques",
+    "moderationRequiredHelp": "Si activé, les sessions proposées par le public nécessitent une validation. Les sessions créées par le partenaire sont toujours auto-validées.",
     "roles": {
       "tab": "Équipe",
       "addRole": "Ajouter un membre",
@@ -619,7 +621,7 @@
     "sessions": "Sessions",
     "partnerRole": "Partenaire",
     "myZones": "Mes zones",
-    "canValidate": "Peut valider",
+    "publicModerationEnabled": "Modération publique",
     "filterByStatus": "Filtrer par statut",
     "allStatuses": "Tous les statuts",
     "draft": "Brouillon",
@@ -672,7 +674,19 @@
     "approving": "Approbation...",
     "sessionApproved": "Session approuvée",
     "sessionRejected": "Session rejetée",
-    "rejectedByPartner": "Rejetée par le partenaire"
+    "changesRequested": "Modifications demandées",
+    "confirmSubmit": "Soumettre la session ?",
+    "confirmSubmitMessage": "La session sera envoyée pour validation par les organisateurs.",
+    "confirmApprove": "Approuver la session ?",
+    "confirmApproveMessage": "La session sera validée et visible par les joueurs qui pourront s'inscrire.",
+    "confirmReject": "Rejeter la session ?",
+    "confirmRejectMessage": "Veuillez indiquer le motif du refus. Le proposant sera notifié.",
+    "rejectionReason": "Motif du refus",
+    "rejectionReasonPlaceholder": "Expliquez pourquoi cette session est refusée...",
+    "confirmRequestChanges": "Demander des modifications ?",
+    "confirmRequestChangesMessage": "Le proposant sera notifié et pourra modifier puis resoumettre la session.",
+    "requestedChanges": "Modifications demandées",
+    "requestedChangesPlaceholder": "Décrivez les modifications nécessaires..."
   },
   "Sessions": {
     "status": {

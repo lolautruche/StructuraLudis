@@ -57,7 +57,7 @@ export function ZoneList({ exhibitionId, partnerMode = false }: ZoneListProps) {
           description: pz.description,
           type: pz.type,
           delegated_to_group_id: null,
-          partner_validation_enabled: pz.partner_validation_enabled,
+          moderation_required: pz.moderation_required,
           name_i18n: null,
           description_i18n: null,
           created_at: '',
@@ -99,7 +99,7 @@ export function ZoneList({ exhibitionId, partnerMode = false }: ZoneListProps) {
     setIsSubmitting(false);
   };
 
-  const handleUpdate = async (data: ZoneCreate & { partner_validation_enabled?: boolean }) => {
+  const handleUpdate = async (data: ZoneCreate & { moderation_required?: boolean }) => {
     if (!editingZone) return;
 
     setIsSubmitting(true);
@@ -109,7 +109,7 @@ export function ZoneList({ exhibitionId, partnerMode = false }: ZoneListProps) {
       name: data.name,
       description: data.description,
       type: data.type,
-      partner_validation_enabled: data.partner_validation_enabled,
+      moderation_required: data.moderation_required,
     });
 
     if (response.error) {
@@ -285,10 +285,10 @@ export function ZoneList({ exhibitionId, partnerMode = false }: ZoneListProps) {
                       <Badge variant={ZONE_TYPE_COLORS[zone.type]}>
                         {t(`zoneTypes.${zone.type}`)}
                       </Badge>
-                      {/* Partner mode: show validation status badge */}
-                      {partnerMode && zone.partner_validation_enabled && (
-                        <Badge variant="success">
-                          {tPartner('canValidate')}
+                      {/* Partner mode: show moderation status badge */}
+                      {partnerMode && zone.moderation_required && (
+                        <Badge variant="warning">
+                          {tPartner('publicModerationEnabled')}
                         </Badge>
                       )}
                       {/* Edit/Delete buttons - only for organizers */}

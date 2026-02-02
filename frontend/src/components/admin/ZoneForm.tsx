@@ -14,7 +14,7 @@ const zoneSchema = z.object({
   name: z.string().min(1).max(100),
   description: z.string().max(500).optional().nullable(),
   type: z.enum(['RPG', 'BOARD_GAME', 'WARGAME', 'TCG', 'DEMO', 'MIXED']),
-  partner_validation_enabled: z.boolean(),
+  moderation_required: z.boolean(),
 });
 
 type ZoneFormData = z.infer<typeof zoneSchema>;
@@ -48,7 +48,7 @@ export function ZoneForm({
       name: '',
       description: '',
       type: 'MIXED',
-      partner_validation_enabled: false,
+      moderation_required: true,
     },
   });
 
@@ -58,28 +58,28 @@ export function ZoneForm({
         name: zone.name,
         description: zone.description || '',
         type: zone.type,
-        partner_validation_enabled: zone.partner_validation_enabled || false,
+        moderation_required: zone.moderation_required ?? true,
       });
     } else {
       reset({
         name: '',
         description: '',
         type: 'MIXED',
-        partner_validation_enabled: false,
+        moderation_required: true,
       });
     }
   }, [zone, reset]);
 
   const handleFormSubmit = async (data: ZoneFormData) => {
-    const payload: ZoneCreate & { partner_validation_enabled?: boolean } = {
+    const payload: ZoneCreate & { moderation_required?: boolean } = {
       exhibition_id: exhibitionId,
       name: data.name,
       description: data.description || undefined,
       type: data.type,
     };
-    // Include partner_validation_enabled when editing (update)
+    // Include moderation_required when editing (update)
     if (zone) {
-      payload.partner_validation_enabled = data.partner_validation_enabled;
+      payload.moderation_required = data.moderation_required;
     }
     await onSubmit(payload as ZoneCreate);
   };
@@ -110,20 +110,29 @@ export function ZoneForm({
         error={errors.type?.message}
       />
 
-      {/* Partner validation toggle - only show when editing */}
+      {/* Session moderation toggle - only show when editing */}
       {zone && (
-        <div className="flex items-center gap-3 py-2">
+        <div className="flex items-start gap-3 py-2">
           <Checkbox
-            {...register('partner_validation_enabled')}
-            id="partner_validation_enabled"
+            {...register('moderation_required')}
+            id="moderation_required"
+            className="mt-0.5"
           />
-          <label
-            htmlFor="partner_validation_enabled"
-            className="text-sm cursor-pointer"
-            style={{ color: 'var(--color-text-primary)' }}
-          >
-            {t('partnerValidation')}
-          </label>
+          <div>
+            <label
+              htmlFor="moderation_required"
+              className="text-sm font-medium cursor-pointer"
+              style={{ color: 'var(--color-text-primary)' }}
+            >
+              {t('moderationRequired')}
+            </label>
+            <p
+              className="text-xs mt-0.5"
+              style={{ color: 'var(--color-text-secondary)' }}
+            >
+              {t('moderationRequiredHelp')}
+            </p>
+          </div>
         </div>
       )}
 

@@ -402,7 +402,7 @@ export interface Zone {
   description: string | null;
   type: ZoneType;
   delegated_to_group_id: string | null;
-  partner_validation_enabled: boolean;
+  moderation_required: boolean;
   name_i18n: Record<string, string> | null;
   description_i18n: Record<string, string> | null;
   created_at: string;
@@ -421,7 +421,7 @@ export interface ZoneUpdate {
   name?: string;
   description?: string;
   type?: ZoneType;
-  partner_validation_enabled?: boolean;
+  moderation_required?: boolean;
 }
 
 /**
@@ -593,7 +593,7 @@ export interface PartnerZone {
   name: string;
   description: string | null;
   type: ZoneType;
-  partner_validation_enabled: boolean;
+  moderation_required: boolean;
   table_count: number;
   pending_sessions_count: number;
   validated_sessions_count: number;

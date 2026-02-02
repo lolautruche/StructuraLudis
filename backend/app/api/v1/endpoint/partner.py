@@ -139,7 +139,7 @@ async def list_partner_zones(
             "name": zone.name,
             "description": zone.description,
             "type": zone.type,
-            "partner_validation_enabled": zone.partner_validation_enabled,
+            "moderation_required": zone.moderation_required,
             "table_count": table_count,
             "pending_sessions_count": pending_count,
             "validated_sessions_count": validated_count,
@@ -267,7 +267,7 @@ async def create_partner_session(
     Create a single session by a partner (Issue #10).
 
     Creates a session and assigns the table in one operation.
-    Auto-validates if the zone has partner_validation_enabled.
+    Partner sessions are always auto-validated.
 
     Requires: Partner with access to the table's zone, or exhibition organizer.
     """
@@ -362,13 +362,9 @@ async def create_partner_session(
             detail=get_message("table_already_booked", locale, table_label=table.label, title=collision.title),
         )
 
-    # Determine initial status (#10):
-    # Auto-validate if zone has partner_validation_enabled
-    initial_status = (
-        SessionStatus.VALIDATED
-        if zone.partner_validation_enabled
-        else SessionStatus.DRAFT
-    )
+    # Partner sessions are always auto-validated (#10)
+    # Partners don't need to moderate their own sessions
+    initial_status = SessionStatus.VALIDATED
 
     # Create the session
     session = GameSession(
@@ -483,16 +479,12 @@ async def create_series(
         )
 
     # Validate user can manage all zones containing the tables
-    # Also track zones with partner_validation_enabled for auto-validation (#10)
-    zones_with_auto_validation = set()
     for table, zone in table_zone_pairs:
         if not await can_manage_zone(current_user, zone, db):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail=get_message("no_zone_access", locale, zone_name=zone.name),
             )
-        if zone.partner_validation_enabled:
-            zones_with_auto_validation.add(zone.id)
 
     # Validate time slots
     slots_result = await db.execute(
@@ -512,8 +504,6 @@ async def create_series(
     # Create sessions for each combination of slot × table
     created_sessions = []
     warnings = []
-    # Keep table-to-zone mapping for auto-validation (#10)
-    table_to_zone = {table.id: zone for table, zone in table_zone_pairs}
     tables = [table for table, zone in table_zone_pairs]
 
     service = GameSessionService(db)
@@ -550,14 +540,8 @@ async def create_series(
             # Create the session with descriptive title
             session_title = f"{data.title} ({slot.name} - {table.label})"
 
-            # Determine initial status (#10):
-            # Auto-validate if zone has partner_validation_enabled
-            zone = table_to_zone[table.id]
-            initial_status = (
-                SessionStatus.VALIDATED
-                if zone.id in zones_with_auto_validation
-                else SessionStatus.DRAFT
-            )
+            # Partner sessions are always auto-validated (#10)
+            initial_status = SessionStatus.VALIDATED
 
             session = GameSession(
                 exhibition_id=data.exhibition_id,

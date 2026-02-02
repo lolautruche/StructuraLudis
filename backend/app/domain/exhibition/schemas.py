@@ -189,10 +189,10 @@ class ZoneBase(BaseModel):
     name: str = Field(..., min_length=1, max_length=100)
     description: Optional[str] = None
     type: ZoneType = Field(default=ZoneType.MIXED)
-    # Partner validation (Issue #10 - JS.D3)
-    partner_validation_enabled: bool = Field(
-        default=False,
-        description="When True, partners managing this zone can validate sessions themselves"
+    # Session moderation (Issue #10 - JS.D3)
+    moderation_required: bool = Field(
+        default=True,
+        description="When True, public session proposals require moderation. Partner sessions are always auto-validated."
     )
 
 
@@ -210,10 +210,10 @@ class ZoneUpdate(BaseModel):
     name: Optional[str] = Field(None, min_length=1, max_length=100)
     description: Optional[str] = None
     type: Optional[ZoneType] = None
-    # Partner validation (Issue #10 - JS.D3)
-    partner_validation_enabled: Optional[bool] = Field(
+    # Session moderation (Issue #10 - JS.D3)
+    moderation_required: Optional[bool] = Field(
         None,
-        description="When True, partners managing this zone can validate sessions themselves"
+        description="When True, public session proposals require moderation. Partner sessions are always auto-validated."
     )
     # i18n fields (#34)
     name_i18n: I18nField = Field(None, description="Translations for name")

@@ -141,6 +141,28 @@ EMAIL_STRINGS = {
         "password_reset_expiration": "This link will expire in 1 hour. If you did not request a password reset, you can safely ignore this email.",
         "password_reset_link_instruction": "If the button doesn't work, copy and paste this link into your browser:",
         "password_reset_closing": "The Structura Ludis Team",
+
+        # Session approved (proposer notification)
+        "session_approved_subject": "Session approved: {session_title}",
+        "session_approved_greeting": "Your session has been approved!",
+        "session_approved_intro": "Great news! Your session has been validated and is now visible to players.",
+        "session_approved_action": "View Session",
+        "session_approved_closing": "Good luck with your session!",
+
+        # Session rejected (proposer notification)
+        "session_rejected_subject": "Session not approved: {session_title}",
+        "session_rejected_greeting": "Session Review Result",
+        "session_rejected_intro": "Unfortunately, your session has not been approved.",
+        "session_rejected_action": "View Details",
+        "session_rejected_closing": "If you have questions, please contact the organizers.",
+
+        # Changes requested (proposer notification)
+        "changes_requested_subject": "Changes requested: {session_title}",
+        "changes_requested_greeting": "Modifications Required",
+        "changes_requested_intro": "The moderators have requested some changes to your session before it can be approved.",
+        "changes_requested_action": "Edit Session",
+        "changes_requested_closing": "Once you've made the changes, please resubmit your session for review.",
+        "comment_label": "Requested changes",
     },
     "fr": {
         # Common
@@ -259,6 +281,28 @@ EMAIL_STRINGS = {
         "password_reset_expiration": "Ce lien expirera dans 1 heure. Si vous n'avez pas demandé de réinitialisation, vous pouvez ignorer cet email.",
         "password_reset_link_instruction": "Si le bouton ne fonctionne pas, copiez et collez ce lien dans votre navigateur :",
         "password_reset_closing": "L'équipe Structura Ludis",
+
+        # Session approved (proposer notification)
+        "session_approved_subject": "Session approuvée : {session_title}",
+        "session_approved_greeting": "Votre session a été approuvée !",
+        "session_approved_intro": "Bonne nouvelle ! Votre session a été validée et est maintenant visible par les joueurs.",
+        "session_approved_action": "Voir la session",
+        "session_approved_closing": "Bonne partie !",
+
+        # Session rejected (proposer notification)
+        "session_rejected_subject": "Session non approuvée : {session_title}",
+        "session_rejected_greeting": "Résultat de la modération",
+        "session_rejected_intro": "Malheureusement, votre session n'a pas été approuvée.",
+        "session_rejected_action": "Voir les détails",
+        "session_rejected_closing": "Si vous avez des questions, veuillez contacter les organisateurs.",
+
+        # Changes requested (proposer notification)
+        "changes_requested_subject": "Modifications demandées : {session_title}",
+        "changes_requested_greeting": "Modifications requises",
+        "changes_requested_intro": "Les modérateurs ont demandé des modifications à votre session avant qu'elle puisse être approuvée.",
+        "changes_requested_action": "Modifier la session",
+        "changes_requested_closing": "Une fois les modifications effectuées, veuillez resoumettre votre session pour examen.",
+        "comment_label": "Modifications demandées",
     },
 }
 
@@ -678,4 +722,93 @@ def render_password_reset(
         expiration_text=get_string("password_reset_expiration", locale),
         link_instruction=get_string("password_reset_link_instruction", locale),
         closing_text=get_string("password_reset_closing", locale),
+    )
+
+
+def render_session_approved(
+    locale: str,
+    session_title: str,
+    exhibition_title: str,
+    scheduled_start: datetime,
+    action_url: Optional[str] = None,
+) -> tuple[str, str]:
+    """Render session approved notification email."""
+    date_str, time_str = format_datetime(scheduled_start, locale)
+
+    # Reuse booking_confirmed template structure
+    return render_email_template(
+        "booking_confirmed",
+        locale=locale,
+        subject=get_string("session_approved_subject", locale, session_title=session_title),
+        session_title=session_title,
+        exhibition_title=exhibition_title,
+        scheduled_date=date_str,
+        scheduled_time=time_str,
+        action_url=action_url,
+        greeting=get_string("session_approved_greeting", locale),
+        intro_text=get_string("session_approved_intro", locale),
+        reminder_text="",
+        action_button_text=get_string("session_approved_action", locale),
+        closing_text=get_string("session_approved_closing", locale),
+    )
+
+
+def render_session_rejected(
+    locale: str,
+    session_title: str,
+    exhibition_title: str,
+    scheduled_start: datetime,
+    rejection_reason: Optional[str] = None,
+    action_url: Optional[str] = None,
+) -> tuple[str, str]:
+    """Render session rejected notification email."""
+    date_str, time_str = format_datetime(scheduled_start, locale)
+
+    # Reuse session_cancelled template structure
+    return render_email_template(
+        "session_cancelled",
+        locale=locale,
+        subject=get_string("session_rejected_subject", locale, session_title=session_title),
+        session_title=session_title,
+        exhibition_title=exhibition_title,
+        scheduled_date=date_str,
+        scheduled_time=time_str,
+        cancellation_reason=rejection_reason,
+        action_url=action_url,
+        greeting=get_string("session_rejected_greeting", locale),
+        alert_text="",
+        intro_text=get_string("session_rejected_intro", locale),
+        apology_text=get_string("session_rejected_closing", locale),
+        action_button_text=get_string("session_rejected_action", locale),
+    )
+
+
+def render_changes_requested(
+    locale: str,
+    session_title: str,
+    exhibition_title: str,
+    scheduled_start: datetime,
+    comment: Optional[str] = None,
+    action_url: Optional[str] = None,
+) -> tuple[str, str]:
+    """Render changes requested notification email."""
+    date_str, time_str = format_datetime(scheduled_start, locale)
+
+    # Reuse session_cancelled template structure
+    return render_email_template(
+        "session_cancelled",
+        locale=locale,
+        subject=get_string("changes_requested_subject", locale, session_title=session_title),
+        session_title=session_title,
+        exhibition_title=exhibition_title,
+        scheduled_date=date_str,
+        scheduled_time=time_str,
+        cancellation_reason=comment,
+        action_url=action_url,
+        greeting=get_string("changes_requested_greeting", locale),
+        alert_text="",
+        intro_text=get_string("changes_requested_intro", locale),
+        apology_text=get_string("changes_requested_closing", locale),
+        action_button_text=get_string("changes_requested_action", locale),
+        reason_label=get_string("comment_label", locale),
     )

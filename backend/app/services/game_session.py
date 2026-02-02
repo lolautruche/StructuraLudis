@@ -37,6 +37,11 @@ from app.domain.shared.entity import (
     PhysicalTableStatus,
 )
 from app.api.deps.permissions import has_exhibition_role, can_manage_zone
+from app.services.notification import (
+    NotificationService,
+    NotificationRecipient,
+    SessionNotificationContext,
+)
 
 
 class GameSessionService:
@@ -565,7 +570,79 @@ class GameSessionService:
         await self.db.flush()
         await self.db.refresh(session)
 
+        # Send notification to session creator
+        await self._notify_moderation_result(
+            session=session,
+            action=data.action,
+            rejection_reason=data.rejection_reason,
+            comment=data.comment,
+            locale=locale,
+        )
+
         return session
+
+    async def _notify_moderation_result(
+        self,
+        session: GameSession,
+        action: str,
+        rejection_reason: Optional[str] = None,
+        comment: Optional[str] = None,
+        locale: str = "en",
+    ) -> None:
+        """Send notification to session creator about moderation result."""
+        # Get session creator info
+        creator_result = await self.db.execute(
+            select(User).where(User.id == session.created_by_user_id)
+        )
+        creator = creator_result.scalar_one_or_none()
+        if not creator:
+            return
+
+        # Get exhibition info
+        exhibition_result = await self.db.execute(
+            select(Exhibition).where(Exhibition.id == session.exhibition_id)
+        )
+        exhibition = exhibition_result.scalar_one_or_none()
+        if not exhibition:
+            return
+
+        # Prepare notification context
+        recipient = NotificationRecipient(
+            user_id=creator.id,
+            email=creator.email,
+            full_name=creator.full_name,
+            locale=creator.locale or locale,
+        )
+
+        context = SessionNotificationContext(
+            session_id=session.id,
+            session_title=session.title,
+            exhibition_id=exhibition.id,
+            exhibition_title=exhibition.title,
+            scheduled_start=session.scheduled_start,
+            scheduled_end=session.scheduled_end,
+        )
+
+        # Send appropriate notification
+        notification_service = NotificationService(self.db)
+
+        if action == "approve":
+            await notification_service.notify_session_approved(
+                recipient=recipient,
+                context=context,
+            )
+        elif action == "reject":
+            await notification_service.notify_session_rejected(
+                recipient=recipient,
+                context=context,
+                rejection_reason=rejection_reason,
+            )
+        elif action == "request_changes":
+            await notification_service.notify_changes_requested(
+                recipient=recipient,
+                context=context,
+                comment=comment,
+            )
 
     async def cancel_session(
         self,

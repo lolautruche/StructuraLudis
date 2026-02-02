@@ -93,7 +93,7 @@ class TestPartnerZones:
             exhibition_id=exhibition_id,
             name="Partner Zone",
             type=ZoneType.RPG,
-            partner_validation_enabled=True,
+            moderation_required=False,
         )
         zone2 = Zone(
             id=uuid4(),
@@ -147,7 +147,7 @@ class TestPartnerZones:
         assert len(data) == 1
         assert data[0]["name"] == "Partner Zone"
         assert data[0]["table_count"] == 2
-        assert data[0]["partner_validation_enabled"] is True
+        assert data[0]["moderation_required"] is False
 
     async def test_non_partner_cannot_access_partner_zones(
         self,
@@ -222,7 +222,7 @@ class TestPartnerSessions:
             exhibition_id=exhibition_id,
             name="Partner Zone",
             type=ZoneType.RPG,
-            partner_validation_enabled=True,
+            moderation_required=False,
         )
         db_session.add(zone)
         await db_session.flush()
@@ -327,7 +327,7 @@ class TestPartnerSessions:
             exhibition_id=exhibition_id,
             name="Filter Zone",
             type=ZoneType.RPG,
-            partner_validation_enabled=True,
+            moderation_required=False,
         )
         db_session.add(zone)
         await db_session.flush()
@@ -449,7 +449,7 @@ class TestSeriesBatchCreate:
             exhibition_id=exhibition_id,
             name="Series Zone",
             type=ZoneType.DEMO,
-            partner_validation_enabled=True,
+            moderation_required=False,
         )
         db_session.add(zone)
         await db_session.flush()

@@ -11,6 +11,7 @@
     "save": "Save",
     "saving": "Saving...",
     "cancel": "Cancel",
+    "confirm": "Confirm",
     "delete": "Delete",
     "edit": "Edit",
     "loading": "Loading...",
@@ -387,7 +388,8 @@
     "tableDeleted": "Table deleted successfully",
     "tableCreateError": "Failed to create tables",
     "tableDeleteError": "Failed to delete table",
-    "partnerValidation": "Allow partners to validate sessions in this zone",
+    "moderationRequired": "Enable moderation for public sessions",
+    "moderationRequiredHelp": "If enabled, sessions proposed by the public require validation. Sessions created by the partner are always auto-validated.",
     "roles": {
       "tab": "Team",
       "addRole": "Add member",
@@ -619,7 +621,7 @@
     "sessions": "Sessions",
     "partnerRole": "Partner",
     "myZones": "My Zones",
-    "canValidate": "Can validate",
+    "publicModerationEnabled": "Public moderation",
     "filterByStatus": "Filter by status",
     "allStatuses": "All statuses",
     "draft": "Draft",
@@ -672,7 +674,19 @@
     "approving": "Approving...",
     "sessionApproved": "Session approved",
     "sessionRejected": "Session rejected",
-    "rejectedByPartner": "Rejected by partner"
+    "changesRequested": "Changes requested",
+    "confirmSubmit": "Submit session?",
+    "confirmSubmitMessage": "The session will be sent for review by the organizers.",
+    "confirmApprove": "Approve session?",
+    "confirmApproveMessage": "The session will be validated and visible to players who can register.",
+    "confirmReject": "Reject session?",
+    "confirmRejectMessage": "Please provide the reason for rejection. The proposer will be notified.",
+    "rejectionReason": "Rejection reason",
+    "rejectionReasonPlaceholder": "Explain why this session is rejected...",
+    "confirmRequestChanges": "Request changes?",
+    "confirmRequestChangesMessage": "The proposer will be notified and can modify and resubmit the session.",
+    "requestedChanges": "Requested changes",
+    "requestedChangesPlaceholder": "Describe the required modifications..."
   },
   "Sessions": {
     "status": {

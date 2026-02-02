@@ -8,13 +8,19 @@ This document describes the session approval workflows for Issue #10 (Partner Zo
 2. [Partner Session Workflow](#partner-session-workflow)
 3. [Session Status Overview](#session-status-overview)
 4. [Permission Matrix](#permission-matrix)
-5. [Moderation Comments Flow](#moderation-comments-flow)
+5. [Zone Moderation Settings](#zone-moderation-settings)
+6. [Moderation Comments Flow](#moderation-comments-flow)
+7. [Email Notifications](#email-notifications)
 
 ---
 
 ## Public Session Workflow
 
-Standard workflow for sessions proposed by players/GMs.
+Standard workflow for sessions proposed by players/GMs via the public `/sessions/` endpoints.
+
+### With Moderation Required (zone.moderation_required = true, default)
+
+When a zone has moderation enabled (the default), public session proposals go through a review process.
 
 ```mermaid
 stateDiagram-v2
@@ -23,9 +29,9 @@ stateDiagram-v2
     DRAFT --> PENDING_MODERATION : User submits
     DRAFT --> [*] : User deletes
 
-    PENDING_MODERATION --> VALIDATED : Organizer approves
-    PENDING_MODERATION --> REJECTED : Organizer rejects
-    PENDING_MODERATION --> CHANGES_REQUESTED : Organizer requests changes
+    PENDING_MODERATION --> VALIDATED : Organizer/Partner approves
+    PENDING_MODERATION --> REJECTED : Organizer/Partner rejects
+    PENDING_MODERATION --> CHANGES_REQUESTED : Organizer/Partner requests changes
 
     CHANGES_REQUESTED --> PENDING_MODERATION : User resubmits
     CHANGES_REQUESTED --> [*] : User deletes
@@ -40,13 +46,33 @@ stateDiagram-v2
     end note
 
     note right of PENDING_MODERATION
-        Awaiting organizer review.
+        Awaiting organizer/partner review.
         Moderation comments enabled.
     end note
 
     note right of VALIDATED
         Session is public and bookable.
         Players can register.
+    end note
+```
+
+### Without Moderation (zone.moderation_required = false)
+
+When moderation is disabled for a zone, public sessions are auto-validated upon submission.
+
+```mermaid
+stateDiagram-v2
+    [*] --> DRAFT : User creates session
+
+    DRAFT --> VALIDATED : User submits (auto-validated)
+    DRAFT --> [*] : User deletes
+
+    VALIDATED --> IN_PROGRESS : Session starts
+    IN_PROGRESS --> FINISHED : Session ends
+
+    note right of VALIDATED
+        Auto-validated: No approval needed
+        when zone.moderation_required=false
     end note
 ```
 
@@ -61,17 +87,15 @@ stateDiagram-v2
 
 ## Partner Session Workflow
 
-### With Auto-Validation (zone.partner_validation_enabled = true)
-
-Sessions created by partners in zones with auto-validation enabled skip the moderation process.
+Partner sessions (created via `/partner/` endpoints) are **always auto-validated**, regardless of zone settings. This is because partners are trusted delegates who manage their own zones.
 
 ```mermaid
 stateDiagram-v2
     [*] --> VALIDATED : Partner creates session
 
     note right of VALIDATED
-        Auto-validated: No approval needed
-        when zone.partner_validation_enabled=true
+        Always auto-validated.
+        Partners are trusted delegates.
     end note
 
     VALIDATED --> IN_PROGRESS : Session starts
@@ -79,28 +103,10 @@ stateDiagram-v2
 ```
 
 **API Endpoints:**
-- `POST /partner/sessions` - Create single session (auto-validates)
-- `POST /partner/sessions/batch` - Create series (auto-validates)
+- `POST /partner/sessions` - Create single session (always auto-validates)
+- `POST /partner/sessions/batch` - Create series (always auto-validates)
 
-### Without Auto-Validation (zone.partner_validation_enabled = false)
-
-Sessions require organizer approval like standard sessions.
-
-```mermaid
-stateDiagram-v2
-    [*] --> DRAFT : Partner creates session
-
-    DRAFT --> PENDING_MODERATION : Partner submits
-
-    PENDING_MODERATION --> VALIDATED : Organizer approves
-    PENDING_MODERATION --> REJECTED : Organizer rejects
-    PENDING_MODERATION --> CHANGES_REQUESTED : Organizer requests changes
-
-    CHANGES_REQUESTED --> PENDING_MODERATION : Partner resubmits
-
-    VALIDATED --> IN_PROGRESS : Session starts
-    IN_PROGRESS --> FINISHED : Session ends
-```
+**Note:** The `zone.moderation_required` flag does NOT affect partner sessions. It only controls whether public session proposals (from regular users via `/sessions/` endpoints) require moderation before being validated.
 
 ---
 
@@ -159,12 +165,38 @@ Who can perform which actions:
 | Create session | ✓ | ✓ | ✓ | ✗ |
 | Edit DRAFT session | ✓ | ✓ | ✓ (own sessions) | ✗ |
 | Submit session | ✓ | ✓ | ✓ (own sessions) | ✗ |
-| Moderate session | ✗ | ✓ | ✓ (if enabled*) | ✗ |
+| Moderate session | ✗ | ✓ | ✓ | ✗ |
 | Assign table | ✗ | ✓ | ✓ | ✗ |
 | Cancel session | ✓ | ✓ | ✓ (own sessions) | ✗ |
 | Start/End session | ✓ | ✓ | ✓ (own sessions) | ✗ |
 
-**\*** Partner can moderate sessions if `zone.partner_validation_enabled = true`
+**Note:** Partners can always moderate public session proposals in their delegated zones, regardless of the `zone.moderation_required` setting. The `moderation_required` flag only controls whether public sessions need moderation at all.
+
+---
+
+## Zone Moderation Settings
+
+Each zone has a `moderation_required` flag that controls how **public** session proposals are handled.
+
+### moderation_required = true (default)
+
+- Public sessions go through DRAFT → PENDING_MODERATION → VALIDATED workflow
+- Organizers and partners can approve, reject, or request changes
+- Email notifications are sent at each moderation step
+
+### moderation_required = false
+
+- Public sessions are auto-validated upon submission (DRAFT → VALIDATED)
+- No moderation step required
+- Useful for "free play" zones where anyone can propose a session
+
+### Partner Sessions (always auto-validated)
+
+Partner sessions created via `/partner/sessions` or `/partner/sessions/batch` are **always** auto-validated, regardless of the zone's `moderation_required` setting. This is because:
+
+1. Partners are trusted delegates assigned to manage specific zones
+2. Partners should not need to moderate their own sessions
+3. It would be redundant to have partners approve sessions they just created
 
 ---
 
@@ -202,3 +234,18 @@ sequenceDiagram
 **API Endpoints:**
 - `GET /sessions/{id}/comments` - List moderation comments
 - `POST /sessions/{id}/comments` - Add comment to moderation thread
+
+---
+
+## Email Notifications
+
+The system sends email notifications at key moderation events:
+
+| Event | Recipient | Email Subject |
+|-------|-----------|---------------|
+| Session submitted | Organizers/Partners | "New session pending moderation" |
+| Session approved | Session creator | "Your session has been approved" |
+| Session rejected | Session creator | "Your session has been rejected" |
+| Changes requested | Session creator | "Changes requested for your session" |
+
+All email templates support i18n (English and French).

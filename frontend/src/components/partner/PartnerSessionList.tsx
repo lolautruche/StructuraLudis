@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useTranslations } from 'next-intl';
 import { partnerApi, sessionsApi, PartnerSession, SessionStatus } from '@/lib/api';
-import { Badge, Button, Select, Card } from '@/components/ui';
+import { Badge, Button, Select, Card, ModerationDialog, ModerationAction } from '@/components/ui';
 import { useToast } from '@/contexts/ToastContext';
 import { SeriesCreator } from './SeriesCreator';
 import { SingleSessionCreator } from './SingleSessionCreator';
@@ -23,9 +23,17 @@ const STATUS_FILTERS: { value: SessionStatus | 'ALL'; labelKey: string }[] = [
   { value: 'FINISHED', labelKey: 'finished' },
 ];
 
+interface ModerationDialogState {
+  isOpen: boolean;
+  action: ModerationAction;
+  sessionId: string;
+  sessionTitle: string;
+}
+
 export function PartnerSessionList({ exhibitionId }: PartnerSessionListProps) {
   const t = useTranslations('Partner');
   const tSession = useTranslations('Sessions');
+  const tCommon = useTranslations('Common');
   const { showError } = useToast();
 
   const [sessions, setSessions] = useState<PartnerSession[]>([]);
@@ -33,8 +41,13 @@ export function PartnerSessionList({ exhibitionId }: PartnerSessionListProps) {
   const [statusFilter, setStatusFilter] = useState<SessionStatus | 'ALL'>('ALL');
   const [showSeriesCreator, setShowSeriesCreator] = useState(false);
   const [showSingleSessionCreator, setShowSingleSessionCreator] = useState(false);
-  const [submittingSessionId, setSubmittingSessionId] = useState<string | null>(null);
-  const [moderatingSessionId, setModeratingSessionId] = useState<string | null>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [moderationDialog, setModerationDialog] = useState<ModerationDialogState>({
+    isOpen: false,
+    action: 'submit',
+    sessionId: '',
+    sessionTitle: '',
+  });
   const { showSuccess } = useToast();
 
   const loadSessions = useCallback(async () => {
@@ -112,43 +125,101 @@ export function PartnerSessionList({ exhibitionId }: PartnerSessionListProps) {
     loadSessions();
   };
 
-  const handleSubmitSession = async (sessionId: string) => {
-    setSubmittingSessionId(sessionId);
-    const response = await sessionsApi.submit(sessionId);
-    if (response.error) {
-      showError(response.error.message);
-    } else {
-      showSuccess(t('sessionSubmitted'));
-      loadSessions();
-    }
-    setSubmittingSessionId(null);
-  };
-
-  const handleApproveSession = async (sessionId: string) => {
-    setModeratingSessionId(sessionId);
-    const response = await sessionsApi.moderate(sessionId, { action: 'approve' });
-    if (response.error) {
-      showError(response.error.message);
-    } else {
-      showSuccess(t('sessionApproved'));
-      loadSessions();
-    }
-    setModeratingSessionId(null);
-  };
-
-  const handleRejectSession = async (sessionId: string) => {
-    setModeratingSessionId(sessionId);
-    const response = await sessionsApi.moderate(sessionId, {
-      action: 'reject',
-      rejection_reason: t('rejectedByPartner'),
+  const openModerationDialog = (action: ModerationAction, sessionId: string, sessionTitle: string) => {
+    setModerationDialog({
+      isOpen: true,
+      action,
+      sessionId,
+      sessionTitle,
     });
-    if (response.error) {
+  };
+
+  const closeModerationDialog = () => {
+    setModerationDialog((prev) => ({ ...prev, isOpen: false }));
+  };
+
+  const handleModerationConfirm = async (reason?: string) => {
+    const { action, sessionId } = moderationDialog;
+    setIsProcessing(true);
+
+    let response;
+
+    if (action === 'submit') {
+      response = await sessionsApi.submit(sessionId);
+      if (!response.error) {
+        showSuccess(t('sessionSubmitted'));
+      }
+    } else if (action === 'approve') {
+      response = await sessionsApi.moderate(sessionId, { action: 'approve' });
+      if (!response.error) {
+        showSuccess(t('sessionApproved'));
+      }
+    } else if (action === 'reject') {
+      response = await sessionsApi.moderate(sessionId, {
+        action: 'reject',
+        rejection_reason: reason || '',
+      });
+      if (!response.error) {
+        showSuccess(t('sessionRejected'));
+      }
+    } else if (action === 'request_changes') {
+      response = await sessionsApi.moderate(sessionId, {
+        action: 'request_changes',
+        comment: reason || '',
+      });
+      if (!response.error) {
+        showSuccess(t('changesRequested'));
+      }
+    }
+
+    if (response?.error) {
       showError(response.error.message);
     } else {
-      showSuccess(t('sessionRejected'));
+      closeModerationDialog();
       loadSessions();
     }
-    setModeratingSessionId(null);
+
+    setIsProcessing(false);
+  };
+
+  const getModerationDialogContent = () => {
+    const { action } = moderationDialog;
+    switch (action) {
+      case 'submit':
+        return {
+          title: t('confirmSubmit'),
+          message: t('confirmSubmitMessage'),
+          confirmLabel: t('submit'),
+        };
+      case 'approve':
+        return {
+          title: t('confirmApprove'),
+          message: t('confirmApproveMessage'),
+          confirmLabel: t('approve'),
+        };
+      case 'reject':
+        return {
+          title: t('confirmReject'),
+          message: t('confirmRejectMessage'),
+          confirmLabel: t('reject'),
+          reasonLabel: t('rejectionReason'),
+          reasonPlaceholder: t('rejectionReasonPlaceholder'),
+        };
+      case 'request_changes':
+        return {
+          title: t('confirmRequestChanges'),
+          message: t('confirmRequestChangesMessage'),
+          confirmLabel: t('requestChanges'),
+          reasonLabel: t('requestedChanges'),
+          reasonPlaceholder: t('requestedChangesPlaceholder'),
+        };
+      default:
+        return {
+          title: '',
+          message: '',
+          confirmLabel: tCommon('confirm'),
+        };
+    }
   };
 
   return (
@@ -279,10 +350,9 @@ export function PartnerSessionList({ exhibitionId }: PartnerSessionListProps) {
                     <Button
                       size="sm"
                       variant="primary"
-                      disabled={submittingSessionId === session.id}
-                      onClick={() => handleSubmitSession(session.id)}
+                      onClick={() => openModerationDialog('submit', session.id, session.title)}
                     >
-                      {submittingSessionId === session.id ? t('submitting') : t('submit')}
+                      {t('submit')}
                     </Button>
                   )}
 
@@ -292,16 +362,21 @@ export function PartnerSessionList({ exhibitionId }: PartnerSessionListProps) {
                       <Button
                         size="sm"
                         variant="primary"
-                        disabled={moderatingSessionId === session.id}
-                        onClick={() => handleApproveSession(session.id)}
+                        onClick={() => openModerationDialog('approve', session.id, session.title)}
                       >
-                        {moderatingSessionId === session.id ? t('approving') : t('approve')}
+                        {t('approve')}
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        onClick={() => openModerationDialog('request_changes', session.id, session.title)}
+                      >
+                        {t('requestChanges')}
                       </Button>
                       <Button
                         size="sm"
                         variant="ghost"
-                        disabled={moderatingSessionId === session.id}
-                        onClick={() => handleRejectSession(session.id)}
+                        onClick={() => openModerationDialog('reject', session.id, session.title)}
                       >
                         {t('reject')}
                       </Button>
@@ -313,6 +388,18 @@ export function PartnerSessionList({ exhibitionId }: PartnerSessionListProps) {
           ))}
         </div>
       )}
+
+      {/* Moderation Dialog */}
+      <ModerationDialog
+        isOpen={moderationDialog.isOpen}
+        onClose={closeModerationDialog}
+        onConfirm={handleModerationConfirm}
+        action={moderationDialog.action}
+        sessionTitle={moderationDialog.sessionTitle}
+        cancelLabel={tCommon('cancel')}
+        isLoading={isProcessing}
+        {...getModerationDialogContent()}
+      />
     </div>
   );
 }

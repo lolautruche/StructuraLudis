@@ -65,7 +65,7 @@ export const partnerApi = {
 
   /**
    * Create a single session as a partner.
-   * Auto-validates if the zone has partner_validation_enabled.
+   * Partner sessions are always auto-validated.
    */
   createSession: async (
     data: PartnerSessionCreateRequest

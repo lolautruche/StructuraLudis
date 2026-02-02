@@ -23,6 +23,9 @@ from app.core.templates import (
     render_booking_cancelled,
     render_player_cancelled,
     render_waitlist_cancelled,
+    render_session_approved,
+    render_session_rejected,
+    render_changes_requested,
 )
 from app.domain.notification.entity import Notification
 from app.domain.notification.schemas import NotificationType, NotificationChannel
@@ -478,6 +481,121 @@ class NotificationService:
 
         # Send email
         return await self._send_email(gm_recipient, subject, html_body, notification)
+
+    # =========================================================================
+    # Moderation Notifications
+    # =========================================================================
+
+    async def notify_session_approved(
+        self,
+        recipient: NotificationRecipient,
+        context: SessionNotificationContext,
+        action_url: Optional[str] = None,
+    ) -> bool:
+        """
+        Notify a session proposer that their session has been approved.
+
+        Channels: Email, In-App
+        """
+        subject, html_body = render_session_approved(
+            locale=recipient.locale,
+            session_title=context.session_title,
+            exhibition_title=context.exhibition_title,
+            scheduled_start=context.scheduled_start,
+            action_url=action_url,
+        )
+
+        # Create in-app notification
+        notification = await self._create_notification_record(
+            user_id=recipient.user_id,
+            notification_type=NotificationType.SESSION_APPROVED,
+            channel=NotificationChannel.EMAIL,
+            subject=subject,
+            body=f"Your session '{context.session_title}' has been approved!",
+            context={
+                "session_id": str(context.session_id),
+                "exhibition_id": str(context.exhibition_id),
+            },
+        )
+
+        # Send email
+        return await self._send_email(recipient, subject, html_body, notification)
+
+    async def notify_session_rejected(
+        self,
+        recipient: NotificationRecipient,
+        context: SessionNotificationContext,
+        rejection_reason: Optional[str] = None,
+        action_url: Optional[str] = None,
+    ) -> bool:
+        """
+        Notify a session proposer that their session has been rejected.
+
+        Channels: Email, In-App
+        """
+        subject, html_body = render_session_rejected(
+            locale=recipient.locale,
+            session_title=context.session_title,
+            exhibition_title=context.exhibition_title,
+            scheduled_start=context.scheduled_start,
+            rejection_reason=rejection_reason,
+            action_url=action_url,
+        )
+
+        # Create in-app notification
+        notification = await self._create_notification_record(
+            user_id=recipient.user_id,
+            notification_type=NotificationType.SESSION_REJECTED,
+            channel=NotificationChannel.EMAIL,
+            subject=subject,
+            body=f"Your session '{context.session_title}' was not approved.",
+            context={
+                "session_id": str(context.session_id),
+                "exhibition_id": str(context.exhibition_id),
+                "reason": rejection_reason,
+            },
+        )
+
+        # Send email
+        return await self._send_email(recipient, subject, html_body, notification)
+
+    async def notify_changes_requested(
+        self,
+        recipient: NotificationRecipient,
+        context: SessionNotificationContext,
+        comment: Optional[str] = None,
+        action_url: Optional[str] = None,
+    ) -> bool:
+        """
+        Notify a session proposer that changes have been requested.
+
+        Channels: Email, In-App
+        """
+        subject, html_body = render_changes_requested(
+            locale=recipient.locale,
+            session_title=context.session_title,
+            exhibition_title=context.exhibition_title,
+            scheduled_start=context.scheduled_start,
+            comment=comment,
+            action_url=action_url,
+        )
+
+        # Create in-app notification
+        notification = await self._create_notification_record(
+            user_id=recipient.user_id,
+            notification_type=NotificationType.CHANGES_REQUESTED,
+            channel=NotificationChannel.EMAIL,
+            subject=subject,
+            body=f"Changes have been requested for your session '{context.session_title}'.",
+            context={
+                "session_id": str(context.session_id),
+                "exhibition_id": str(context.exhibition_id),
+                "comment": comment,
+            },
+        )
+
+        # Send email
+        return await self._send_email(recipient, subject, html_body, notification)
 
     # =========================================================================
     # In-App Notification Management
