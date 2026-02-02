@@ -16,6 +16,7 @@
     "loading": "Chargement...",
     "error": "Erreur",
     "success": "Succès",
+    "change": "Changer",
     "exhibitionRoles": {
       "ORGANIZER": "Organisateur",
       "PARTNER": "Partenaire"
@@ -621,6 +622,7 @@
     "canValidate": "Peut valider",
     "filterByStatus": "Filtrer par statut",
     "allStatuses": "Tous les statuts",
+    "draft": "Brouillon",
     "pendingModeration": "En attente de validation",
     "validated": "Validées",
     "changesRequested": "Modifications demandées",
@@ -656,7 +658,17 @@
     "noZonesAssigned": "Aucune zone ne vous est assignée",
     "seriesSummary": "Cela créera {sessions} sessions ({slots} créneaux × {tables} tables)",
     "seriesCreated": "{count} sessions créées avec succès",
-    "creating": "Création..."
+    "creating": "Création...",
+    "createSession": "Créer une session",
+    "createSessionButton": "Créer la session",
+    "sessionCreated": "Session créée avec succès",
+    "submit": "Soumettre",
+    "submitting": "Soumission...",
+    "sessionSubmitted": "Session soumise pour validation",
+    "selectTimeSlot": "Créneau horaire",
+    "selectTimeSlotPlaceholder": "Sélectionner un créneau",
+    "selectTable": "Table",
+    "selectTablePlaceholder": "Sélectionner une table"
   },
   "Sessions": {
     "status": {

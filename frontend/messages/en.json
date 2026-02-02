@@ -16,6 +16,7 @@
     "loading": "Loading...",
     "error": "Error",
     "success": "Success",
+    "change": "Change",
     "exhibitionRoles": {
       "ORGANIZER": "Organizer",
       "PARTNER": "Partner"
@@ -621,6 +622,7 @@
     "canValidate": "Can validate",
     "filterByStatus": "Filter by status",
     "allStatuses": "All statuses",
+    "draft": "Draft",
     "pendingModeration": "Pending validation",
     "validated": "Validated",
     "changesRequested": "Changes requested",
@@ -656,7 +658,17 @@
     "noZonesAssigned": "No zones assigned to you",
     "seriesSummary": "This will create {sessions} sessions ({slots} time slots × {tables} tables)",
     "seriesCreated": "{count} sessions created successfully",
-    "creating": "Creating..."
+    "creating": "Creating...",
+    "createSession": "Create session",
+    "createSessionButton": "Create session",
+    "sessionCreated": "Session created successfully",
+    "submit": "Submit",
+    "submitting": "Submitting...",
+    "sessionSubmitted": "Session submitted for validation",
+    "selectTimeSlot": "Time slot",
+    "selectTimeSlotPlaceholder": "Select a time slot",
+    "selectTable": "Table",
+    "selectTablePlaceholder": "Select a table"
   },
   "Sessions": {
     "status": {

@@ -2,10 +2,11 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useTranslations } from 'next-intl';
-import { partnerApi, PartnerSession, SessionStatus } from '@/lib/api';
+import { partnerApi, sessionsApi, PartnerSession, SessionStatus } from '@/lib/api';
 import { Badge, Button, Select, Card } from '@/components/ui';
 import { useToast } from '@/contexts/ToastContext';
 import { SeriesCreator } from './SeriesCreator';
+import { SingleSessionCreator } from './SingleSessionCreator';
 
 interface PartnerSessionListProps {
   exhibitionId: string;
@@ -13,6 +14,7 @@ interface PartnerSessionListProps {
 
 const STATUS_FILTERS: { value: SessionStatus | 'ALL'; labelKey: string }[] = [
   { value: 'ALL', labelKey: 'allStatuses' },
+  { value: 'DRAFT', labelKey: 'draft' },
   { value: 'PENDING_MODERATION', labelKey: 'pendingModeration' },
   { value: 'VALIDATED', labelKey: 'validated' },
   { value: 'CHANGES_REQUESTED', labelKey: 'changesRequested' },
@@ -30,6 +32,9 @@ export function PartnerSessionList({ exhibitionId }: PartnerSessionListProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<SessionStatus | 'ALL'>('ALL');
   const [showSeriesCreator, setShowSeriesCreator] = useState(false);
+  const [showSingleSessionCreator, setShowSingleSessionCreator] = useState(false);
+  const [submittingSessionId, setSubmittingSessionId] = useState<string | null>(null);
+  const { showSuccess } = useToast();
 
   const loadSessions = useCallback(async () => {
     setIsLoading(true);
@@ -51,6 +56,8 @@ export function PartnerSessionList({ exhibitionId }: PartnerSessionListProps) {
 
   const getStatusBadgeVariant = (status: SessionStatus) => {
     switch (status) {
+      case 'DRAFT':
+        return 'default';
       case 'VALIDATED':
         return 'success';
       case 'PENDING_MODERATION':
@@ -99,25 +106,68 @@ export function PartnerSessionList({ exhibitionId }: PartnerSessionListProps) {
     loadSessions();
   };
 
+  const handleSingleSessionCreated = () => {
+    setShowSingleSessionCreator(false);
+    loadSessions();
+  };
+
+  const handleSubmitSession = async (sessionId: string) => {
+    setSubmittingSessionId(sessionId);
+    const response = await sessionsApi.submit(sessionId);
+    if (response.error) {
+      showError(response.error.message);
+    } else {
+      showSuccess(t('sessionSubmitted'));
+      loadSessions();
+    }
+    setSubmittingSessionId(null);
+  };
+
   return (
     <div className="space-y-4">
       {/* Header with actions */}
-      <div className="flex items-center justify-between">
-        <Select
-          label={t('filterByStatus')}
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value as SessionStatus | 'ALL')}
-          options={STATUS_FILTERS.map((filter) => ({
-            value: filter.value,
-            label: t(filter.labelKey),
-          }))}
-        />
-        {!showSeriesCreator && (
-          <Button variant="primary" onClick={() => setShowSeriesCreator(true)}>
-            {t('createSeries')}
-          </Button>
+      <div className="flex items-center justify-between gap-4">
+        <div className="flex-shrink-0">
+          <Select
+            label={t('filterByStatus')}
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value as SessionStatus | 'ALL')}
+            options={STATUS_FILTERS.map((filter) => ({
+              value: filter.value,
+              label: t(filter.labelKey),
+            }))}
+          />
+        </div>
+        {!showSeriesCreator && !showSingleSessionCreator && (
+          <div className="flex gap-2">
+            <Button variant="secondary" onClick={() => setShowSingleSessionCreator(true)}>
+              {t('createSession')}
+            </Button>
+            <Button variant="primary" onClick={() => setShowSeriesCreator(true)}>
+              {t('createSeries')}
+            </Button>
+          </div>
         )}
       </div>
+
+      {/* Single Session Creator */}
+      {showSingleSessionCreator && (
+        <Card>
+          <Card.Content>
+            <h3
+              className="text-lg font-medium mb-4"
+              style={{ color: 'var(--color-text-primary)' }}
+            >
+              {t('createSession')}
+            </h3>
+            <SingleSessionCreator
+              exhibitionId={exhibitionId}
+              onSuccess={handleSingleSessionCreated}
+              onCancel={() => setShowSingleSessionCreator(false)}
+            />
+          </Card.Content>
+        </Card>
+      )}
 
       {/* Series Creator */}
       {showSeriesCreator && (
@@ -194,29 +244,44 @@ export function PartnerSessionList({ exhibitionId }: PartnerSessionListProps) {
                   </div>
                 </div>
 
-                {/* Actions - only show moderation buttons for pending sessions */}
-                {session.status === 'PENDING_MODERATION' && (
-                  <div className="flex gap-2 ml-4">
+                {/* Actions based on session status */}
+                <div className="flex gap-2 ml-4">
+                  {/* Submit button for DRAFT sessions */}
+                  {session.status === 'DRAFT' && (
                     <Button
                       size="sm"
                       variant="primary"
-                      onClick={() => {
-                        // TODO: Implement approval
-                      }}
+                      disabled={submittingSessionId === session.id}
+                      onClick={() => handleSubmitSession(session.id)}
                     >
-                      {t('approve')}
+                      {submittingSessionId === session.id ? t('submitting') : t('submit')}
                     </Button>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => {
-                        // TODO: Implement rejection
-                      }}
-                    >
-                      {t('reject')}
-                    </Button>
-                  </div>
-                )}
+                  )}
+
+                  {/* Moderation buttons for pending sessions */}
+                  {session.status === 'PENDING_MODERATION' && (
+                    <>
+                      <Button
+                        size="sm"
+                        variant="primary"
+                        onClick={() => {
+                          // TODO: Implement approval
+                        }}
+                      >
+                        {t('approve')}
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => {
+                          // TODO: Implement rejection
+                        }}
+                      >
+                        {t('reject')}
+                      </Button>
+                    </>
+                  )}
+                </div>
               </div>
             </div>
           ))}

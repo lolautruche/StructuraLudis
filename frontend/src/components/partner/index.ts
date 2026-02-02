@@ -6,3 +6,4 @@
 
 export { PartnerSessionList } from './PartnerSessionList';
 export { SeriesCreator } from './SeriesCreator';
+export { SingleSessionCreator } from './SingleSessionCreator';

@@ -118,4 +118,11 @@ export const sessionsApi = {
   getMyBooking: async (sessionId: string): Promise<ApiResponse<Booking | null>> => {
     return api.get<Booking | null>(`/api/v1/sessions/${sessionId}/my-booking`);
   },
+
+  /**
+   * Assign a physical table to a session.
+   */
+  assignTable: async (sessionId: string, tableId: string): Promise<ApiResponse<GameSession>> => {
+    return api.post<GameSession>(`/api/v1/sessions/${sessionId}/assign-table?table_id=${tableId}`);
+  },
 };
