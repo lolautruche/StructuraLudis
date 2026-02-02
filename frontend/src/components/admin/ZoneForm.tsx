@@ -6,7 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useTranslations } from 'next-intl';
 import { Zone, ZoneCreate, ZoneType } from '@/lib/api';
-import { Button, Input, Select, Textarea } from '@/components/ui';
+import { Button, Input, Select, Textarea, Checkbox } from '@/components/ui';
 
 const ZONE_TYPE_VALUES: ZoneType[] = ['MIXED', 'RPG', 'BOARD_GAME', 'WARGAME', 'TCG', 'DEMO'];
 
@@ -14,6 +14,7 @@ const zoneSchema = z.object({
   name: z.string().min(1).max(100),
   description: z.string().max(500).optional().nullable(),
   type: z.enum(['RPG', 'BOARD_GAME', 'WARGAME', 'TCG', 'DEMO', 'MIXED']),
+  partner_validation_enabled: z.boolean(),
 });
 
 type ZoneFormData = z.infer<typeof zoneSchema>;
@@ -47,6 +48,7 @@ export function ZoneForm({
       name: '',
       description: '',
       type: 'MIXED',
+      partner_validation_enabled: false,
     },
   });
 
@@ -56,24 +58,30 @@ export function ZoneForm({
         name: zone.name,
         description: zone.description || '',
         type: zone.type,
+        partner_validation_enabled: zone.partner_validation_enabled || false,
       });
     } else {
       reset({
         name: '',
         description: '',
         type: 'MIXED',
+        partner_validation_enabled: false,
       });
     }
   }, [zone, reset]);
 
   const handleFormSubmit = async (data: ZoneFormData) => {
-    const payload: ZoneCreate = {
+    const payload: ZoneCreate & { partner_validation_enabled?: boolean } = {
       exhibition_id: exhibitionId,
       name: data.name,
       description: data.description || undefined,
       type: data.type,
     };
-    await onSubmit(payload);
+    // Include partner_validation_enabled when editing (update)
+    if (zone) {
+      payload.partner_validation_enabled = data.partner_validation_enabled;
+    }
+    await onSubmit(payload as ZoneCreate);
   };
 
   return (
@@ -101,6 +109,23 @@ export function ZoneForm({
         }))}
         error={errors.type?.message}
       />
+
+      {/* Partner validation toggle - only show when editing */}
+      {zone && (
+        <div className="flex items-center gap-3 py-2">
+          <Checkbox
+            {...register('partner_validation_enabled')}
+            id="partner_validation_enabled"
+          />
+          <label
+            htmlFor="partner_validation_enabled"
+            className="text-sm cursor-pointer"
+            style={{ color: 'var(--color-text-primary)' }}
+          >
+            {t('partnerValidation')}
+          </label>
+        </div>
+      )}
 
       <div className="flex justify-end gap-3 pt-4">
         <Button type="button" variant="secondary" onClick={onCancel}>

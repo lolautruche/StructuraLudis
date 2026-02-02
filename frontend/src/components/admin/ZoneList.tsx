@@ -1,14 +1,15 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useTranslations } from 'next-intl';
-import { zonesApi, Zone, ZoneCreate } from '@/lib/api';
+import { zonesApi, partnerApi, Zone, ZoneCreate } from '@/lib/api';
 import { Button, Card, Badge, ConfirmDialog } from '@/components/ui';
 import { ZoneForm } from './ZoneForm';
 import { PhysicalTableList } from './PhysicalTableList';
 
 interface ZoneListProps {
   exhibitionId: string;
+  partnerMode?: boolean;
 }
 
 const ZONE_TYPE_COLORS: Record<string, 'default' | 'success' | 'warning' | 'danger'> = {
@@ -20,9 +21,10 @@ const ZONE_TYPE_COLORS: Record<string, 'default' | 'success' | 'warning' | 'dang
   DEMO: 'default',
 };
 
-export function ZoneList({ exhibitionId }: ZoneListProps) {
+export function ZoneList({ exhibitionId, partnerMode = false }: ZoneListProps) {
   const t = useTranslations('Admin');
   const tCommon = useTranslations('Common');
+  const tPartner = useTranslations('Partner');
 
   const [zones, setZones] = useState<Zone[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -37,24 +39,47 @@ export function ZoneList({ exhibitionId }: ZoneListProps) {
   const [isDeleting, setIsDeleting] = useState(false);
 
   // Load zones
-  useEffect(() => {
-    async function loadZones() {
-      setIsLoading(true);
-      setError(null);
+  const loadZones = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
 
+    if (partnerMode) {
+      // In partner mode, use partner API to get only assigned zones
+      const response = await partnerApi.listZones(exhibitionId);
+      if (response.error) {
+        setError(response.error.message);
+      } else if (response.data) {
+        // Convert PartnerZone to Zone for compatibility
+        const convertedZones: Zone[] = response.data.map((pz) => ({
+          id: pz.id,
+          exhibition_id: pz.exhibition_id,
+          name: pz.name,
+          description: pz.description,
+          type: pz.type,
+          delegated_to_group_id: null,
+          partner_validation_enabled: pz.partner_validation_enabled,
+          name_i18n: null,
+          description_i18n: null,
+          created_at: '',
+          updated_at: null,
+        }));
+        setZones(convertedZones);
+      }
+    } else {
       const response = await zonesApi.list(exhibitionId);
-
       if (response.error) {
         setError(response.error.message);
       } else if (response.data) {
         setZones(response.data);
       }
-
-      setIsLoading(false);
     }
 
+    setIsLoading(false);
+  }, [exhibitionId, partnerMode]);
+
+  useEffect(() => {
     loadZones();
-  }, [exhibitionId]);
+  }, [loadZones]);
 
   const handleCreate = async (data: ZoneCreate) => {
     setIsSubmitting(true);
@@ -74,7 +99,7 @@ export function ZoneList({ exhibitionId }: ZoneListProps) {
     setIsSubmitting(false);
   };
 
-  const handleUpdate = async (data: ZoneCreate) => {
+  const handleUpdate = async (data: ZoneCreate & { partner_validation_enabled?: boolean }) => {
     if (!editingZone) return;
 
     setIsSubmitting(true);
@@ -84,6 +109,7 @@ export function ZoneList({ exhibitionId }: ZoneListProps) {
       name: data.name,
       description: data.description,
       type: data.type,
+      partner_validation_enabled: data.partner_validation_enabled,
     });
 
     if (response.error) {
@@ -161,8 +187,8 @@ export function ZoneList({ exhibitionId }: ZoneListProps) {
         </div>
       )}
 
-      {/* Add button */}
-      {!isFormOpen && !editingZone && (
+      {/* Add button - only for organizers, not partners */}
+      {!partnerMode && !isFormOpen && !editingZone && (
         <div className="flex justify-end">
           <Button variant="primary" onClick={openCreateForm}>
             {t('addZone')}
@@ -170,8 +196,8 @@ export function ZoneList({ exhibitionId }: ZoneListProps) {
         </div>
       )}
 
-      {/* Create form */}
-      {isFormOpen && (
+      {/* Create form - only for organizers */}
+      {!partnerMode && isFormOpen && (
         <Card>
           <Card.Content>
             <h4
@@ -259,22 +285,31 @@ export function ZoneList({ exhibitionId }: ZoneListProps) {
                       <Badge variant={ZONE_TYPE_COLORS[zone.type]}>
                         {t(`zoneTypes.${zone.type}`)}
                       </Badge>
-                      <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
-                        <Button
-                          variant="secondary"
-                          size="sm"
-                          onClick={() => openEditForm(zone)}
-                        >
-                          {tCommon('edit')}
-                        </Button>
-                        <Button
-                          variant="danger"
-                          size="sm"
-                          onClick={() => setDeleteZone(zone)}
-                        >
-                          {tCommon('delete')}
-                        </Button>
-                      </div>
+                      {/* Partner mode: show validation status badge */}
+                      {partnerMode && zone.partner_validation_enabled && (
+                        <Badge variant="success">
+                          {tPartner('canValidate')}
+                        </Badge>
+                      )}
+                      {/* Edit/Delete buttons - only for organizers */}
+                      {!partnerMode && (
+                        <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
+                          <Button
+                            variant="secondary"
+                            size="sm"
+                            onClick={() => openEditForm(zone)}
+                          >
+                            {tCommon('edit')}
+                          </Button>
+                          <Button
+                            variant="danger"
+                            size="sm"
+                            onClick={() => setDeleteZone(zone)}
+                          >
+                            {tCommon('delete')}
+                          </Button>
+                        </div>
+                      )}
                     </div>
                   </div>
 

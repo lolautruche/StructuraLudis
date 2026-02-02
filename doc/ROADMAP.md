@@ -75,6 +75,7 @@ This document tracks prioritization decisions and project progress.
 
 | Issue | Title | Job Stories | Date |
 |-------|-------|-------------|------|
+| [#10](https://github.com/lolautruche/StructuraLudis/issues/10) | Partner Zone Management | JS.D1 | 2026-02-02 |
 | [#99](https://github.com/lolautruche/StructuraLudis/issues/99) | Role architecture refactor | JS.02, JS.02b | 2026-02-02 |
 | [#13](https://github.com/lolautruche/StructuraLudis/issues/13) | SuperAdmin Portal | JS.01-04 | 2026-02-01 |
 | [#7](https://github.com/lolautruche/StructuraLudis/issues/7) | Admin: Event Configuration | JS.A2, JS.A3, JS.A5 | 2026-02-01 |

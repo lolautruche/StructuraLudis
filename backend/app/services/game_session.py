@@ -516,6 +516,7 @@ class GameSessionService:
         )
 
         # Check if user is a partner with access to the zone
+        # Partner can only moderate if partner_validation_enabled is True for the zone (#10)
         if not can_moderate and session.physical_table_id:
             zone_result = await self.db.execute(
                 select(Zone)
@@ -523,8 +524,9 @@ class GameSessionService:
                 .where(PhysicalTable.id == session.physical_table_id)
             )
             zone = zone_result.scalar_one_or_none()
-            if zone and await can_manage_zone(current_user, zone, self.db):
-                can_moderate = True
+            if zone and zone.partner_validation_enabled:
+                if await can_manage_zone(current_user, zone, self.db):
+                    can_moderate = True
 
         if not can_moderate:
             raise HTTPException(

@@ -8,11 +8,13 @@ import { useRouter } from '@/i18n/routing';
 import { exhibitionsApi, Exhibition } from '@/lib/api';
 import { Card } from '@/components/ui';
 import { ExhibitionSettingsForm, TimeSlotList, ZoneList, RolesList } from '@/components/admin';
+import { PartnerSessionList } from '@/components/partner';
 
-type TabId = 'settings' | 'slots' | 'zones' | 'roles';
+type TabId = 'settings' | 'slots' | 'zones' | 'roles' | 'sessions';
 
 export default function ManageExhibitionPage() {
   const t = useTranslations('Admin');
+  const tPartner = useTranslations('Partner');
   const params = useParams();
   const router = useRouter();
   const { isLoading: authLoading, isAuthenticated } = useAuth();
@@ -20,7 +22,7 @@ export default function ManageExhibitionPage() {
   const [exhibition, setExhibition] = useState<Exhibition | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<TabId>('settings');
+  const [activeTab, setActiveTab] = useState<TabId | null>(null);
 
   const exhibitionId = params.id as string;
 
@@ -90,12 +92,30 @@ export default function ManageExhibitionPage() {
     );
   }
 
-  const tabs: { id: TabId; label: string }[] = [
-    { id: 'settings', label: t('settings') },
-    { id: 'slots', label: t('timeSlots') },
-    { id: 'zones', label: t('zonesAndTables') },
-    { id: 'roles', label: t('roles.tab') },
-  ];
+  // Determine user role for this exhibition
+  const isOrganizer = exhibition.user_exhibition_role === 'ORGANIZER';
+  const isPartner = exhibition.user_exhibition_role === 'PARTNER';
+
+  // Build tabs based on role (Issue #10)
+  // ORGANIZER: settings, slots, zones, roles
+  // PARTNER: zones (filtered), sessions
+  const tabs: { id: TabId; label: string }[] = isOrganizer
+    ? [
+        { id: 'settings', label: t('settings') },
+        { id: 'slots', label: t('timeSlots') },
+        { id: 'zones', label: t('zonesAndTables') },
+        { id: 'roles', label: t('roles.tab') },
+      ]
+    : [
+        { id: 'zones', label: t('zonesAndTables') },
+        { id: 'sessions', label: tPartner('sessions') },
+      ];
+
+  // Set default active tab if not set
+  const currentTab = activeTab || tabs[0].id;
+
+  // Title based on role
+  const pageTitle = isOrganizer ? t('title') : tPartner('dashboard');
 
   return (
     <div className="max-w-4xl mx-auto mt-8 px-4">
@@ -103,13 +123,18 @@ export default function ManageExhibitionPage() {
         className="text-2xl font-bold mb-2"
         style={{ color: 'var(--color-text-primary)' }}
       >
-        {t('title')}
+        {pageTitle}
       </h1>
       <p
         className="text-sm mb-6"
         style={{ color: 'var(--color-text-secondary)' }}
       >
         {exhibition.title}
+        {isPartner && (
+          <span className="ml-2 text-xs px-2 py-0.5 rounded-full bg-slate-200 dark:bg-slate-700">
+            {tPartner('partnerRole')}
+          </span>
+        )}
       </p>
 
       {/* Tab navigation */}
@@ -122,13 +147,13 @@ export default function ManageExhibitionPage() {
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
             className={`px-4 py-2 text-sm font-medium transition-colors border-b-2 -mb-px ${
-              activeTab === tab.id
+              currentTab === tab.id
                 ? 'border-ludis-primary text-ludis-primary'
                 : 'border-transparent hover:border-slate-300 dark:hover:border-slate-600'
             }`}
             style={{
               color:
-                activeTab === tab.id
+                currentTab === tab.id
                   ? 'var(--color-primary)'
                   : 'var(--color-text-secondary)',
             }}
@@ -141,20 +166,26 @@ export default function ManageExhibitionPage() {
       {/* Tab content */}
       <Card>
         <Card.Content>
-          {activeTab === 'settings' && (
+          {currentTab === 'settings' && isOrganizer && (
             <ExhibitionSettingsForm
               exhibition={exhibition}
               onUpdate={setExhibition}
             />
           )}
-          {activeTab === 'slots' && (
+          {currentTab === 'slots' && isOrganizer && (
             <TimeSlotList exhibitionId={exhibition.id} />
           )}
-          {activeTab === 'zones' && (
-            <ZoneList exhibitionId={exhibition.id} />
+          {currentTab === 'zones' && (
+            <ZoneList
+              exhibitionId={exhibition.id}
+              partnerMode={isPartner}
+            />
           )}
-          {activeTab === 'roles' && (
+          {currentTab === 'roles' && isOrganizer && (
             <RolesList exhibitionId={exhibition.id} />
+          )}
+          {currentTab === 'sessions' && isPartner && (
+            <PartnerSessionList exhibitionId={exhibition.id} />
           )}
         </Card.Content>
       </Card>

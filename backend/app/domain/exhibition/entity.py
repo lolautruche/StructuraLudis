@@ -155,6 +155,10 @@ class Zone(Base, TimestampMixin):
         ForeignKey("user_groups.id", ondelete="SET NULL"), nullable=True
     )
 
+    # Partner validation (Issue #10 - JS.D3)
+    # When True, partners managing this zone can validate sessions themselves
+    partner_validation_enabled: Mapped[bool] = mapped_column(default=False)
+
     # Relationships
     exhibition: Mapped["Exhibition"] = relationship(back_populates="zones")
     delegated_to_group: Mapped[Optional["UserGroup"]] = relationship()
