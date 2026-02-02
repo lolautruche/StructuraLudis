@@ -81,11 +81,8 @@ export function ZoneForm({
       description: data.description || undefined,
       type: data.type,
       allow_public_proposals: data.allow_public_proposals,
+      moderation_required: data.moderation_required,
     };
-    // Include moderation_required when editing (update)
-    if (zone) {
-      payload.moderation_required = data.moderation_required;
-    }
     await onSubmit(payload as ZoneCreate);
   };
 
@@ -139,31 +136,29 @@ export function ZoneForm({
         </div>
       </div>
 
-      {/* Session moderation toggle - only show when editing and public proposals enabled */}
-      {zone && (
-        <div className="flex items-start gap-3 py-2">
-          <Checkbox
-            {...register('moderation_required')}
-            id="moderation_required"
-            className="mt-0.5"
-          />
-          <div>
-            <label
-              htmlFor="moderation_required"
-              className="text-sm font-medium cursor-pointer"
-              style={{ color: 'var(--color-text-primary)' }}
-            >
-              {t('moderationRequired')}
-            </label>
-            <p
-              className="text-xs mt-0.5"
-              style={{ color: 'var(--color-text-secondary)' }}
-            >
-              {t('moderationRequiredHelp')}
-            </p>
-          </div>
+      {/* Session moderation toggle */}
+      <div className="flex items-start gap-3 py-2">
+        <Checkbox
+          {...register('moderation_required')}
+          id="moderation_required"
+          className="mt-0.5"
+        />
+        <div>
+          <label
+            htmlFor="moderation_required"
+            className="text-sm font-medium cursor-pointer"
+            style={{ color: 'var(--color-text-primary)' }}
+          >
+            {t('moderationRequired')}
+          </label>
+          <p
+            className="text-xs mt-0.5"
+            style={{ color: 'var(--color-text-secondary)' }}
+          >
+            {t('moderationRequiredHelp')}
+          </p>
         </div>
-      )}
+      </div>
 
       <div className="flex justify-end gap-3 pt-4">
         <Button type="button" variant="secondary" onClick={onCancel}>

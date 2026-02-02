@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useTranslations } from 'next-intl';
 import { zonesApi, partnerApi, Zone, ZoneCreate } from '@/lib/api';
-import { Button, Card, Badge, ConfirmDialog } from '@/components/ui';
+import { Button, Card, Badge, ConfirmDialog, Checkbox } from '@/components/ui';
 import { ZoneForm } from './ZoneForm';
 import { PhysicalTableList } from './PhysicalTableList';
 
@@ -167,6 +167,26 @@ export function ZoneList({ exhibitionId, partnerMode = false }: ZoneListProps) {
     setEditingZone(null);
   };
 
+  // Partner mode: update zone settings (allow_public_proposals, moderation_required)
+  const handlePartnerSettingChange = async (
+    zoneId: string,
+    setting: 'allow_public_proposals' | 'moderation_required',
+    value: boolean
+  ) => {
+    setError(null);
+
+    const response = await zonesApi.update(zoneId, { [setting]: value });
+
+    if (response.error) {
+      setError(response.error.message);
+    } else if (response.data) {
+      // Update local state
+      setZones((prev) =>
+        prev.map((z) => (z.id === zoneId ? { ...z, [setting]: value } : z))
+      );
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="animate-pulse space-y-3">
@@ -286,10 +306,10 @@ export function ZoneList({ exhibitionId, partnerMode = false }: ZoneListProps) {
                       <Badge variant={ZONE_TYPE_COLORS[zone.type]}>
                         {t(`zoneTypes.${zone.type}`)}
                       </Badge>
-                      {/* Partner mode: show moderation status badge */}
-                      {partnerMode && zone.moderation_required && (
-                        <Badge variant="warning">
-                          {tPartner('publicModerationEnabled')}
+                      {/* Show if zone accepts public proposals */}
+                      {zone.allow_public_proposals && (
+                        <Badge variant="success">
+                          {t('publicProposalsOpen')}
                         </Badge>
                       )}
                       {/* Edit/Delete buttons - only for organizers */}
@@ -314,12 +334,61 @@ export function ZoneList({ exhibitionId, partnerMode = false }: ZoneListProps) {
                     </div>
                   </div>
 
-                  {/* Tables section (expanded) */}
+                  {/* Expanded section */}
                   {expandedZoneId === zone.id && (
                     <div
                       className="p-4 border-t"
                       style={{ borderColor: 'var(--color-border)' }}
                     >
+                      {/* Zone settings - editable in partner mode, read-only for organizers */}
+                      {partnerMode ? (
+                        <div className="mb-4 space-y-3">
+                          <div className="flex items-center gap-3">
+                            <Checkbox
+                              id={`allow_public_${zone.id}`}
+                              checked={zone.allow_public_proposals}
+                              onChange={(e) => handlePartnerSettingChange(zone.id, 'allow_public_proposals', e.target.checked)}
+                            />
+                            <label
+                              htmlFor={`allow_public_${zone.id}`}
+                              className="text-sm cursor-pointer"
+                              style={{ color: 'var(--color-text-primary)' }}
+                            >
+                              {t('allowPublicProposals')}
+                            </label>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <Checkbox
+                              id={`moderation_${zone.id}`}
+                              checked={zone.moderation_required}
+                              onChange={(e) => handlePartnerSettingChange(zone.id, 'moderation_required', e.target.checked)}
+                            />
+                            <label
+                              htmlFor={`moderation_${zone.id}`}
+                              className="text-sm cursor-pointer"
+                              style={{ color: 'var(--color-text-primary)' }}
+                            >
+                              {t('moderationRequired')}
+                            </label>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="mb-4 flex flex-wrap gap-2">
+                          {zone.allow_public_proposals ? (
+                            <Badge variant="success">{t('publicProposalsEnabled')}</Badge>
+                          ) : (
+                            <Badge variant="default">{t('publicProposalsDisabled')}</Badge>
+                          )}
+                          {zone.allow_public_proposals && (
+                            zone.moderation_required ? (
+                              <Badge variant="warning">{t('moderationEnabled')}</Badge>
+                            ) : (
+                              <Badge variant="default">{t('moderationDisabled')}</Badge>
+                            )
+                          )}
+                        </div>
+                      )}
+
                       <h5
                         className="font-medium mb-3"
                         style={{ color: 'var(--color-text-primary)' }}

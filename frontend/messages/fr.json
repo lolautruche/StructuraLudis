@@ -392,6 +392,11 @@
     "allowPublicProposalsHelp": "Si activé, tout le monde peut proposer une session de jeu sur les tables de cette zone.",
     "moderationRequired": "Activer la modération des sessions publiques",
     "moderationRequiredHelp": "Si activé, les sessions proposées par le public nécessitent une validation. Les sessions créées par le partenaire sont toujours auto-validées.",
+    "publicProposalsOpen": "Ouvert au public",
+    "publicProposalsEnabled": "Propositions publiques activées",
+    "publicProposalsDisabled": "Partenaires uniquement",
+    "moderationEnabled": "Modération activée",
+    "moderationDisabled": "Auto-validé",
     "roles": {
       "tab": "Équipe",
       "addRole": "Ajouter un membre",

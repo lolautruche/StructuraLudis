@@ -392,6 +392,11 @@
     "allowPublicProposalsHelp": "If enabled, anyone can propose a game session on tables in this zone.",
     "moderationRequired": "Enable moderation for public sessions",
     "moderationRequiredHelp": "If enabled, sessions proposed by the public require validation. Sessions created by the partner are always auto-validated.",
+    "publicProposalsOpen": "Open to public",
+    "publicProposalsEnabled": "Public proposals enabled",
+    "publicProposalsDisabled": "Partners only",
+    "moderationEnabled": "Moderation enabled",
+    "moderationDisabled": "Auto-validated",
     "roles": {
       "tab": "Team",
       "addRole": "Add member",
