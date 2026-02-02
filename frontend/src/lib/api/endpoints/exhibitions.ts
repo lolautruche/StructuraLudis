@@ -14,6 +14,7 @@ import {
   ExhibitionRoleAssignment,
   ExhibitionRoleCreate,
   ExhibitionRoleUpdate,
+  UserSearchResult,
 } from '../types';
 
 export const exhibitionsApi = {
@@ -104,6 +105,20 @@ export const exhibitionsApi = {
   // ==========================================================================
   // Exhibition Roles (Issue #99)
   // ==========================================================================
+
+  /**
+   * Search users for role assignment.
+   * Returns users matching query who don't already have a role for this exhibition.
+   * Requires: Exhibition organizer or SUPER_ADMIN/ADMIN.
+   */
+  searchUsers: async (
+    exhibitionId: string,
+    query: string
+  ): Promise<ApiResponse<UserSearchResult[]>> => {
+    return api.get<UserSearchResult[]>(
+      `/api/v1/exhibitions/${exhibitionId}/users/search?q=${encodeURIComponent(query)}`
+    );
+  },
 
   /**
    * List role assignments for an exhibition.

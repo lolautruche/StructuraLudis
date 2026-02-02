@@ -543,6 +543,12 @@ export interface ExhibitionRoleUpdate {
   zone_ids?: string[];
 }
 
+export interface UserSearchResult {
+  id: string;
+  email: string;
+  full_name: string | null;
+}
+
 export interface PlatformStats {
   users: {
     total: number;

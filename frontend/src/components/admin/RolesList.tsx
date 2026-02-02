@@ -1,31 +1,27 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { useParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import { Link } from '@/i18n/routing';
 import {
   exhibitionsApi,
   zonesApi,
-  Exhibition,
   ExhibitionRoleAssignment,
   ExhibitionRole,
   Zone,
   UserSearchResult,
 } from '@/lib/api';
-import { Card, Button, Select, Input, ConfirmDialog, Badge } from '@/components/ui';
-import { useToast } from '@/contexts/ToastContext';
+import { Button, Card, Badge, ConfirmDialog, Input, Select } from '@/components/ui';
 
-export default function ExhibitionRolesPage() {
-  const params = useParams();
-  const exhibitionId = params.id as string;
-  const t = useTranslations('SuperAdmin.exhibitionRoles');
+interface RolesListProps {
+  exhibitionId: string;
+}
+
+export function RolesList({ exhibitionId }: RolesListProps) {
+  const t = useTranslations('Admin.roles');
   const tCommon = useTranslations('Common');
   const tRoles = useTranslations('Common.exhibitionRoles');
-  const { showSuccess, showError } = useToast();
 
   // Data states
-  const [exhibition, setExhibition] = useState<Exhibition | null>(null);
   const [roles, setRoles] = useState<ExhibitionRoleAssignment[]>([]);
   const [zones, setZones] = useState<Zone[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -53,39 +49,29 @@ export default function ExhibitionRolesPage() {
   // Delete states
   const [deleteRole, setDeleteRole] = useState<ExhibitionRoleAssignment | null>(null);
 
-  const loadData = useCallback(async () => {
-    setIsLoading(true);
-    setError(null);
+  // Load roles and zones
+  useEffect(() => {
+    async function loadData() {
+      setIsLoading(true);
+      setError(null);
 
-    try {
-      const [exhibitionRes, rolesRes, zonesRes] = await Promise.all([
-        exhibitionsApi.getById(exhibitionId),
+      const [rolesRes, zonesRes] = await Promise.all([
         exhibitionsApi.listRoles(exhibitionId),
         zonesApi.list(exhibitionId),
       ]);
 
-      if (exhibitionRes.error) {
-        setError(exhibitionRes.error.message);
-        return;
-      }
       if (rolesRes.error) {
         setError(rolesRes.error.message);
-        return;
+      } else {
+        setRoles(rolesRes.data || []);
       }
 
-      setExhibition(exhibitionRes.data!);
-      setRoles(rolesRes.data!);
       setZones(zonesRes.data || []);
-    } catch {
-      setError('Failed to load data');
+      setIsLoading(false);
     }
 
-    setIsLoading(false);
-  }, [exhibitionId]);
-
-  useEffect(() => {
     loadData();
-  }, [loadData]);
+  }, [exhibitionId]);
 
   // User search with debounce
   const searchUsers = useCallback(
@@ -147,16 +133,17 @@ export default function ExhibitionRolesPage() {
 
   const handleAddRole = async () => {
     if (!selectedUser) {
-      showError(t('selectUserRequired'));
+      setError(t('selectUserRequired'));
       return;
     }
 
     if (selectedRole === 'PARTNER' && selectedZoneIds.length === 0) {
-      showError(t('selectZonesRequired'));
+      setError(t('selectZonesRequired'));
       return;
     }
 
     setIsSubmitting(true);
+    setError(null);
 
     const response = await exhibitionsApi.assignRole(exhibitionId, {
       user_id: selectedUser.id,
@@ -165,10 +152,9 @@ export default function ExhibitionRolesPage() {
     });
 
     if (response.error) {
-      showError(response.error.message);
+      setError(response.error.message);
     } else if (response.data) {
       setRoles((prev) => [...prev, response.data!]);
-      showSuccess(t('roleAssigned'));
       resetForm();
     }
 
@@ -179,23 +165,23 @@ export default function ExhibitionRolesPage() {
     if (!editingRole) return;
 
     if (editingRole.role === 'PARTNER' && editZoneIds.length === 0) {
-      showError(t('selectZonesRequired'));
+      setError(t('selectZonesRequired'));
       return;
     }
 
     setIsSubmitting(true);
+    setError(null);
 
     const response = await exhibitionsApi.updateRole(exhibitionId, editingRole.id, {
       zone_ids: editZoneIds,
     });
 
     if (response.error) {
-      showError(response.error.message);
+      setError(response.error.message);
     } else if (response.data) {
       setRoles((prev) =>
         prev.map((r) => (r.id === editingRole.id ? response.data! : r))
       );
-      showSuccess(t('roleUpdated'));
       setEditingRole(null);
     }
 
@@ -206,14 +192,14 @@ export default function ExhibitionRolesPage() {
     if (!deleteRole) return;
 
     setIsSubmitting(true);
+    setError(null);
 
     const response = await exhibitionsApi.removeRole(exhibitionId, deleteRole.id);
 
     if (response.error) {
-      showError(response.error.message);
+      setError(response.error.message);
     } else {
       setRoles((prev) => prev.filter((r) => r.id !== deleteRole.id));
-      showSuccess(t('roleRemoved'));
     }
 
     setIsSubmitting(false);
@@ -242,54 +228,45 @@ export default function ExhibitionRolesPage() {
 
   if (isLoading) {
     return (
-      <div className="animate-pulse space-y-6">
-        <div className="h-8 w-64 rounded" style={{ backgroundColor: 'var(--color-bg-secondary)' }} />
-        <div className="h-64 rounded-lg" style={{ backgroundColor: 'var(--color-bg-secondary)' }} />
+      <div className="animate-pulse space-y-3">
+        {[1, 2, 3].map((i) => (
+          <div
+            key={i}
+            className="h-16 bg-slate-200 dark:bg-slate-700 rounded"
+          />
+        ))}
       </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <Card>
-        <Card.Content>
-          <p style={{ color: 'var(--color-text-danger)' }}>{error}</p>
-        </Card.Content>
-      </Card>
     );
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <Link
-            href="/admin/exhibitions"
-            className="text-sm hover:underline"
-            style={{ color: 'var(--color-text-muted)' }}
-          >
-            &larr; {t('backToExhibitions')}
-          </Link>
-          <h2
-            className="text-xl font-semibold mt-1"
-            style={{ color: 'var(--color-text-primary)' }}
-          >
-            {t('title', { exhibition: exhibition?.title })}
-          </h2>
+    <div className="space-y-4">
+      {error && (
+        <div className="p-3 bg-red-500/10 border border-red-500/30 rounded-lg text-red-600 dark:text-red-400 text-sm">
+          {error}
         </div>
-        {!showAddForm && (
-          <Button onClick={() => setShowAddForm(true)}>{t('addRole')}</Button>
-        )}
-      </div>
+      )}
+
+      {/* Add button */}
+      {!showAddForm && (
+        <div className="flex justify-end">
+          <Button variant="primary" onClick={() => setShowAddForm(true)}>
+            {t('addRole')}
+          </Button>
+        </div>
+      )}
 
       {/* Add role form */}
       {showAddForm && (
         <Card>
-          <Card.Header>
-            <Card.Title>{t('assignRole')}</Card.Title>
-          </Card.Header>
           <Card.Content className="space-y-4">
+            <h4
+              className="text-lg font-medium"
+              style={{ color: 'var(--color-text-primary)' }}
+            >
+              {t('assignRole')}
+            </h4>
+
             {/* User search */}
             <div ref={searchRef} className="relative">
               <label
@@ -417,169 +394,123 @@ export default function ExhibitionRolesPage() {
       )}
 
       {/* Current roles list */}
-      <Card>
-        <Card.Header>
-          <Card.Title>{t('currentRoles')}</Card.Title>
-        </Card.Header>
-        <Card.Content className="p-0">
-          {roles.length === 0 ? (
-            <div className="p-6 text-center">
-              <p style={{ color: 'var(--color-text-muted)' }}>{t('noRoles')}</p>
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr
-                    className="border-b"
-                    style={{ borderColor: 'var(--color-border)' }}
+      {roles.length === 0 && !showAddForm ? (
+        <div
+          className="text-center py-8"
+          style={{ color: 'var(--color-text-muted)' }}
+        >
+          {t('noRoles')}
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {roles.map((role) => (
+            <div
+              key={role.id}
+              className="flex items-center justify-between p-4 border rounded-lg"
+              style={{ borderColor: 'var(--color-border)' }}
+            >
+              <div className="flex items-center gap-4">
+                <div>
+                  <div
+                    className="font-medium"
+                    style={{ color: 'var(--color-text-primary)' }}
                   >
-                    <th
-                      className="text-left p-4 font-medium"
-                      style={{ color: 'var(--color-text-secondary)' }}
+                    {role.user_full_name || role.user_email}
+                  </div>
+                  {role.user_full_name && (
+                    <div
+                      className="text-sm"
+                      style={{ color: 'var(--color-text-muted)' }}
                     >
-                      {t('user')}
-                    </th>
-                    <th
-                      className="text-left p-4 font-medium"
-                      style={{ color: 'var(--color-text-secondary)' }}
-                    >
-                      {t('role')}
-                    </th>
-                    <th
-                      className="text-left p-4 font-medium"
-                      style={{ color: 'var(--color-text-secondary)' }}
-                    >
-                      {t('zones')}
-                    </th>
-                    <th
-                      className="text-right p-4 font-medium"
-                      style={{ color: 'var(--color-text-secondary)' }}
-                    >
-                      {t('actions')}
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {roles.map((role) => (
-                    <tr
-                      key={role.id}
-                      className="border-b last:border-0 hover:bg-slate-50 dark:hover:bg-slate-800/50"
-                      style={{ borderColor: 'var(--color-border)' }}
-                    >
-                      <td className="p-4">
-                        <span
-                          className="font-medium"
-                          style={{ color: 'var(--color-text-primary)' }}
-                        >
-                          {role.user_full_name || role.user_email}
-                        </span>
-                        {role.user_full_name && (
-                          <span
-                            className="block text-sm"
-                            style={{ color: 'var(--color-text-muted)' }}
-                          >
-                            {role.user_email}
-                          </span>
-                        )}
-                      </td>
-                      <td className="p-4">
-                        <Badge
-                          variant={role.role === 'ORGANIZER' ? 'primary' : 'secondary'}
-                        >
-                          {tRoles(role.role)}
-                        </Badge>
-                      </td>
-                      <td className="p-4">
-                        {role.role === 'PARTNER' && role.zone_ids ? (
-                          editingRole?.id === role.id ? (
-                            <div className="flex flex-wrap gap-2">
-                              {zones.map((zone) => (
-                                <button
-                                  key={zone.id}
-                                  type="button"
-                                  onClick={() => toggleZone(zone.id, setEditZoneIds)}
-                                  className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
-                                    editZoneIds.includes(zone.id)
-                                      ? 'bg-ludis-primary text-white'
-                                      : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300'
-                                  }`}
-                                >
-                                  {zone.name}
-                                </button>
-                              ))}
-                            </div>
-                          ) : (
-                            <div className="flex flex-wrap gap-1">
-                              {role.zone_ids.map((zoneId) => (
-                                <Badge key={zoneId} variant="outline">
-                                  {getZoneName(zoneId)}
-                                </Badge>
-                              ))}
-                            </div>
-                          )
-                        ) : (
-                          <span style={{ color: 'var(--color-text-muted)' }}>
-                            {role.role === 'ORGANIZER' ? t('allZones') : '-'}
-                          </span>
-                        )}
-                      </td>
-                      <td className="p-4 text-right">
-                        <div className="flex justify-end gap-2">
-                          {editingRole?.id === role.id ? (
-                            <>
-                              <Button
-                                variant="primary"
-                                size="sm"
-                                onClick={handleUpdateRole}
-                                disabled={isSubmitting}
-                              >
-                                {tCommon('save')}
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => setEditingRole(null)}
-                              >
-                                {tCommon('cancel')}
-                              </Button>
-                            </>
-                          ) : (
-                            <>
-                              {role.role === 'PARTNER' && (
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => {
-                                    setEditingRole(role);
-                                    setEditZoneIds(role.zone_ids || []);
-                                  }}
-                                >
-                                  {t('editZones')}
-                                </Button>
-                              )}
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => setDeleteRole(role)}
-                                className="text-red-600 hover:text-red-700"
-                              >
-                                {t('remove')}
-                              </Button>
-                            </>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </Card.Content>
-      </Card>
+                      {role.user_email}
+                    </div>
+                  )}
+                </div>
+                <Badge variant={role.role === 'ORGANIZER' ? 'primary' : 'secondary'}>
+                  {tRoles(role.role)}
+                </Badge>
+              </div>
 
-      {/* Delete confirmation dialog */}
+              <div className="flex items-center gap-4">
+                {/* Zones for PARTNER */}
+                {role.role === 'PARTNER' && (
+                  <div className="flex flex-wrap gap-1">
+                    {editingRole?.id === role.id ? (
+                      zones.map((zone) => (
+                        <button
+                          key={zone.id}
+                          type="button"
+                          onClick={() => toggleZone(zone.id, setEditZoneIds)}
+                          className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
+                            editZoneIds.includes(zone.id)
+                              ? 'bg-ludis-primary text-white'
+                              : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300'
+                          }`}
+                        >
+                          {zone.name}
+                        </button>
+                      ))
+                    ) : (
+                      role.zone_ids?.map((zoneId) => (
+                        <Badge key={zoneId} variant="outline" size="sm">
+                          {getZoneName(zoneId)}
+                        </Badge>
+                      ))
+                    )}
+                  </div>
+                )}
+
+                {/* Actions */}
+                <div className="flex gap-2">
+                  {editingRole?.id === role.id ? (
+                    <>
+                      <Button
+                        variant="primary"
+                        size="sm"
+                        onClick={handleUpdateRole}
+                        disabled={isSubmitting}
+                      >
+                        {tCommon('save')}
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setEditingRole(null)}
+                      >
+                        {tCommon('cancel')}
+                      </Button>
+                    </>
+                  ) : (
+                    <>
+                      {role.role === 'PARTNER' && (
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          onClick={() => {
+                            setEditingRole(role);
+                            setEditZoneIds(role.zone_ids || []);
+                          }}
+                        >
+                          {tCommon('edit')}
+                        </Button>
+                      )}
+                      <Button
+                        variant="danger"
+                        size="sm"
+                        onClick={() => setDeleteRole(role)}
+                      >
+                        {t('remove')}
+                      </Button>
+                    </>
+                  )}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Delete confirmation */}
       <ConfirmDialog
         isOpen={!!deleteRole}
         onClose={() => setDeleteRole(null)}

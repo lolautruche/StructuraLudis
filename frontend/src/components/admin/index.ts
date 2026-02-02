@@ -5,3 +5,4 @@ export { ZoneList } from './ZoneList';
 export { ZoneForm } from './ZoneForm';
 export { PhysicalTableList } from './PhysicalTableList';
 export { BatchTableCreator } from './BatchTableCreator';
+export { RolesList } from './RolesList';

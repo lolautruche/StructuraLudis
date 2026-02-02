@@ -7,6 +7,7 @@ from typing import List, Optional
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status
+from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -533,6 +534,68 @@ async def delete_safety_tool(
         )
 
     await db.delete(tool)
+
+
+# =============================================================================
+# User Search for Role Assignment (#99)
+# =============================================================================
+
+
+class UserSearchResult(BaseModel):
+    """Minimal user info for role assignment search."""
+    id: UUID
+    email: str
+    full_name: Optional[str] = None
+
+
+@router.get("/{exhibition_id}/users/search", response_model=List[UserSearchResult])
+async def search_users_for_role(
+    exhibition_id: UUID,
+    q: str,
+    current_user: User = Depends(require_exhibition_organizer),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Search users by email or name for role assignment.
+
+    Returns users matching the query who don't already have a role for this exhibition.
+    Requires: Exhibition organizer or SUPER_ADMIN/ADMIN.
+
+    Query must be at least 3 characters.
+    """
+    if len(q) < 3:
+        return []
+
+    search_pattern = f"%{q.lower()}%"
+
+    # Get users already assigned to this exhibition
+    existing_users = await db.execute(
+        select(UserExhibitionRole.user_id).where(
+            UserExhibitionRole.exhibition_id == exhibition_id
+        )
+    )
+    existing_user_ids = {row[0] for row in existing_users.fetchall()}
+
+    # Search users by email or name
+    result = await db.execute(
+        select(User)
+        .where(
+            User.is_active == True,
+            (
+                User.email.ilike(search_pattern) |
+                User.full_name.ilike(search_pattern)
+            ),
+            ~User.id.in_(existing_user_ids) if existing_user_ids else True,
+        )
+        .order_by(User.full_name.asc(), User.email.asc())
+        .limit(20)
+    )
+    users = result.scalars().all()
+
+    return [
+        UserSearchResult(id=u.id, email=u.email, full_name=u.full_name)
+        for u in users
+    ]
 
 
 # =============================================================================
