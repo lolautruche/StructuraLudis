@@ -528,6 +528,7 @@ async def seed(force: bool = False):
         exhibition = Exhibition(
             id=uuid4(),
             organization_id=org_fdj.id,
+            created_by_id=organizer.id,  # Main organizer (#99)
             title="Festival du Jeu Lyon 2026",
             slug="fdj-lyon-2026",
             description="Le plus grand festival de jeux de la région lyonnaise",

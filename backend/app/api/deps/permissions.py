@@ -84,13 +84,34 @@ async def has_exhibition_role(
     return result.scalar_one_or_none() is not None
 
 
+async def has_any_exhibition_role(
+    user: User,
+    exhibition: Exhibition,
+    db: AsyncSession,
+) -> bool:
+    """
+    Check if user has any role (ORGANIZER or PARTNER) for the exhibition.
+
+    Used to determine if the exhibition should appear in user's "My Events" list.
+
+    Returns True if:
+    - User is SUPER_ADMIN or ADMIN
+    - User has ORGANIZER or PARTNER role for this specific exhibition
+    """
+    return await has_exhibition_role(
+        user, exhibition.id, [ExhibitionRole.ORGANIZER, ExhibitionRole.PARTNER], db
+    )
+
+
 async def can_manage_exhibition(
     user: User,
     exhibition: Exhibition,
     db: AsyncSession,
 ) -> bool:
     """
-    Check if user can manage the specified exhibition.
+    Check if user can fully manage the specified exhibition (organizer-level access).
+
+    Used by require_exhibition_organizer for endpoints that require full management access.
 
     Returns True if:
     - User is SUPER_ADMIN or ADMIN

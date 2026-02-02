@@ -108,6 +108,7 @@ class ExhibitionService:
 
         exhibition = Exhibition(
             **data.model_dump(),
+            created_by_id=current_user.id,  # Track creator (#99)
             settings=default_settings,
             status=ExhibitionStatus.DRAFT,
         )
@@ -115,14 +116,14 @@ class ExhibitionService:
         await self.db.flush()
 
         # Automatically assign creator as ORGANIZER of this exhibition (#99)
-        if current_user.global_role not in [GlobalRole.SUPER_ADMIN, GlobalRole.ADMIN]:
-            organizer_role = UserExhibitionRole(
-                user_id=current_user.id,
-                exhibition_id=exhibition.id,
-                role=ExhibitionRole.ORGANIZER,
-            )
-            self.db.add(organizer_role)
-            await self.db.flush()
+        # Always assign, regardless of global_role (even admins get explicit role)
+        organizer_role = UserExhibitionRole(
+            user_id=current_user.id,
+            exhibition_id=exhibition.id,
+            role=ExhibitionRole.ORGANIZER,
+        )
+        self.db.add(organizer_role)
+        await self.db.flush()
 
         await self.db.refresh(exhibition)
 

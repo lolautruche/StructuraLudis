@@ -1086,6 +1086,61 @@ class TestCanManagePermission:
         # Organizer should be able to manage their own exhibition
         assert any(e["can_manage"] is True for e in data)
 
+    async def test_partner_can_see_exhibition_in_list(
+        self, client: AsyncClient, auth_client: AsyncClient,
+        test_organizer: dict, test_user: dict, db_session
+    ):
+        """Partner sees can_manage=true for exhibitions they have a PARTNER role on."""
+        from uuid import uuid4
+        from app.domain.user.entity import UserExhibitionRole
+        from app.domain.shared.entity import ExhibitionRole
+
+        # Create exhibition (with organizer auth)
+        payload = {
+            "title": "Partner Test Exhibition",
+            "slug": "partner-test-exhibition",
+            "start_date": "2026-07-01T10:00:00Z",
+            "end_date": "2026-07-03T18:00:00Z",
+            "organization_id": test_organizer["organization_id"],
+        }
+        create_resp = await auth_client.post("/api/v1/exhibitions/", json=payload)
+        exhibition_id = create_resp.json()["id"]
+
+        # Create a zone for the partner
+        zone_resp = await auth_client.post(
+            f"/api/v1/zones/",
+            json={
+                "exhibition_id": exhibition_id,
+                "name": "Partner Zone",
+                "type": "RPG",
+            },
+        )
+        zone_id = zone_resp.json()["id"]
+
+        # Assign PARTNER role to test_user via database
+        partner_role = UserExhibitionRole(
+            id=uuid4(),
+            user_id=test_user["id"],
+            exhibition_id=exhibition_id,
+            role=ExhibitionRole.PARTNER,
+            zone_ids=[str(zone_id)],
+        )
+        db_session.add(partner_role)
+        await db_session.commit()
+
+        # Get exhibition list with partner auth
+        response = await client.get(
+            "/api/v1/exhibitions/",
+            headers={"X-User-ID": test_user["id"]},
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        # Partner should see the exhibition with can_manage=True
+        partner_exhibitions = [e for e in data if e["id"] == exhibition_id]
+        assert len(partner_exhibitions) == 1
+        assert partner_exhibitions[0]["can_manage"] is True
+
     async def test_organizer_cannot_manage_other_org_exhibition(
         self, client: AsyncClient, db_session, test_organizer: dict
     ):
@@ -1379,27 +1434,117 @@ class TestExhibitionRoleManagement:
         role_ids = [r["id"] for r in list_resp.json()]
         assert role_id not in role_ids
 
-    async def test_cannot_remove_last_organizer(
+    async def test_cannot_remove_yourself(
         self, auth_client: AsyncClient, test_organizer: dict
     ):
-        """Cannot remove the last ORGANIZER from an exhibition."""
+        """Cannot remove yourself from an exhibition (Issue #99)."""
         exhibition_id = await self._create_exhibition(
-            auth_client, test_organizer["organization_id"], "last-organizer"
+            auth_client, test_organizer["organization_id"], "self-remove"
         )
 
-        # Get the creator's role
+        # Get the creator's role (which is the current user)
         list_resp = await auth_client.get(
             f"/api/v1/exhibitions/{exhibition_id}/roles"
         )
         role_id = list_resp.json()[0]["id"]
 
-        # Try to delete it
+        # Try to delete your own role
         response = await auth_client.delete(
             f"/api/v1/exhibitions/{exhibition_id}/roles/{role_id}"
         )
 
         assert response.status_code == 400
-        assert "last organizer" in response.json()["detail"]
+        assert "Cannot remove yourself" in response.json()["detail"]
+
+    async def test_is_main_organizer_flag(
+        self, auth_client: AsyncClient, second_auth_client: AsyncClient,
+        test_organizer: dict, db_session
+    ):
+        """The is_main_organizer flag correctly identifies the exhibition creator (Issue #99)."""
+        from app.domain.user.entity import UserExhibitionRole
+        from app.domain.shared.entity import ExhibitionRole
+        from uuid import uuid4
+
+        # Create exhibition as test_organizer (becomes main organizer)
+        exhibition_id = await self._create_exhibition(
+            auth_client, test_organizer["organization_id"], "main-org-flag"
+        )
+
+        # Get second_organizer user ID
+        second_resp = await second_auth_client.get("/api/v1/users/me")
+        second_user_id = second_resp.json()["id"]
+
+        # Grant ORGANIZER role to second_organizer
+        second_role = UserExhibitionRole(
+            id=uuid4(),
+            user_id=second_user_id,
+            exhibition_id=exhibition_id,
+            role=ExhibitionRole.ORGANIZER,
+        )
+        db_session.add(second_role)
+        await db_session.commit()
+
+        # List roles
+        list_resp = await auth_client.get(
+            f"/api/v1/exhibitions/{exhibition_id}/roles"
+        )
+        roles = list_resp.json()
+
+        # Find main and secondary organizer
+        main_org = next(r for r in roles if r["user_id"] == test_organizer["id"])
+        secondary_org = next(r for r in roles if r["user_id"] == second_user_id)
+
+        # Main organizer should have is_main_organizer=True
+        assert main_org["is_main_organizer"] is True
+        # Secondary organizer should have is_main_organizer=False
+        assert secondary_org["is_main_organizer"] is False
+
+    async def test_secondary_organizer_cannot_remove_main_organizer(
+        self, auth_client: AsyncClient, second_auth_client: AsyncClient,
+        test_organizer: dict, db_session
+    ):
+        """Secondary organizer cannot remove the main organizer (creator) (Issue #99)."""
+        from app.domain.user.entity import UserExhibitionRole
+        from app.domain.shared.entity import ExhibitionRole
+        from uuid import uuid4
+
+        # Create exhibition as test_organizer (becomes main organizer)
+        exhibition_id = await self._create_exhibition(
+            auth_client, test_organizer["organization_id"], "secondary-remove"
+        )
+
+        # Get second_organizer user ID
+        second_resp = await second_auth_client.get("/api/v1/users/me")
+        second_user_id = second_resp.json()["id"]
+
+        # Grant ORGANIZER role to second_organizer via database
+        # (we can't use API since second_organizer doesn't have a role yet)
+        second_role = UserExhibitionRole(
+            id=uuid4(),
+            user_id=second_user_id,
+            exhibition_id=exhibition_id,
+            role=ExhibitionRole.ORGANIZER,
+        )
+        db_session.add(second_role)
+        await db_session.commit()
+
+        # Get the main organizer's role ID
+        list_resp = await auth_client.get(
+            f"/api/v1/exhibitions/{exhibition_id}/roles"
+        )
+        roles = list_resp.json()
+        main_organizer_role = next(
+            r for r in roles
+            if r["user_id"] == test_organizer["id"]
+        )
+
+        # Secondary organizer tries to remove main organizer
+        response = await second_auth_client.delete(
+            f"/api/v1/exhibitions/{exhibition_id}/roles/{main_organizer_role['id']}"
+        )
+
+        assert response.status_code == 403
+        assert "main organizer" in response.json()["detail"].lower()
 
     async def test_roles_unauthorized(
         self, client: AsyncClient, test_organizer: dict, auth_client: AsyncClient

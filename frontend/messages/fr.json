@@ -404,7 +404,9 @@
       "selectUserRequired": "Veuillez sélectionner un utilisateur",
       "selectZonesRequired": "Le rôle Partenaire nécessite au moins une zone",
       "confirmRemoveTitle": "Retirer le membre ?",
-      "confirmRemoveMessage": "Retirer le rôle {role} de {user} ? Cette personne perdra l'accès à la gestion de cet événement."
+      "confirmRemoveMessage": "Retirer le rôle {role} de {user} ? Cette personne perdra l'accès à la gestion de cet événement.",
+      "mainOrganizer": "Créateur",
+      "cannotRemoveSelf": "Demandez à l'organisateur principal de vous retirer"
     }
   },
   "SessionForm": {

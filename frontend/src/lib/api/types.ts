@@ -528,6 +528,7 @@ export interface ExhibitionRoleAssignment {
   exhibition_id: string;
   role: ExhibitionRole;
   zone_ids: string[] | null;
+  is_main_organizer: boolean;
   created_at: string;
   updated_at: string | null;
 }

@@ -11,6 +11,7 @@ import {
   UserSearchResult,
 } from '@/lib/api';
 import { Button, Card, Badge, ConfirmDialog, Input, Select } from '@/components/ui';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface RolesListProps {
   exhibitionId: string;
@@ -20,6 +21,7 @@ export function RolesList({ exhibitionId }: RolesListProps) {
   const t = useTranslations('Admin.roles');
   const tCommon = useTranslations('Common');
   const tRoles = useTranslations('Common.exhibitionRoles');
+  const { user: currentUser } = useAuth();
 
   // Data states
   const [roles, setRoles] = useState<ExhibitionRoleAssignment[]>([]);
@@ -429,6 +431,11 @@ export function RolesList({ exhibitionId }: RolesListProps) {
                 <Badge variant={role.role === 'ORGANIZER' ? 'primary' : 'secondary'}>
                   {tRoles(role.role)}
                 </Badge>
+                {role.is_main_organizer && (
+                  <Badge variant="outline" size="sm">
+                    {t('mainOrganizer')}
+                  </Badge>
+                )}
               </div>
 
               <div className="flex items-center gap-4">
@@ -494,13 +501,25 @@ export function RolesList({ exhibitionId }: RolesListProps) {
                           {tCommon('edit')}
                         </Button>
                       )}
-                      <Button
-                        variant="danger"
-                        size="sm"
-                        onClick={() => setDeleteRole(role)}
-                      >
-                        {t('remove')}
-                      </Button>
+                      {/* Can remove if: not main organizer AND not yourself */}
+                      {!role.is_main_organizer && role.user_id !== currentUser?.id && (
+                        <Button
+                          variant="danger"
+                          size="sm"
+                          onClick={() => setDeleteRole(role)}
+                        >
+                          {t('remove')}
+                        </Button>
+                      )}
+                      {/* Show message for own role (not main organizer) */}
+                      {!role.is_main_organizer && role.user_id === currentUser?.id && (
+                        <span
+                          className="text-xs italic"
+                          style={{ color: 'var(--color-text-muted)' }}
+                        >
+                          {t('cannotRemoveSelf')}
+                        </span>
+                      )}
                     </>
                   )}
                 </div>

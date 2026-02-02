@@ -22,6 +22,7 @@ from app.domain.shared.entity import (
 if TYPE_CHECKING:
     from app.domain.organization.entity import Organization, UserGroup
     from app.domain.game.entity import GameSession
+    from app.domain.user.entity import User
 
 
 class Exhibition(Base, TimestampMixin):
@@ -37,6 +38,10 @@ class Exhibition(Base, TimestampMixin):
     )
     organization_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("organizations.id", ondelete="CASCADE")
+    )
+    # Creator of the exhibition (main organizer) - Issue #99
+    created_by_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL"), nullable=True
     )
     title: Mapped[str] = mapped_column(String(255))
     slug: Mapped[str] = mapped_column(String(100), unique=True, index=True)
@@ -79,6 +84,7 @@ class Exhibition(Base, TimestampMixin):
 
     # Relationships
     organization: Mapped["Organization"] = relationship(back_populates="exhibitions")
+    created_by: Mapped[Optional["User"]] = relationship()
     time_slots: Mapped[List["TimeSlot"]] = relationship(
         back_populates="exhibition", cascade="all, delete-orphan"
     )

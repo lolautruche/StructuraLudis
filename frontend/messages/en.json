@@ -404,7 +404,9 @@
       "selectUserRequired": "Please select a user",
       "selectZonesRequired": "Partner role requires at least one zone",
       "confirmRemoveTitle": "Remove team member?",
-      "confirmRemoveMessage": "Remove {role} role from {user}? They will lose access to manage this exhibition."
+      "confirmRemoveMessage": "Remove {role} role from {user}? They will lose access to manage this exhibition.",
+      "mainOrganizer": "Creator",
+      "cannotRemoveSelf": "Ask the main organizer to remove you"
     }
   },
   "SessionForm": {

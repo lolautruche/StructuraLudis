@@ -403,6 +403,11 @@ class ExhibitionRoleRead(BaseModel):
     # User info for display
     user_email: Optional[str] = None
     user_full_name: Optional[str] = None
+    # Main organizer flag (cannot be removed by other organizers)
+    is_main_organizer: bool = Field(
+        default=False,
+        description="True if this user is the exhibition creator (main organizer)"
+    )
     created_at: datetime
     updated_at: Optional[datetime] = None
 

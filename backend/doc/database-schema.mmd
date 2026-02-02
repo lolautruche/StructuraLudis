@@ -74,6 +74,7 @@ erDiagram
     Exhibition {
         uuid id PK
         uuid organization_id FK
+        uuid created_by_id FK "Issue 99 - Main organizer"
         string title
         string slug UK
         text description
@@ -268,6 +269,7 @@ erDiagram
 
     User ||--o{ UserGroupMembership : "belongs to"
     User ||--o{ UserExhibitionRole : "has exhibition roles"
+    User ||--o{ Exhibition : "creates (main organizer)"
     User ||--o{ GameSession : "creates"
     User ||--o{ Booking : "books"
     User ||--o{ Media : "uploads"

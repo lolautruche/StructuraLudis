@@ -36,7 +36,7 @@ from app.domain.user.entity import User, UserExhibitionRole
 from app.api.deps import (
     get_current_active_user,
     get_current_user_optional,
-    can_manage_exhibition,
+    has_any_exhibition_role,
     require_exhibition_organizer,
 )
 from app.services.exhibition import ExhibitionService
@@ -78,7 +78,8 @@ async def list_exhibitions(
     for exhibition in all_exhibitions:
         can_manage = False
         if current_user:
-            can_manage = await can_manage_exhibition(current_user, exhibition, db)
+            # Check if user has any role (ORGANIZER or PARTNER) for this exhibition
+            can_manage = await has_any_exhibition_role(current_user, exhibition, db)
 
         # Filter: show if PUBLISHED, or if user is admin, or if user can manage
         if exhibition.status == ExhibitionStatus.PUBLISHED or is_admin or can_manage:
@@ -124,10 +125,10 @@ async def get_exhibition(
             detail="Exhibition not found",
         )
 
-    # Check if current user can manage this exhibition
+    # Check if current user has any role (ORGANIZER or PARTNER) for this exhibition
     user_can_manage = False
     if current_user:
-        user_can_manage = await can_manage_exhibition(current_user, exhibition, db)
+        user_can_manage = await has_any_exhibition_role(current_user, exhibition, db)
 
     # Create response with can_manage flag
     response = ExhibitionRead.model_validate(exhibition)
@@ -613,6 +614,17 @@ async def list_exhibition_roles(
 
     Requires: Exhibition organizer or SUPER_ADMIN/ADMIN.
     """
+    # Get the exhibition to find the main organizer (creator)
+    exhibition_result = await db.execute(
+        select(Exhibition).where(Exhibition.id == exhibition_id)
+    )
+    exhibition = exhibition_result.scalar_one_or_none()
+    if not exhibition:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Exhibition not found",
+        )
+
     result = await db.execute(
         select(UserExhibitionRole, User.email, User.full_name)
         .join(User, UserExhibitionRole.user_id == User.id)
@@ -630,6 +642,11 @@ async def list_exhibition_roles(
             zone_ids=role.zone_ids,
             user_email=email,
             user_full_name=full_name,
+            is_main_organizer=(
+                role.role == ExhibitionRole.ORGANIZER
+                and exhibition.created_by_id is not None
+                and role.user_id == exhibition.created_by_id
+            ),
             created_at=role.created_at,
             updated_at=role.updated_at,
         )
@@ -819,9 +836,12 @@ async def remove_exhibition_role(
 
     Requires: Exhibition organizer or SUPER_ADMIN/ADMIN.
 
-    Note: Cannot remove your own ORGANIZER role if you're the last organizer.
+    Restrictions:
+    - Cannot remove yourself
+    - Secondary organizers cannot remove the main organizer (first ORGANIZER by created_at)
+    - SUPER_ADMIN/ADMIN can remove anyone except themselves
     """
-    # Get the role
+    # Get the role to remove
     result = await db.execute(
         select(UserExhibitionRole).where(
             UserExhibitionRole.id == role_id,
@@ -836,20 +856,28 @@ async def remove_exhibition_role(
             detail="Role assignment not found",
         )
 
-    # Check if trying to remove self as last organizer
-    if role.user_id == current_user.id and role.role == ExhibitionRole.ORGANIZER:
-        # Count organizers for this exhibition
-        organizer_count_result = await db.execute(
-            select(UserExhibitionRole).where(
-                UserExhibitionRole.exhibition_id == exhibition_id,
-                UserExhibitionRole.role == ExhibitionRole.ORGANIZER,
-            )
+    # Rule 1: Cannot remove yourself
+    if role.user_id == current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Cannot remove yourself from the exhibition",
         )
-        organizers = organizer_count_result.scalars().all()
-        if len(organizers) <= 1:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Cannot remove the last organizer from an exhibition",
+
+    # Rule 2: Secondary organizers cannot remove the main organizer (creator)
+    # SUPER_ADMIN/ADMIN bypass this check
+    if current_user.global_role not in [GlobalRole.SUPER_ADMIN, GlobalRole.ADMIN]:
+        if role.role == ExhibitionRole.ORGANIZER:
+            # Get the exhibition to check created_by_id
+            exhibition_result = await db.execute(
+                select(Exhibition).where(Exhibition.id == exhibition_id)
             )
+            exhibition = exhibition_result.scalar_one_or_none()
+
+            # If the role belongs to the creator, only the creator themselves can remove it
+            if exhibition and exhibition.created_by_id and role.user_id == exhibition.created_by_id:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Only the main organizer or admins can remove the main organizer",
+                )
 
     await db.delete(role)
