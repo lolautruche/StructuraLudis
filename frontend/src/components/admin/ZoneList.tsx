@@ -357,20 +357,23 @@ export function ZoneList({ exhibitionId, partnerMode = false }: ZoneListProps) {
                               {t('allowPublicProposals')}
                             </label>
                           </div>
-                          <div className="flex items-center gap-3">
-                            <Checkbox
-                              id={`moderation_${zone.id}`}
-                              checked={zone.moderation_required}
-                              onChange={(e) => handlePartnerSettingChange(zone.id, 'moderation_required', e.target.checked)}
-                            />
-                            <label
-                              htmlFor={`moderation_${zone.id}`}
-                              className="text-sm cursor-pointer"
-                              style={{ color: 'var(--color-text-primary)' }}
-                            >
-                              {t('moderationRequired')}
-                            </label>
-                          </div>
+                          {/* Only show moderation checkbox if public proposals enabled */}
+                          {zone.allow_public_proposals && (
+                            <div className="flex items-center gap-3 ml-6">
+                              <Checkbox
+                                id={`moderation_${zone.id}`}
+                                checked={zone.moderation_required}
+                                onChange={(e) => handlePartnerSettingChange(zone.id, 'moderation_required', e.target.checked)}
+                              />
+                              <label
+                                htmlFor={`moderation_${zone.id}`}
+                                className="text-sm cursor-pointer"
+                                style={{ color: 'var(--color-text-primary)' }}
+                              >
+                                {t('moderationRequired')}
+                              </label>
+                            </div>
+                          )}
                         </div>
                       ) : (
                         <div className="mb-4 flex flex-wrap gap-2">
