@@ -327,70 +327,68 @@ async def create_series(
             detail="One or more time slots not found or don't belong to this exhibition",
         )
 
-    # Create sessions
+    # Create sessions for each combination of slot × table
     created_sessions = []
     warnings = []
-    table_index = 0
     tables = [table for table, zone in table_zone_pairs]
 
     service = GameSessionService(db)
 
     for slot_id in data.time_slot_ids:
         slot = time_slots[slot_id]
-        table = tables[table_index % len(tables)]
 
-        # Calculate session times within the slot
-        session_start = slot.start_time
-        session_end = session_start + timedelta(minutes=data.duration_minutes)
+        for table in tables:
+            # Calculate session times within the slot
+            session_start = slot.start_time
+            session_end = session_start + timedelta(minutes=data.duration_minutes)
 
-        # Check if session fits within time slot
-        if session_end > slot.end_time:
-            warnings.append(
-                f"Session would exceed slot '{slot.name}' end time, skipped"
+            # Check if session fits within time slot
+            if session_end > slot.end_time:
+                warnings.append(
+                    f"Session would exceed slot '{slot.name}' end time, skipped"
+                )
+                continue
+
+            # Check for table collision
+            collision = await service._check_table_collision(
+                table_id=table.id,
+                scheduled_start=session_start,
+                scheduled_end=session_end,
+                buffer_minutes=slot.buffer_time_minutes,
             )
-            continue
 
-        # Check for table collision
-        collision = await service._check_table_collision(
-            table_id=table.id,
-            scheduled_start=session_start,
-            scheduled_end=session_end,
-            buffer_minutes=slot.buffer_time_minutes,
-        )
+            if collision:
+                warnings.append(
+                    f"Table '{table.label}' has conflict at slot '{slot.name}', skipped"
+                )
+                continue
 
-        if collision:
-            warnings.append(
-                f"Table '{table.label}' has conflict at slot '{slot.name}', skipped"
+            # Create the session with descriptive title
+            session_title = f"{data.title} ({slot.name} - {table.label})"
+
+            session = GameSession(
+                exhibition_id=data.exhibition_id,
+                time_slot_id=slot_id,
+                game_id=data.game_id,
+                physical_table_id=table.id,
+                provided_by_group_id=data.provided_by_group_id,
+                created_by_user_id=current_user.id,
+                title=session_title,
+                description=data.description,
+                language=data.language,
+                min_age=data.min_age,
+                max_players_count=data.max_players_count,
+                safety_tools=data.safety_tools,
+                is_accessible_disability=data.is_accessible_disability,
+                scheduled_start=session_start,
+                scheduled_end=session_end,
+                status=SessionStatus.DRAFT,
             )
-            table_index += 1
-            continue
 
-        # Create the session
-        session = GameSession(
-            exhibition_id=data.exhibition_id,
-            time_slot_id=slot_id,
-            game_id=data.game_id,
-            physical_table_id=table.id,
-            provided_by_group_id=data.provided_by_group_id,
-            created_by_user_id=current_user.id,
-            title=data.title,
-            description=data.description,
-            language=data.language,
-            min_age=data.min_age,
-            max_players_count=data.max_players_count,
-            safety_tools=data.safety_tools,
-            is_accessible_disability=data.is_accessible_disability,
-            scheduled_start=session_start,
-            scheduled_end=session_end,
-            status=SessionStatus.DRAFT,
-        )
-
-        db.add(session)
-        await db.flush()
-        await db.refresh(session)
-        created_sessions.append(session)
-
-        table_index += 1
+            db.add(session)
+            await db.flush()
+            await db.refresh(session)
+            created_sessions.append(session)
 
     # Build response
     session_reads = []

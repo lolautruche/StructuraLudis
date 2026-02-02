@@ -96,7 +96,9 @@ async def list_exhibitions(
                     )
                     role_assignment = role_result.scalar_one_or_none()
                     if role_assignment:
-                        user_exhibition_role = role_assignment.role.value
+                        # Handle both enum and string (depending on SQLAlchemy mapping)
+                        role = role_assignment.role
+                        user_exhibition_role = role.value if hasattr(role, 'value') else str(role)
 
         # Filter: show if PUBLISHED, or if user is admin, or if user can manage
         if exhibition.status == ExhibitionStatus.PUBLISHED or is_admin or can_manage:
@@ -165,7 +167,9 @@ async def get_exhibition(
                 )
                 role_assignment = role_result.scalar_one_or_none()
                 if role_assignment:
-                    user_exhibition_role = role_assignment.role.value
+                    # Handle both enum and string (depending on SQLAlchemy mapping)
+                    role = role_assignment.role
+                    user_exhibition_role = role.value if hasattr(role, 'value') else str(role)
 
     # Create response with can_manage flag and user role
     response = ExhibitionRead.model_validate(exhibition)
