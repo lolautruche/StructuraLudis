@@ -629,6 +629,8 @@
     "partnerRole": "Partenaire",
     "myZones": "Mes zones",
     "publicModerationEnabled": "Modération publique",
+    "filterByZone": "Filtrer par zone",
+    "allZones": "Toutes les zones",
     "filterByStatus": "Filtrer par statut",
     "allStatuses": "Tous les statuts",
     "draft": "Brouillon",

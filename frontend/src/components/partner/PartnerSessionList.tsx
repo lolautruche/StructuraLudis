@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useTranslations } from 'next-intl';
-import { partnerApi, sessionsApi, PartnerSession, SessionStatus } from '@/lib/api';
+import { partnerApi, sessionsApi, PartnerSession, PartnerZone, SessionStatus } from '@/lib/api';
 import { Badge, Button, Select, Card, ModerationDialog, ModerationAction } from '@/components/ui';
 import { useToast } from '@/contexts/ToastContext';
 import { SeriesCreator } from './SeriesCreator';
@@ -37,8 +37,10 @@ export function PartnerSessionList({ exhibitionId }: PartnerSessionListProps) {
   const { showError } = useToast();
 
   const [sessions, setSessions] = useState<PartnerSession[]>([]);
+  const [zones, setZones] = useState<PartnerZone[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<SessionStatus | 'ALL'>('ALL');
+  const [zoneFilter, setZoneFilter] = useState<string>('ALL');
   const [showSeriesCreator, setShowSeriesCreator] = useState(false);
   const [showSingleSessionCreator, setShowSingleSessionCreator] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -50,10 +52,22 @@ export function PartnerSessionList({ exhibitionId }: PartnerSessionListProps) {
   });
   const { showSuccess } = useToast();
 
+  // Load zones for the filter dropdown
+  useEffect(() => {
+    async function loadZones() {
+      const response = await partnerApi.listZones(exhibitionId);
+      if (response.data) {
+        setZones(response.data);
+      }
+    }
+    loadZones();
+  }, [exhibitionId]);
+
   const loadSessions = useCallback(async () => {
     setIsLoading(true);
     const response = await partnerApi.listSessions(exhibitionId, {
       status: statusFilter === 'ALL' ? undefined : statusFilter,
+      zoneId: zoneFilter === 'ALL' ? undefined : zoneFilter,
     });
 
     if (response.error) {
@@ -62,7 +76,7 @@ export function PartnerSessionList({ exhibitionId }: PartnerSessionListProps) {
       setSessions(response.data);
     }
     setIsLoading(false);
-  }, [exhibitionId, statusFilter, showError]);
+  }, [exhibitionId, statusFilter, zoneFilter, showError]);
 
   useEffect(() => {
     loadSessions();
@@ -225,17 +239,33 @@ export function PartnerSessionList({ exhibitionId }: PartnerSessionListProps) {
   return (
     <div className="space-y-4">
       {/* Header with actions */}
-      <div className="flex items-center justify-between gap-4">
-        <div className="flex-shrink-0">
-          <Select
-            label={t('filterByStatus')}
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value as SessionStatus | 'ALL')}
-            options={STATUS_FILTERS.map((filter) => ({
-              value: filter.value,
-              label: t(filter.labelKey),
-            }))}
-          />
+      <div className="flex items-center justify-between gap-4 flex-wrap">
+        <div className="flex gap-4 flex-wrap">
+          <div className="flex-shrink-0">
+            <Select
+              label={t('filterByZone')}
+              value={zoneFilter}
+              onChange={(e) => setZoneFilter(e.target.value)}
+              options={[
+                { value: 'ALL', label: t('allZones') },
+                ...zones.map((zone) => ({
+                  value: zone.id,
+                  label: zone.name,
+                })),
+              ]}
+            />
+          </div>
+          <div className="flex-shrink-0">
+            <Select
+              label={t('filterByStatus')}
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value as SessionStatus | 'ALL')}
+              options={STATUS_FILTERS.map((filter) => ({
+                value: filter.value,
+                label: t(filter.labelKey),
+              }))}
+            />
+          </div>
         </div>
         {!showSeriesCreator && !showSingleSessionCreator && (
           <div className="flex gap-2">

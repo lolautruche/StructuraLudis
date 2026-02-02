@@ -97,13 +97,14 @@ export default function ManageExhibitionPage() {
   const isPartner = exhibition.user_exhibition_role === 'PARTNER';
 
   // Build tabs based on role (Issue #10)
-  // ORGANIZER: settings, slots, zones, roles
+  // ORGANIZER: settings, slots, zones, sessions, roles
   // PARTNER: zones (filtered), sessions
   const tabs: { id: TabId; label: string }[] = isOrganizer
     ? [
         { id: 'settings', label: t('settings') },
         { id: 'slots', label: t('timeSlots') },
         { id: 'zones', label: t('zonesAndTables') },
+        { id: 'sessions', label: tPartner('sessions') },
         { id: 'roles', label: t('roles.tab') },
       ]
     : [
@@ -184,7 +185,7 @@ export default function ManageExhibitionPage() {
           {currentTab === 'roles' && isOrganizer && (
             <RolesList exhibitionId={exhibition.id} />
           )}
-          {currentTab === 'sessions' && isPartner && (
+          {currentTab === 'sessions' && (isOrganizer || isPartner) && (
             <PartnerSessionList exhibitionId={exhibition.id} />
           )}
         </Card.Content>

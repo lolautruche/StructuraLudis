@@ -629,6 +629,8 @@
     "partnerRole": "Partner",
     "myZones": "My Zones",
     "publicModerationEnabled": "Public moderation",
+    "filterByZone": "Filter by zone",
+    "allZones": "All zones",
     "filterByStatus": "Filter by status",
     "allStatuses": "All statuses",
     "draft": "Draft",
