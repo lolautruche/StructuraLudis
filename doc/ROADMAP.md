@@ -9,6 +9,12 @@ This document tracks prioritization decisions and project progress.
 
 ### MVP
 
+#### Critical Architecture
+
+| Issue | Title | Job Stories | Notes |
+|-------|-------|-------------|-------|
+| [#105](https://github.com/lolautruche/StructuraLudis/issues/105) | **Move time slots to zone level** | JS.D1, JS.A2 | **TOP PRIORITY** - Time slots must belong to zones, not exhibitions. Partners need independent schedules. |
+
 #### Core Features
 
 | Issue | Title | Job Stories | Notes |
