@@ -7,11 +7,12 @@ from datetime import datetime
 from typing import List, Optional
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, Header, HTTPException, Query, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
+from app.core.i18n import parse_accept_language
 from app.domain.game.entity import GameSession, Booking
 from app.domain.game.schemas import (
     GameSessionCreate,
@@ -119,6 +120,7 @@ async def create_session(
     session_in: GameSessionCreate,
     current_user: User = Depends(get_current_active_user),
     db: AsyncSession = Depends(get_db),
+    accept_language: Optional[str] = Header(None, alias="Accept-Language"),
 ):
     """
     Create a new game session.
@@ -126,8 +128,11 @@ async def create_session(
     The session is created in DRAFT status.
     Submit for moderation using POST /{id}/submit.
     """
+    locale = parse_accept_language(accept_language)
+    if current_user.locale:
+        locale = current_user.locale
     service = GameSessionService(db)
-    return await service.create_session(session_in, current_user)
+    return await service.create_session(session_in, current_user, locale)
 
 
 @router.get("/{session_id}", response_model=SessionSearchResult)
@@ -277,6 +282,7 @@ async def assign_table(
     table_id: UUID,
     current_user: User = Depends(get_current_active_user),
     db: AsyncSession = Depends(get_db),
+    accept_language: Optional[str] = Header(None, alias="Accept-Language"),
 ):
     """
     Assign a physical table to a session.
@@ -287,8 +293,11 @@ async def assign_table(
 
     Requires: Organizer or SUPER_ADMIN.
     """
+    locale = parse_accept_language(accept_language)
+    if current_user.locale:
+        locale = current_user.locale
     service = GameSessionService(db)
-    return await service.assign_table(session_id, table_id, current_user)
+    return await service.assign_table(session_id, table_id, current_user, locale)
 
 
 # =============================================================================
@@ -316,6 +325,7 @@ async def moderate_session(
     moderation: GameSessionModerate,
     current_user: User = Depends(get_current_active_user),
     db: AsyncSession = Depends(get_db),
+    accept_language: Optional[str] = Header(None, alias="Accept-Language"),
 ):
     """
     Approve, reject, or request changes on a session (#30).
@@ -332,8 +342,11 @@ async def moderate_session(
 
     Requires: Organizer, SUPER_ADMIN, or zone manager.
     """
+    locale = parse_accept_language(accept_language)
+    if current_user.locale:
+        locale = current_user.locale
     service = GameSessionService(db)
-    return await service.moderate_session(session_id, moderation, current_user)
+    return await service.moderate_session(session_id, moderation, current_user, locale)
 
 
 # =============================================================================

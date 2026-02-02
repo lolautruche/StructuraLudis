@@ -7,11 +7,13 @@ from datetime import timedelta
 from typing import List, Optional
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, Header, HTTPException, Query, status
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
+from app.core.i18n import parse_accept_language
+from app.core.messages import get_message
 from app.domain.exhibition.entity import Exhibition, Zone, PhysicalTable, TimeSlot
 from app.domain.game.entity import GameSession, Game, Booking
 from app.domain.game.schemas import (
@@ -259,6 +261,7 @@ async def create_partner_session(
     data: PartnerSessionCreate,
     current_user: User = Depends(get_current_active_user),
     db: AsyncSession = Depends(get_db),
+    accept_language: Optional[str] = Header(None, alias="Accept-Language"),
 ):
     """
     Create a single session by a partner (Issue #10).
@@ -268,6 +271,10 @@ async def create_partner_session(
 
     Requires: Partner with access to the table's zone, or exhibition organizer.
     """
+    locale = parse_accept_language(accept_language)
+    if current_user.locale:
+        locale = current_user.locale
+
     # Validate exhibition exists
     exhibition_result = await db.execute(
         select(Exhibition).where(Exhibition.id == data.exhibition_id)
@@ -276,7 +283,7 @@ async def create_partner_session(
     if not exhibition:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Exhibition not found",
+            detail=get_message("exhibition_not_found", locale),
         )
 
     # Validate game exists
@@ -287,7 +294,7 @@ async def create_partner_session(
     if not game:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Game not found",
+            detail=get_message("game_not_found", locale),
         )
 
     # Get table and validate access
@@ -301,7 +308,7 @@ async def create_partner_session(
     if not table_zone:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Table not found",
+            detail=get_message("table_not_found", locale),
         )
 
     table, zone = table_zone
@@ -310,7 +317,7 @@ async def create_partner_session(
     if not await can_manage_zone(current_user, zone, db):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail=f"You do not have access to zone '{zone.name}'",
+            detail=get_message("no_zone_access", locale, zone_name=zone.name),
         )
 
     # Validate time slot
@@ -325,7 +332,7 @@ async def create_partner_session(
     if not slot:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Time slot not found or doesn't belong to this exhibition",
+            detail=get_message("time_slot_not_found", locale),
         )
 
     # Calculate session times
@@ -334,9 +341,10 @@ async def create_partner_session(
 
     # Check if session fits within time slot
     if session_end > slot.end_time:
+        max_minutes = int((slot.end_time - slot.start_time).total_seconds() / 60)
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Session duration exceeds time slot. Max duration: {int((slot.end_time - slot.start_time).total_seconds() / 60)} minutes",
+            detail=get_message("session_duration_exceeds", locale, max_minutes=max_minutes),
         )
 
     # Check for table collision
@@ -351,7 +359,7 @@ async def create_partner_session(
     if collision:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail=f"Table '{table.label}' is already booked for '{collision.title}' at this time",
+            detail=get_message("table_already_booked", locale, table_label=table.label, title=collision.title),
         )
 
     # Determine initial status (#10):
@@ -423,6 +431,7 @@ async def create_series(
     data: SeriesCreate,
     current_user: User = Depends(get_current_active_user),
     db: AsyncSession = Depends(get_db),
+    accept_language: Optional[str] = Header(None, alias="Accept-Language"),
 ):
     """
     Create a series of sessions (Issue #10).
@@ -433,6 +442,10 @@ async def create_series(
     Requires: Partner with access to all specified tables' zones,
     or exhibition organizer.
     """
+    locale = parse_accept_language(accept_language)
+    if current_user.locale:
+        locale = current_user.locale
+
     # Validate exhibition exists
     exhibition_result = await db.execute(
         select(Exhibition).where(Exhibition.id == data.exhibition_id)
@@ -441,7 +454,7 @@ async def create_series(
     if not exhibition:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Exhibition not found",
+            detail=get_message("exhibition_not_found", locale),
         )
 
     # Validate game exists
@@ -452,7 +465,7 @@ async def create_series(
     if not game:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Game not found",
+            detail=get_message("game_not_found", locale),
         )
 
     # Get tables and validate access
@@ -466,7 +479,7 @@ async def create_series(
     if len(table_zone_pairs) != len(data.table_ids):
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="One or more tables not found",
+            detail=get_message("table_not_found", locale),
         )
 
     # Validate user can manage all zones containing the tables
@@ -476,7 +489,7 @@ async def create_series(
         if not await can_manage_zone(current_user, zone, db):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail=f"You do not have access to zone '{zone.name}'",
+                detail=get_message("no_zone_access", locale, zone_name=zone.name),
             )
         if zone.partner_validation_enabled:
             zones_with_auto_validation.add(zone.id)
@@ -493,7 +506,7 @@ async def create_series(
     if len(time_slots) != len(data.time_slot_ids):
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="One or more time slots not found or don't belong to this exhibition",
+            detail=get_message("time_slot_not_found", locale),
         )
 
     # Create sessions for each combination of slot × table
@@ -516,7 +529,7 @@ async def create_series(
             # Check if session fits within time slot
             if session_end > slot.end_time:
                 warnings.append(
-                    f"Session would exceed slot '{slot.name}' end time, skipped"
+                    get_message("warning_slot_exceeded", locale, slot_name=slot.name)
                 )
                 continue
 
@@ -530,7 +543,7 @@ async def create_series(
 
             if collision:
                 warnings.append(
-                    f"Table '{table.label}' has conflict at slot '{slot.name}', skipped"
+                    get_message("warning_table_conflict", locale, table_label=table.label, slot_name=slot.name)
                 )
                 continue
 
