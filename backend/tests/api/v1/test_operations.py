@@ -76,7 +76,12 @@ async def ops_exhibition_setup(auth_client: AsyncClient, test_organizer: dict) -
     exhibition_resp = await auth_client.post("/api/v1/exhibitions/", json=exhibition_payload)
     exhibition_id = exhibition_resp.json()["id"]
 
-    # Create time slot spanning current time
+    # Create zone first (time slots are now at zone level - #105)
+    zone_payload = {"name": "Main Hall", "exhibition_id": exhibition_id}
+    zone_resp = await auth_client.post("/api/v1/zones/", json=zone_payload)
+    zone_id = zone_resp.json()["id"]
+
+    # Create time slot on zone spanning current time
     slot_payload = {
         "name": "Current Slot",
         "start_time": slot_start,
@@ -85,15 +90,11 @@ async def ops_exhibition_setup(auth_client: AsyncClient, test_organizer: dict) -
         "buffer_time_minutes": 15,
     }
     slot_resp = await auth_client.post(
-        f"/api/v1/exhibitions/{exhibition_id}/slots", json=slot_payload
+        f"/api/v1/zones/{zone_id}/slots", json=slot_payload
     )
     time_slot_id = slot_resp.json()["id"]
 
-    # Create zone with tables
-    zone_payload = {"name": "Main Hall", "exhibition_id": exhibition_id}
-    zone_resp = await auth_client.post("/api/v1/zones/", json=zone_payload)
-    zone_id = zone_resp.json()["id"]
-
+    # Create tables in the zone
     tables_resp = await auth_client.post(
         f"/api/v1/zones/{zone_id}/batch-tables",
         json={"prefix": "T", "count": 5},

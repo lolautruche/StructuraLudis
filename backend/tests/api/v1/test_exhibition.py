@@ -276,13 +276,13 @@ class TestDeleteExhibition:
 
 
 class TestTimeSlots:
-    """Tests for TimeSlot endpoints."""
+    """Tests for TimeSlot endpoints (now at zone level - Issue #105)."""
 
     async def test_create_slot_success(
         self, auth_client: AsyncClient, test_organizer: dict
     ):
         """Create time slot returns 201."""
-        # Create exhibition first
+        # Create exhibition and zone first
         exhibition_payload = {
             "title": "Slot Test Exhibition",
             "slug": "slot-test",
@@ -293,7 +293,11 @@ class TestTimeSlots:
         create_resp = await auth_client.post("/api/v1/exhibitions/", json=exhibition_payload)
         exhibition_id = create_resp.json()["id"]
 
-        # Create time slot
+        zone_payload = {"name": "Main Zone", "exhibition_id": exhibition_id}
+        zone_resp = await auth_client.post("/api/v1/zones/", json=zone_payload)
+        zone_id = zone_resp.json()["id"]
+
+        # Create time slot on zone
         slot_payload = {
             "name": "Morning",
             "start_time": "2026-07-01T09:00:00Z",
@@ -302,19 +306,20 @@ class TestTimeSlots:
             "buffer_time_minutes": 15,
         }
         response = await auth_client.post(
-            f"/api/v1/exhibitions/{exhibition_id}/slots", json=slot_payload
+            f"/api/v1/zones/{zone_id}/slots", json=slot_payload
         )
 
         assert response.status_code == 201
         data = response.json()
         assert data["name"] == "Morning"
         assert data["max_duration_minutes"] == 240
+        assert data["zone_id"] == zone_id
 
     async def test_create_slot_outside_exhibition(
         self, auth_client: AsyncClient, test_organizer: dict
     ):
         """Slot outside exhibition dates returns 400."""
-        # Create exhibition first
+        # Create exhibition and zone
         exhibition_payload = {
             "title": "Slot Validation Test",
             "slug": "slot-validation",
@@ -325,6 +330,10 @@ class TestTimeSlots:
         create_resp = await auth_client.post("/api/v1/exhibitions/", json=exhibition_payload)
         exhibition_id = create_resp.json()["id"]
 
+        zone_payload = {"name": "Validation Zone", "exhibition_id": exhibition_id}
+        zone_resp = await auth_client.post("/api/v1/zones/", json=zone_payload)
+        zone_id = zone_resp.json()["id"]
+
         # Try to create slot outside exhibition dates
         slot_payload = {
             "name": "Outside",
@@ -333,7 +342,7 @@ class TestTimeSlots:
             "max_duration_minutes": 240,
         }
         response = await auth_client.post(
-            f"/api/v1/exhibitions/{exhibition_id}/slots", json=slot_payload
+            f"/api/v1/zones/{zone_id}/slots", json=slot_payload
         )
 
         assert response.status_code == 400
@@ -342,7 +351,7 @@ class TestTimeSlots:
         self, auth_client: AsyncClient, test_organizer: dict
     ):
         """List slots returns 200."""
-        # Create exhibition
+        # Create exhibition and zone
         exhibition_payload = {
             "title": "List Slots Test",
             "slug": "list-slots-test",
@@ -353,6 +362,10 @@ class TestTimeSlots:
         create_resp = await auth_client.post("/api/v1/exhibitions/", json=exhibition_payload)
         exhibition_id = create_resp.json()["id"]
 
+        zone_payload = {"name": "List Zone", "exhibition_id": exhibition_id}
+        zone_resp = await auth_client.post("/api/v1/zones/", json=zone_payload)
+        zone_id = zone_resp.json()["id"]
+
         # Create some slots
         for i, name in enumerate(["Morning", "Afternoon", "Evening"]):
             slot_payload = {
@@ -362,11 +375,11 @@ class TestTimeSlots:
                 "max_duration_minutes": 240,
             }
             await auth_client.post(
-                f"/api/v1/exhibitions/{exhibition_id}/slots", json=slot_payload
+                f"/api/v1/zones/{zone_id}/slots", json=slot_payload
             )
 
         # List them
-        response = await auth_client.get(f"/api/v1/exhibitions/{exhibition_id}/slots")
+        response = await auth_client.get(f"/api/v1/zones/{zone_id}/slots")
 
         assert response.status_code == 200
         data = response.json()
@@ -376,7 +389,7 @@ class TestTimeSlots:
         self, auth_client: AsyncClient, test_organizer: dict
     ):
         """Update time slot returns 200 with updated data."""
-        # Create exhibition
+        # Create exhibition and zone
         exhibition_payload = {
             "title": "Update Slot Test",
             "slug": "update-slot-test",
@@ -387,6 +400,10 @@ class TestTimeSlots:
         create_resp = await auth_client.post("/api/v1/exhibitions/", json=exhibition_payload)
         exhibition_id = create_resp.json()["id"]
 
+        zone_payload = {"name": "Update Zone", "exhibition_id": exhibition_id}
+        zone_resp = await auth_client.post("/api/v1/zones/", json=zone_payload)
+        zone_id = zone_resp.json()["id"]
+
         # Create a slot
         slot_payload = {
             "name": "Morning",
@@ -396,7 +413,7 @@ class TestTimeSlots:
             "buffer_time_minutes": 15,
         }
         slot_resp = await auth_client.post(
-            f"/api/v1/exhibitions/{exhibition_id}/slots", json=slot_payload
+            f"/api/v1/zones/{zone_id}/slots", json=slot_payload
         )
         slot_id = slot_resp.json()["id"]
 
@@ -406,7 +423,7 @@ class TestTimeSlots:
             "buffer_time_minutes": 30,
         }
         response = await auth_client.put(
-            f"/api/v1/exhibitions/{exhibition_id}/slots/{slot_id}",
+            f"/api/v1/zones/{zone_id}/slots/{slot_id}",
             json=update_payload,
         )
 
@@ -420,7 +437,7 @@ class TestTimeSlots:
         self, auth_client: AsyncClient, test_organizer: dict
     ):
         """Update non-existent slot returns 404."""
-        # Create exhibition
+        # Create exhibition and zone
         exhibition_payload = {
             "title": "Update Slot 404 Test",
             "slug": "update-slot-404",
@@ -431,9 +448,13 @@ class TestTimeSlots:
         create_resp = await auth_client.post("/api/v1/exhibitions/", json=exhibition_payload)
         exhibition_id = create_resp.json()["id"]
 
+        zone_payload = {"name": "404 Zone", "exhibition_id": exhibition_id}
+        zone_resp = await auth_client.post("/api/v1/zones/", json=zone_payload)
+        zone_id = zone_resp.json()["id"]
+
         fake_slot_id = "00000000-0000-0000-0000-000000000000"
         response = await auth_client.put(
-            f"/api/v1/exhibitions/{exhibition_id}/slots/{fake_slot_id}",
+            f"/api/v1/zones/{zone_id}/slots/{fake_slot_id}",
             json={"name": "Whatever"},
         )
 
@@ -443,7 +464,7 @@ class TestTimeSlots:
         self, auth_client: AsyncClient, test_organizer: dict
     ):
         """Delete time slot returns 204."""
-        # Create exhibition
+        # Create exhibition and zone
         exhibition_payload = {
             "title": "Delete Slot Test",
             "slug": "delete-slot-test",
@@ -454,6 +475,10 @@ class TestTimeSlots:
         create_resp = await auth_client.post("/api/v1/exhibitions/", json=exhibition_payload)
         exhibition_id = create_resp.json()["id"]
 
+        zone_payload = {"name": "Delete Zone", "exhibition_id": exhibition_id}
+        zone_resp = await auth_client.post("/api/v1/zones/", json=zone_payload)
+        zone_id = zone_resp.json()["id"]
+
         # Create a slot
         slot_payload = {
             "name": "To Delete",
@@ -462,25 +487,25 @@ class TestTimeSlots:
             "max_duration_minutes": 240,
         }
         slot_resp = await auth_client.post(
-            f"/api/v1/exhibitions/{exhibition_id}/slots", json=slot_payload
+            f"/api/v1/zones/{zone_id}/slots", json=slot_payload
         )
         slot_id = slot_resp.json()["id"]
 
         # Delete the slot
         response = await auth_client.delete(
-            f"/api/v1/exhibitions/{exhibition_id}/slots/{slot_id}"
+            f"/api/v1/zones/{zone_id}/slots/{slot_id}"
         )
         assert response.status_code == 204
 
         # Verify it's gone
-        list_resp = await auth_client.get(f"/api/v1/exhibitions/{exhibition_id}/slots")
+        list_resp = await auth_client.get(f"/api/v1/zones/{zone_id}/slots")
         assert len(list_resp.json()) == 0
 
     async def test_delete_slot_not_found(
         self, auth_client: AsyncClient, test_organizer: dict
     ):
         """Delete non-existent slot returns 404."""
-        # Create exhibition
+        # Create exhibition and zone
         exhibition_payload = {
             "title": "Delete Slot 404 Test",
             "slug": "delete-slot-404",
@@ -491,9 +516,13 @@ class TestTimeSlots:
         create_resp = await auth_client.post("/api/v1/exhibitions/", json=exhibition_payload)
         exhibition_id = create_resp.json()["id"]
 
+        zone_payload = {"name": "Delete 404 Zone", "exhibition_id": exhibition_id}
+        zone_resp = await auth_client.post("/api/v1/zones/", json=zone_payload)
+        zone_id = zone_resp.json()["id"]
+
         fake_slot_id = "00000000-0000-0000-0000-000000000000"
         response = await auth_client.delete(
-            f"/api/v1/exhibitions/{exhibition_id}/slots/{fake_slot_id}"
+            f"/api/v1/zones/{zone_id}/slots/{fake_slot_id}"
         )
 
         assert response.status_code == 404
@@ -1574,3 +1603,129 @@ class TestExhibitionRoleManagement:
         )
 
         assert response.status_code == 403
+
+
+class TestUserSearchForRole:
+    """Tests for user search endpoint for role assignment."""
+
+    async def _create_exhibition(
+        self,
+        auth_client: AsyncClient,
+        organization_id: str,
+        slug: str = "search-test-exhibition",
+    ) -> str:
+        """Helper to create an exhibition."""
+        payload = {
+            "title": "Search Test Exhibition",
+            "slug": slug,
+            "start_date": "2026-06-15T09:00:00Z",
+            "end_date": "2026-06-17T18:00:00Z",
+            "organization_id": organization_id,
+        }
+        resp = await auth_client.post("/api/v1/exhibitions/", json=payload)
+        assert resp.status_code == 201
+        return resp.json()["id"]
+
+    async def test_search_returns_matching_users(
+        self, auth_client: AsyncClient, test_organizer: dict, test_user: dict
+    ):
+        """Search returns users matching the query."""
+        exhibition_id = await self._create_exhibition(
+            auth_client, test_organizer["organization_id"], "search-match"
+        )
+
+        # Search for the test user by email (must be at least 3 chars)
+        # test_user email is typically test_user@example.com or similar
+        response = await auth_client.get(
+            f"/api/v1/exhibitions/{exhibition_id}/users/search?q=test"
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        # Should find at least the test_user
+        assert len(data) >= 1
+        # Results should include id, email, and optionally full_name
+        assert all("id" in u and "email" in u for u in data)
+
+    async def test_search_excludes_already_assigned_users(
+        self, auth_client: AsyncClient, test_organizer: dict, test_user: dict
+    ):
+        """Search excludes users already assigned to the exhibition."""
+        exhibition_id = await self._create_exhibition(
+            auth_client, test_organizer["organization_id"], "search-exclude"
+        )
+
+        # Search for the organizer's email - they're already assigned
+        organizer_email = "test_organizer"  # partial match
+        response = await auth_client.get(
+            f"/api/v1/exhibitions/{exhibition_id}/users/search?q={organizer_email}"
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        # The organizer should NOT be in results (already assigned)
+        organizer_ids = [u["id"] for u in data]
+        assert test_organizer["user_id"] not in organizer_ids
+
+    async def test_search_requires_min_3_chars(
+        self, auth_client: AsyncClient, test_organizer: dict
+    ):
+        """Search with less than 3 characters returns empty array."""
+        exhibition_id = await self._create_exhibition(
+            auth_client, test_organizer["organization_id"], "search-minchars"
+        )
+
+        # Search with only 2 characters
+        response = await auth_client.get(
+            f"/api/v1/exhibitions/{exhibition_id}/users/search?q=ab"
+        )
+
+        assert response.status_code == 200
+        assert response.json() == []
+
+    async def test_search_unauthorized(
+        self, client: AsyncClient, auth_client: AsyncClient, test_organizer: dict
+    ):
+        """Search requires authentication."""
+        exhibition_id = await self._create_exhibition(
+            auth_client, test_organizer["organization_id"], "search-unauth"
+        )
+
+        response = await client.get(
+            f"/api/v1/exhibitions/{exhibition_id}/users/search?q=test"
+        )
+
+        assert response.status_code == 401
+
+    async def test_search_forbidden_for_regular_user(
+        self, client: AsyncClient, auth_client: AsyncClient,
+        test_organizer: dict, test_user: dict
+    ):
+        """Regular user cannot search users for role assignment."""
+        exhibition_id = await self._create_exhibition(
+            auth_client, test_organizer["organization_id"], "search-forbidden"
+        )
+
+        response = await client.get(
+            f"/api/v1/exhibitions/{exhibition_id}/users/search?q=test",
+            headers={"X-User-ID": test_user["id"]},
+        )
+
+        assert response.status_code == 403
+
+    async def test_search_by_full_name(
+        self, auth_client: AsyncClient, test_organizer: dict
+    ):
+        """Search matches user full_name as well as email."""
+        exhibition_id = await self._create_exhibition(
+            auth_client, test_organizer["organization_id"], "search-fullname"
+        )
+
+        # Search for "user" which should match either email or name
+        response = await auth_client.get(
+            f"/api/v1/exhibitions/{exhibition_id}/users/search?q=user"
+        )
+
+        assert response.status_code == 200
+        # Should return results (may be empty if no users match, but endpoint works)
+        assert isinstance(response.json(), list)

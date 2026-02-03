@@ -100,6 +100,11 @@ The platform uses two types of roles:
     * **I want** to configure periods (e.g., Morning, Afternoon, Evening, Night) with specific maximum durations allowed per session for each period,
     * **so that** the framework remains adaptable to different game types while allowing for longer sessions at specific times (e.g., 4h afternoon, 6h night).
 
+* **JS.A2b - Batch Time Slot Creation**
+    * **When** I configure zones for a convention,
+    * **I want** to create multiple time slots at once using patterns (slot duration, buffer time, date range, daily schedule),
+    * **so that** I can quickly set up the complete schedule without repetitive manual entry.
+
 * **JS.A3 - Buffer Times**
     * **When** I configure periods and spaces,
     * **I want** to define a configurable buffer time (e.g., 0 to 30 min) between sessions on a single physical table,
@@ -151,8 +156,8 @@ The platform uses two types of roles:
 
 * **JS.B2 - Dynamic Slotting**
     * **When** planning my session,
-    * **I want** to choose a start time and duration that fits within the organizer's limits for that period (e.g., max 4h afternoon, 6h for night session),
-    * **so that** my game is logistically compatible with the global rotation.
+    * **I want** to choose a start time within the slot bounds and a duration that fits within the organizer's limits for that period (e.g., max 4h afternoon, 6h for night session),
+    * **so that** my game is logistically compatible with the global rotation and I have flexibility to start later if my session is shorter than the full slot duration.
 
 * **JS.B3 - Game Identity (Game Reference)**
     * **When** identifying the game for my session,

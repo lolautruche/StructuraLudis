@@ -363,6 +363,7 @@
     "statuses": {
       "DRAFT": "Brouillon",
       "PUBLISHED": "Publié",
+      "SUSPENDED": "Suspendu",
       "ARCHIVED": "Archivé"
     },
     "tableStatuses": {
@@ -405,6 +406,8 @@
       "searchUserPlaceholder": "Rechercher par nom ou email (min. 3 car.)...",
       "searching": "Recherche...",
       "minChars": "Tapez au moins 3 caractères pour rechercher",
+      "noUsersFound": "Aucun utilisateur trouvé (ou déjà membre)",
+      "userAlreadyMember": "Cet utilisateur est déjà membre de l'équipe",
       "userSelected": "Sélectionné : {email}",
       "role": "Rôle",
       "selectZones": "Zones (requis pour Partenaire)",

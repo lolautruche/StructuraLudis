@@ -245,14 +245,14 @@ class GameSessionService:
                 detail=get_message("exhibition_not_found", locale),
             )
 
-        # Validate time slot belongs to exhibition
-        time_slot = await self._get_time_slot(data.time_slot_id)
+        # Validate time slot belongs to a zone in this exhibition (#105)
+        time_slot = await self._get_time_slot_with_zone(data.time_slot_id)
         if not time_slot:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=get_message("time_slot_not_found", locale),
             )
-        if time_slot.exhibition_id != data.exhibition_id:
+        if time_slot.zone.exhibition_id != data.exhibition_id:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=get_message("slot_not_in_exhibition", locale),
@@ -770,15 +770,15 @@ class GameSessionService:
         target_start = scheduled_start or original.scheduled_start
         target_end = scheduled_end or original.scheduled_end
 
-        # Validate time slot if changed
+        # Validate time slot if changed (#105)
         if time_slot_id and time_slot_id != original.time_slot_id:
-            time_slot = await self._get_time_slot(time_slot_id)
+            time_slot = await self._get_time_slot_with_zone(time_slot_id)
             if not time_slot:
                 raise HTTPException(
                     status_code=status.HTTP_404_NOT_FOUND,
                     detail="Time slot not found",
                 )
-            if time_slot.exhibition_id != original.exhibition_id:
+            if time_slot.zone.exhibition_id != original.exhibition_id:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
                     detail="Time slot does not belong to this exhibition",
@@ -1073,6 +1073,16 @@ class GameSessionService:
     async def _get_time_slot(self, time_slot_id: UUID) -> Optional[TimeSlot]:
         result = await self.db.execute(
             select(TimeSlot).where(TimeSlot.id == time_slot_id)
+        )
+        return result.scalar_one_or_none()
+
+    async def _get_time_slot_with_zone(self, time_slot_id: UUID) -> Optional[TimeSlot]:
+        """Get time slot with zone eagerly loaded (#105)."""
+        from sqlalchemy.orm import selectinload
+        result = await self.db.execute(
+            select(TimeSlot)
+            .options(selectinload(TimeSlot.zone))
+            .where(TimeSlot.id == time_slot_id)
         )
         return result.scalar_one_or_none()
 

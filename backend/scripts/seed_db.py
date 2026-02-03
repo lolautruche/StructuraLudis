@@ -24,7 +24,7 @@ Usage:
 
 Test accounts (password: password123):
     Super Admin:  admin@structura-ludis.dev
-    Organizer:    organizer@fdj-lyon.com
+    Organizer:    orga@octogones.org
     Partner:      contact@les12singes.com, contact@arkhane.com
     GMs:          gm1@example.com, gm2@example.com, gm3@example.com
     Players:      player1@example.com ... player12@example.com
@@ -128,7 +128,7 @@ async def seed(force: bool = False):
         # Main Organizer (will be assigned ORGANIZER role for the exhibition)
         organizer = User(
             id=uuid4(),
-            email="organizer@fdj-lyon.com",
+            email="orga@octogones.org",
             hashed_password=password_hash,
             full_name="Marie Dupont",
             global_role=GlobalRole.USER,
@@ -240,8 +240,8 @@ async def seed(force: bool = False):
         # Main festival organization
         org_fdj = Organization(
             id=uuid4(),
-            name="Festival du Jeu Lyon",
-            slug="fdj-lyon",
+            name="OctoGônes",
+            slug="octogones",
         )
 
         # Partner exhibitor organizations
@@ -519,24 +519,26 @@ async def seed(force: bool = False):
          cats, wastburg, alien, cof, wingspan, catan) = games
 
         # =====================================================================
-        # 5. EXHIBITION
+        # 5. EXHIBITION - OctoGônes 16
         # =====================================================================
-        event_start = datetime.now(timezone.utc).replace(
-            hour=9, minute=0, second=0, microsecond=0
-        ) + timedelta(days=14)
+        # Fixed dates for OctoGônes 16: May 22-24, 2026
+        from zoneinfo import ZoneInfo
+        paris_tz = ZoneInfo("Europe/Paris")
+        event_start = datetime(2026, 5, 22, 14, 0, 0, tzinfo=paris_tz)
+        event_end = datetime(2026, 5, 24, 18, 0, 0, tzinfo=paris_tz)
 
         exhibition = Exhibition(
             id=uuid4(),
             organization_id=org_fdj.id,
             created_by_id=organizer.id,  # Main organizer (#99)
-            title="Festival du Jeu Lyon 2026",
-            slug="fdj-lyon-2026",
-            description="Le plus grand festival de jeux de la région lyonnaise",
-            title_i18n={"fr": "Festival du Jeu Lyon 2026", "en": "Lyon Game Festival 2026"},
+            title="OctoGônes 16",
+            slug="octogones-16",
+            description="Convention du Jeu et de l'Imaginaire",
+            title_i18n={"fr": "OctoGônes 16", "en": "OctoGônes 16"},
             start_date=event_start,
-            end_date=event_start + timedelta(days=3),
+            end_date=event_end,
             location_name="Eurexpo Lyon",
-            city="Lyon",
+            city="Chassieu",
             country_code="FR",
             timezone="Europe/Paris",
             grace_period_minutes=15,
@@ -702,60 +704,166 @@ async def seed(force: bool = False):
         session.add_all(rpg_tables + singes_tables + board_tables)
 
         # =====================================================================
-        # 8. TIME SLOTS
+        # 8. TIME SLOTS (now zone-level, Issue #105)
+        # Each zone has its own schedule with different time slots
+        # OctoGônes 16: Fri 22/05 14:00 - Sun 24/05 18:00
         # =====================================================================
         time_slots = []
-        for day_offset in range(3):
-            day = event_start + timedelta(days=day_offset)
-            day_name = ["Vendredi", "Samedi", "Dimanche"][day_offset]
+        rpg_slots = []  # Keep track of RPG zone slots for session creation
+        singes_slots = []  # Keep track of XII Singes slots
+        board_slots = []  # Keep track of board game slots
 
-            # Morning slot
-            time_slots.append(TimeSlot(
+        # Day definitions for OctoGônes 16
+        days = [
+            (datetime(2026, 5, 22, tzinfo=paris_tz), "Vendredi"),   # Friday
+            (datetime(2026, 5, 23, tzinfo=paris_tz), "Samedi"),     # Saturday
+            (datetime(2026, 5, 24, tzinfo=paris_tz), "Dimanche"),   # Sunday
+        ]
+
+        for day_offset, (day, day_name) in enumerate(days):
+            # === Espace JdR: Classic RPG slots ===
+            # Friday: only afternoon (14:00-19:00) and evening
+            # Saturday: morning, afternoon, evening
+            # Sunday: morning and afternoon only (ends at 18:00)
+
+            if day_offset > 0:  # Saturday and Sunday only
+                # Morning: 09:00-13:00, max 240min
+                rpg_morning = TimeSlot(
+                    id=uuid4(),
+                    zone_id=zone_rpg.id,
+                    name=f"{day_name} Matin",
+                    start_time=day.replace(hour=9, minute=0),
+                    end_time=day.replace(hour=13, minute=0),
+                    max_duration_minutes=240,
+                    buffer_time_minutes=15,
+                )
+                rpg_slots.append(rpg_morning)
+                time_slots.append(rpg_morning)
+
+            # Afternoon: 14:00-19:00 (18:00 on Sunday)
+            afternoon_end = 18 if day_offset == 2 else 19
+            rpg_afternoon = TimeSlot(
                 id=uuid4(),
-                exhibition_id=exhibition.id,
-                name=f"{day_name} Matin",
-                start_time=day.replace(hour=10, minute=0),
-                end_time=day.replace(hour=13, minute=0),
-                max_duration_minutes=180,
+                zone_id=zone_rpg.id,
+                name=f"{day_name} Après-midi",
+                start_time=day.replace(hour=14, minute=0),
+                end_time=day.replace(hour=afternoon_end, minute=0),
+                max_duration_minutes=240,
                 buffer_time_minutes=15,
-            ))
+            )
+            rpg_slots.append(rpg_afternoon)
+            time_slots.append(rpg_afternoon)
 
-            # Afternoon slot
-            time_slots.append(TimeSlot(
+            # Evening: 20:00-01:00, max 300min (Friday and Saturday only)
+            if day_offset < 2:
+                rpg_evening = TimeSlot(
+                    id=uuid4(),
+                    zone_id=zone_rpg.id,
+                    name=f"{day_name} Soirée",
+                    start_time=day.replace(hour=20, minute=0),
+                    end_time=(day + timedelta(days=1)).replace(hour=1, minute=0),
+                    max_duration_minutes=300,
+                    buffer_time_minutes=15,
+                )
+                rpg_slots.append(rpg_evening)
+                time_slots.append(rpg_evening)
+
+            # === Stand XII Singes: 2 slots per day (demo format) ===
+            if day_offset > 0:  # Saturday and Sunday only (no morning on Friday)
+                # Morning: 10:00-13:00, max 120min
+                singes_morning = TimeSlot(
+                    id=uuid4(),
+                    zone_id=zone_12singes.id,
+                    name=f"{day_name} Matin",
+                    start_time=day.replace(hour=10, minute=0),
+                    end_time=day.replace(hour=13, minute=0),
+                    max_duration_minutes=120,
+                    buffer_time_minutes=15,
+                )
+                singes_slots.append(singes_morning)
+                time_slots.append(singes_morning)
+
+            # Afternoon: 14:00-18:00, max 120min
+            singes_afternoon = TimeSlot(
                 id=uuid4(),
-                exhibition_id=exhibition.id,
+                zone_id=zone_12singes.id,
                 name=f"{day_name} Après-midi",
                 start_time=day.replace(hour=14, minute=0),
                 end_time=day.replace(hour=18, minute=0),
-                max_duration_minutes=240,
+                max_duration_minutes=120,
                 buffer_time_minutes=15,
-            ))
+            )
+            singes_slots.append(singes_afternoon)
+            time_slots.append(singes_afternoon)
 
-            # Evening slot (except Sunday)
-            if day_offset < 2:
-                time_slots.append(TimeSlot(
+            # === Espace Jeux de Plateau: Short varied slots ===
+            if day_offset > 0:  # Saturday and Sunday only
+                # Slot 1: 10:00-12:00, max 120min
+                board_slot1 = TimeSlot(
                     id=uuid4(),
-                    exhibition_id=exhibition.id,
-                    name=f"{day_name} Soirée",
-                    start_time=day.replace(hour=19, minute=0),
-                    end_time=day.replace(hour=23, minute=0),
-                    max_duration_minutes=240,
+                    zone_id=zone_board.id,
+                    name=f"{day_name} Slot 1",
+                    start_time=day.replace(hour=10, minute=0),
+                    end_time=day.replace(hour=12, minute=0),
+                    max_duration_minutes=120,
                     buffer_time_minutes=15,
-                ))
+                )
+                board_slots.append(board_slot1)
+                time_slots.append(board_slot1)
+
+            # Slot 2: 14:00-16:00, max 120min
+            board_slot2 = TimeSlot(
+                id=uuid4(),
+                zone_id=zone_board.id,
+                name=f"{day_name} Slot 2",
+                start_time=day.replace(hour=14, minute=0),
+                end_time=day.replace(hour=16, minute=0),
+                max_duration_minutes=120,
+                buffer_time_minutes=15,
+            )
+            board_slots.append(board_slot2)
+            time_slots.append(board_slot2)
+
+            # Slot 3: 16:30-18:00 (18:00 max on Sunday)
+            slot3_end_hour = 18
+            slot3_end_minute = 0 if day_offset == 2 else 30
+            if day_offset < 2 or True:  # Always add slot 3
+                board_slot3 = TimeSlot(
+                    id=uuid4(),
+                    zone_id=zone_board.id,
+                    name=f"{day_name} Slot 3",
+                    start_time=day.replace(hour=16, minute=30),
+                    end_time=day.replace(hour=slot3_end_hour, minute=slot3_end_minute),
+                    max_duration_minutes=90 if day_offset == 2 else 120,
+                    buffer_time_minutes=15,
+                )
+                board_slots.append(board_slot3)
+                time_slots.append(board_slot3)
 
         session.add_all(time_slots)
 
         # =====================================================================
         # 9. GAME SESSIONS (with realistic player distribution)
         # =====================================================================
+        # Helper to get slots based on zone
+        # rpg_slots: 7 slots (Fri: afternoon, evening; Sat: morning, afternoon, evening; Sun: morning, afternoon)
+        # singes_slots: 5 slots (Fri: afternoon; Sat: morning, afternoon; Sun: morning, afternoon)
+        # board_slots: 8 slots (Fri: slot2, slot3; Sat: slot1-3; Sun: slot1-3)
+        zone_slots_map = {
+            "rpg": rpg_slots,
+            "singes": singes_slots,
+            "board": board_slots,
+        }
+
         sessions_data = [
             # === VALIDATED - Various fill levels ===
-            # Session 0: Cthulhu - 2 players (3 available)
+            # Session 0: Cthulhu - 2 players (3 available) - Friday Afternoon
             {
                 "game": cthulhu,
                 "gm": gm1,
                 "title": "Les Masques de Nyarlathotep - Prologue",
-                "time_slot_idx": 0,
+                "zone": "rpg",
+                "slot_idx": 0,  # Friday Afternoon
                 "table": rpg_tables[0],
                 "status": SessionStatus.VALIDATED,
                 "max_players": 5,
@@ -764,12 +872,13 @@ async def seed(force: bool = False):
                 "language": "fr",
                 "players": players[:2],  # Alice, Bob
             },
-            # Session 1: D&D - FULL with waitlist
+            # Session 1: D&D - FULL with waitlist - Friday Evening
             {
                 "game": dnd,
                 "gm": gm2,
                 "title": "La Malédiction de Strahd - Chapitre 1",
-                "time_slot_idx": 1,
+                "zone": "rpg",
+                "slot_idx": 1,  # Friday Evening
                 "table": rpg_tables[1],
                 "status": SessionStatus.VALIDATED,
                 "max_players": 4,
@@ -779,12 +888,13 @@ async def seed(force: bool = False):
                 "players": players[:4],  # Alice, Bob, Claire, David
                 "waitlist": players[4:6],  # Emma, François
             },
-            # Session 2: Alien - Almost full (4/5)
+            # Session 2: Alien - Almost full (4/5) - Saturday Morning
             {
                 "game": alien,
                 "gm": gm1,
                 "title": "Chariot of the Gods",
-                "time_slot_idx": 2,
+                "zone": "rpg",
+                "slot_idx": 2,  # Saturday Morning
                 "table": rpg_tables[2],
                 "status": SessionStatus.VALIDATED,
                 "max_players": 5,
@@ -793,12 +903,13 @@ async def seed(force: bool = False):
                 "language": "en",
                 "players": players[:4],  # Alice, Bob, Claire, David
             },
-            # Session 3: COF - Beginner friendly, half full
+            # Session 3: COF - Beginner friendly, half full - Saturday Afternoon
             {
                 "game": cof,
                 "gm": gm2,
                 "title": "Initiation : Le Donjon de Donjons",
-                "time_slot_idx": 3,
+                "zone": "rpg",
+                "slot_idx": 3,  # Saturday Afternoon
                 "table": rpg_tables[3],
                 "status": SessionStatus.VALIDATED,
                 "max_players": 6,
@@ -808,12 +919,13 @@ async def seed(force: bool = False):
                 "is_accessible": True,
                 "players": players[4:7],  # Emma, François, Géraldine
             },
-            # Session 4: Pénombre - 3 players
+            # Session 4: Pénombre - 3 players - Saturday Evening
             {
                 "game": penombre,
                 "gm": gm1,
                 "title": "L'Affaire du Vampire de Düsseldorf",
-                "time_slot_idx": 4,
+                "zone": "rpg",
+                "slot_idx": 4,  # Saturday Evening
                 "table": rpg_tables[4],
                 "status": SessionStatus.VALIDATED,
                 "max_players": 4,
@@ -822,12 +934,13 @@ async def seed(force: bool = False):
                 "language": "fr",
                 "players": players[6:9],  # Géraldine, Hugo, Isabelle
             },
-            # Session 5: Maléfices by Arkhane partner
+            # Session 5: Maléfices by Arkhane partner - Sunday Morning
             {
                 "game": malefices,
                 "gm": partner_arkhane,
                 "title": "Le Fantôme de l'Opéra",
-                "time_slot_idx": 5,
+                "zone": "rpg",
+                "slot_idx": 5,  # Sunday Morning
                 "table": rpg_tables[5],
                 "status": SessionStatus.VALIDATED,
                 "max_players": 5,
@@ -836,12 +949,13 @@ async def seed(force: bool = False):
                 "language": "fr",
                 "players": players[2:5],  # Claire, David, Emma
             },
-            # Session 6: Kult - Mature, 2 players
+            # Session 6: Kult - Mature, 2 players - Sunday Morning (different table)
             {
                 "game": kult,
                 "gm": gm1,
                 "title": "Les Portes de l'Illusion",
-                "time_slot_idx": 5,
+                "zone": "rpg",
+                "slot_idx": 5,  # Sunday Morning
                 "table": rpg_tables[6],
                 "status": SessionStatus.VALIDATED,
                 "max_players": 4,
@@ -850,12 +964,13 @@ async def seed(force: bool = False):
                 "language": "fr",
                 "players": players[8:10],  # Isabelle, Julien
             },
-            # Session 7: Star Wars - Empty (just opened)
+            # Session 7: Star Wars - Empty (just opened) - Sunday Afternoon
             {
                 "game": starwars,
                 "gm": gm2,
                 "title": "Contrebande sur Tatooine",
-                "time_slot_idx": 6,
+                "zone": "rpg",
+                "slot_idx": 6,  # Sunday Afternoon
                 "table": rpg_tables[7],
                 "status": SessionStatus.VALIDATED,
                 "max_players": 5,
@@ -866,12 +981,13 @@ async def seed(force: bool = False):
             },
 
             # === 12 SINGES BOOTH SESSIONS ===
-            # Session 8: Cats - Family friendly, full
+            # Session 8: Cats - Family friendly, full - Saturday Morning
             {
                 "game": cats,
                 "gm": gm3,
                 "title": "Les Mystères de la Ruelle",
-                "time_slot_idx": 3,
+                "zone": "singes",
+                "slot_idx": 1,  # Saturday Morning
                 "table": singes_tables[0],
                 "status": SessionStatus.VALIDATED,
                 "max_players": 5,
@@ -882,12 +998,13 @@ async def seed(force: bool = False):
                 "group": team_12singes,
                 "players": players[:5],  # Full table
             },
-            # Session 9: Wastburg
+            # Session 9: Wastburg - Saturday Afternoon
             {
                 "game": wastburg,
                 "gm": gm3,
                 "title": "Intrigues au Quartier des Tanneurs",
-                "time_slot_idx": 4,
+                "zone": "singes",
+                "slot_idx": 2,  # Saturday Afternoon
                 "table": singes_tables[1],
                 "status": SessionStatus.VALIDATED,
                 "max_players": 4,
@@ -899,12 +1016,13 @@ async def seed(force: bool = False):
             },
 
             # === IN_PROGRESS SESSION ===
-            # Session 10: In progress with checked-in players
+            # Session 10: In progress with checked-in players - Friday Afternoon
             {
                 "game": cthulhu,
                 "gm": gm1,
                 "title": "Campagne de l'horreur",
-                "time_slot_idx": 0,
+                "zone": "rpg",
+                "slot_idx": 0,  # Friday Afternoon
                 "table": rpg_tables[0],
                 "status": SessionStatus.IN_PROGRESS,
                 "max_players": 4,
@@ -920,7 +1038,8 @@ async def seed(force: bool = False):
                 "game": dnd,
                 "gm": gm2,
                 "title": "One-shot terminé",
-                "time_slot_idx": 0,
+                "zone": "rpg",
+                "slot_idx": 0,  # Friday Afternoon
                 "table": rpg_tables[1],
                 "status": SessionStatus.FINISHED,
                 "max_players": 5,
@@ -935,7 +1054,8 @@ async def seed(force: bool = False):
                 "game": alien,
                 "gm": gm1,
                 "title": "Session annulée",
-                "time_slot_idx": 4,
+                "zone": "rpg",
+                "slot_idx": 3,  # Saturday Afternoon
                 "table": rpg_tables[2],
                 "status": SessionStatus.CANCELLED,
                 "max_players": 5,
@@ -950,7 +1070,8 @@ async def seed(force: bool = False):
                 "game": fadingsuns,
                 "gm": gm2,
                 "title": "Brouillon en cours",
-                "time_slot_idx": 7,
+                "zone": "rpg",
+                "slot_idx": 6,  # Sunday Afternoon
                 "table": None,
                 "status": SessionStatus.DRAFT,
                 "max_players": 5,
@@ -965,7 +1086,8 @@ async def seed(force: bool = False):
                 "game": wingspan,
                 "gm": organizer,
                 "title": "Découverte Wingspan",
-                "time_slot_idx": 3,
+                "zone": "board",
+                "slot_idx": 2,  # Saturday Slot 1
                 "table": board_tables[0],
                 "status": SessionStatus.VALIDATED,
                 "max_players": 4,
@@ -978,7 +1100,8 @@ async def seed(force: bool = False):
                 "game": catan,
                 "gm": organizer,
                 "title": "Tournoi Catan - Qualifications",
-                "time_slot_idx": 4,
+                "zone": "board",
+                "slot_idx": 3,  # Saturday Slot 2
                 "table": board_tables[1],
                 "status": SessionStatus.VALIDATED,
                 "max_players": 4,
@@ -992,7 +1115,9 @@ async def seed(force: bool = False):
 
         game_sessions = []
         for data in sessions_data:
-            ts = time_slots[data["time_slot_idx"]]
+            # Get the correct time slot from the zone-specific array (#105)
+            zone_slots = zone_slots_map[data["zone"]]
+            ts = zone_slots[data["slot_idx"]]
             gs = GameSession(
                 id=uuid4(),
                 exhibition_id=exhibition.id,
@@ -1050,11 +1175,13 @@ async def seed(force: bool = False):
         print("=" * 60)
         print("\nTest accounts (password: password123):")
         print(f"  Super Admin:  admin@structura-ludis.dev")
-        print(f"  Organizer:    organizer@fdj-lyon.com")
+        print(f"  Organizer:    orga@octogones.org")
         print(f"  Partner:      contact@les12singes.com, contact@arkhane.com")
         print(f"  GMs:          gm1@example.com, gm2@example.com, gm3@example.com")
         print(f"  Players:      player1@example.com ... player12@example.com")
         print(f"\nExhibition: {exhibition.title}")
+        print(f"  Dates: 22-24 mai 2026")
+        print(f"  Lieu: {exhibition.location_name}, {exhibition.city}")
         print(f"  - {len(games)} games ({len([g for g in games if g.category_id == cat_rpg.id])} RPGs)")
         print(f"  - {len(game_sessions)} game sessions")
         print(f"  - {len(rpg_tables)} RPG tables + {len(singes_tables)} booth tables + {len(board_tables)} board game tables")

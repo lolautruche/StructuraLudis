@@ -1,7 +1,8 @@
 """
 Exhibition service layer.
 
-Contains business logic for exhibitions, time slots, zones, and physical tables.
+Contains business logic for exhibitions, zones, and physical tables.
+Note: Time slots are now managed at zone level (Issue #105).
 """
 from typing import List, Optional
 from uuid import UUID
@@ -14,7 +15,6 @@ from app.domain.exhibition.entity import Exhibition, TimeSlot, Zone, PhysicalTab
 from app.domain.exhibition.schemas import (
     ExhibitionCreate,
     ExhibitionDashboard,
-    TimeSlotCreate,
     ZoneCreate,
     BatchTablesCreate,
     SessionStatusCount,
@@ -128,57 +128,6 @@ class ExhibitionService:
         await self.db.refresh(exhibition)
 
         return exhibition
-
-    # =========================================================================
-    # TimeSlot Operations
-    # =========================================================================
-
-    async def create_time_slot(
-        self,
-        exhibition_id: UUID,
-        data: TimeSlotCreate,
-    ) -> TimeSlot:
-        """
-        Create a time slot for an exhibition.
-
-        Validates:
-        - Exhibition exists
-        - Slot is within exhibition dates
-        - max_duration <= slot duration (already in schema)
-        - buffer_time >= 0 (already in schema)
-        """
-        # Get exhibition
-        result = await self.db.execute(
-            select(Exhibition).where(Exhibition.id == exhibition_id)
-        )
-        exhibition = result.scalar_one_or_none()
-        if not exhibition:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Exhibition not found",
-            )
-
-        # Check slot is within exhibition dates
-        if data.start_time < exhibition.start_date:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Time slot cannot start before exhibition start date",
-            )
-        if data.end_time > exhibition.end_date:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Time slot cannot end after exhibition end date",
-            )
-
-        time_slot = TimeSlot(
-            exhibition_id=exhibition_id,
-            **data.model_dump(),
-        )
-        self.db.add(time_slot)
-        await self.db.flush()
-        await self.db.refresh(time_slot)
-
-        return time_slot
 
     # =========================================================================
     # Zone Operations

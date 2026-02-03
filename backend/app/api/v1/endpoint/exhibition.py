@@ -1,18 +1,19 @@
 """
 Exhibition API endpoints.
 
-CRUD operations + TimeSlots + Dashboard.
+CRUD operations + Dashboard + Safety Tools + Roles.
+Note: TimeSlots are now managed at zone level (Issue #105).
 """
 from typing import List, Optional
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
-from sqlalchemy import select
+from sqlalchemy import select, or_, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
-from app.domain.exhibition import Exhibition, TimeSlot
+from app.domain.exhibition import Exhibition
 from app.domain.shared.entity import GlobalRole, ExhibitionRole, ExhibitionStatus
 from app.domain.exhibition.entity import SafetyTool, Zone
 from app.domain.exhibition.schemas import (
@@ -20,9 +21,6 @@ from app.domain.exhibition.schemas import (
     ExhibitionRead,
     ExhibitionUpdate,
     ExhibitionDashboard,
-    TimeSlotCreate,
-    TimeSlotRead,
-    TimeSlotUpdate,
     SafetyToolCreate,
     SafetyToolRead,
     SafetyToolUpdate,
@@ -235,150 +233,6 @@ async def delete_exhibition(
         )
 
     await db.delete(exhibition)
-
-
-# =============================================================================
-# TimeSlot Endpoints
-# =============================================================================
-
-@router.get("/{exhibition_id}/slots", response_model=List[TimeSlotRead])
-async def list_time_slots(
-    exhibition_id: UUID,
-    db: AsyncSession = Depends(get_db),
-):
-    """List all time slots for an exhibition."""
-    # Check exhibition exists
-    result = await db.execute(
-        select(Exhibition).where(Exhibition.id == exhibition_id)
-    )
-    if not result.scalar_one_or_none():
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Exhibition not found",
-        )
-
-    slots = await db.execute(
-        select(TimeSlot)
-        .where(TimeSlot.exhibition_id == exhibition_id)
-        .order_by(TimeSlot.start_time)
-    )
-    return slots.scalars().all()
-
-
-@router.post(
-    "/{exhibition_id}/slots",
-    response_model=TimeSlotRead,
-    status_code=status.HTTP_201_CREATED,
-)
-async def create_time_slot(
-    exhibition_id: UUID,
-    slot_in: TimeSlotCreate,
-    current_user: User = Depends(require_exhibition_organizer),
-    db: AsyncSession = Depends(get_db),
-):
-    """
-    Create a time slot for an exhibition.
-
-    Validates:
-    - Slot is within exhibition dates
-    - max_duration_minutes <= slot duration
-    - buffer_time_minutes >= 0
-
-    Requires: Exhibition organizer or SUPER_ADMIN.
-    """
-    service = ExhibitionService(db)
-    return await service.create_time_slot(exhibition_id, slot_in)
-
-
-@router.put(
-    "/{exhibition_id}/slots/{slot_id}",
-    response_model=TimeSlotRead,
-)
-async def update_time_slot(
-    exhibition_id: UUID,
-    slot_id: UUID,
-    slot_in: TimeSlotUpdate,
-    current_user: User = Depends(require_exhibition_organizer),
-    db: AsyncSession = Depends(get_db),
-):
-    """
-    Update a time slot.
-
-    Requires: Exhibition organizer or SUPER_ADMIN.
-    """
-    result = await db.execute(
-        select(TimeSlot).where(
-            TimeSlot.id == slot_id,
-            TimeSlot.exhibition_id == exhibition_id,
-        )
-    )
-    slot = result.scalar_one_or_none()
-
-    if not slot:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Time slot not found",
-        )
-
-    update_data = slot_in.model_dump(exclude_unset=True)
-
-    # If updating times, validate consistency
-    start_time = update_data.get("start_time", slot.start_time)
-    end_time = update_data.get("end_time", slot.end_time)
-    max_duration = update_data.get("max_duration_minutes", slot.max_duration_minutes)
-
-    if start_time >= end_time:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="start_time must be before end_time",
-        )
-
-    slot_duration = (end_time - start_time).total_seconds() / 60
-    if max_duration > slot_duration:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"max_duration_minutes ({max_duration}) cannot exceed slot duration ({int(slot_duration)} minutes)",
-        )
-
-    for field, value in update_data.items():
-        setattr(slot, field, value)
-
-    await db.flush()
-    await db.refresh(slot)
-
-    return slot
-
-
-@router.delete(
-    "/{exhibition_id}/slots/{slot_id}",
-    status_code=status.HTTP_204_NO_CONTENT,
-)
-async def delete_time_slot(
-    exhibition_id: UUID,
-    slot_id: UUID,
-    current_user: User = Depends(require_exhibition_organizer),
-    db: AsyncSession = Depends(get_db),
-):
-    """
-    Delete a time slot.
-
-    Requires: Exhibition organizer or SUPER_ADMIN.
-    """
-    result = await db.execute(
-        select(TimeSlot).where(
-            TimeSlot.id == slot_id,
-            TimeSlot.exhibition_id == exhibition_id,
-        )
-    )
-    slot = result.scalar_one_or_none()
-
-    if not slot:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Time slot not found",
-        )
-
-    await db.delete(slot)
 
 
 # =============================================================================
@@ -619,20 +473,25 @@ async def search_users_for_role(
     )
     existing_user_ids = {row[0] for row in existing_users.fetchall()}
 
-    # Search users by email or name
-    result = await db.execute(
+    # Build the query with proper OR handling for nullable full_name
+    query = (
         select(User)
         .where(
             User.is_active == True,
-            (
-                User.email.ilike(search_pattern) |
-                User.full_name.ilike(search_pattern)
+            or_(
+                func.lower(User.email).like(search_pattern),
+                func.lower(func.coalesce(User.full_name, "")).like(search_pattern),
             ),
-            ~User.id.in_(existing_user_ids) if existing_user_ids else True,
         )
         .order_by(User.full_name.asc(), User.email.asc())
         .limit(20)
     )
+
+    # Add exclusion for users already assigned (only if there are some)
+    if existing_user_ids:
+        query = query.where(~User.id.in_(existing_user_ids))
+
+    result = await db.execute(query)
     users = result.scalars().all()
 
     return [

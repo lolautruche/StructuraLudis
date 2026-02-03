@@ -6,10 +6,15 @@ import { zonesApi, partnerApi, Zone, ZoneCreate } from '@/lib/api';
 import { Button, Card, Badge, ConfirmDialog, Checkbox } from '@/components/ui';
 import { ZoneForm } from './ZoneForm';
 import { PhysicalTableList } from './PhysicalTableList';
+import { TimeSlotList } from './TimeSlotList';
 
 interface ZoneListProps {
   exhibitionId: string;
   partnerMode?: boolean;
+  /** Exhibition start date for time slot defaults */
+  exhibitionStartDate?: string;
+  /** Exhibition end date for time slot constraints */
+  exhibitionEndDate?: string;
 }
 
 const ZONE_TYPE_COLORS: Record<string, 'default' | 'success' | 'warning' | 'danger'> = {
@@ -21,7 +26,7 @@ const ZONE_TYPE_COLORS: Record<string, 'default' | 'success' | 'warning' | 'dang
   DEMO: 'default',
 };
 
-export function ZoneList({ exhibitionId, partnerMode = false }: ZoneListProps) {
+export function ZoneList({ exhibitionId, partnerMode = false, exhibitionStartDate, exhibitionEndDate }: ZoneListProps) {
   const t = useTranslations('Admin');
   const tCommon = useTranslations('Common');
 
@@ -391,8 +396,22 @@ export function ZoneList({ exhibitionId, partnerMode = false }: ZoneListProps) {
                         </div>
                       )}
 
+                      {/* Time Slots section (#105) */}
                       <h5
                         className="font-medium mb-3"
+                        style={{ color: 'var(--color-text-primary)' }}
+                      >
+                        {t('timeSlots')}
+                      </h5>
+                      <TimeSlotList
+                        zoneId={zone.id}
+                        exhibitionStartDate={exhibitionStartDate}
+                        exhibitionEndDate={exhibitionEndDate}
+                      />
+
+                      {/* Tables section */}
+                      <h5
+                        className="font-medium mb-3 mt-6"
                         style={{ color: 'var(--color-text-primary)' }}
                       >
                         {t('tables')}

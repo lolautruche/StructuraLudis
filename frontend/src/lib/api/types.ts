@@ -361,10 +361,12 @@ export interface GameCreateRequest {
 
 /**
  * Time slot types.
+ * Note: Time slots belong to zones, not exhibitions (Issue #105).
  */
 export interface TimeSlot {
   id: string;
-  exhibition_id: string;
+  zone_id: string;
+  zone_name?: string;
   name: string;
   start_time: string;
   end_time: string;

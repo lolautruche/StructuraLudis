@@ -1,6 +1,6 @@
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import { SessionSubmissionForm } from '../SessionSubmissionForm';
-import { exhibitionsApi, gamesApi, sessionsApi } from '@/lib/api';
+import { exhibitionsApi, gamesApi, sessionsApi, zonesApi } from '@/lib/api';
 
 // Mock next-intl
 jest.mock('next-intl', () => ({
@@ -12,8 +12,11 @@ jest.mock('next-intl', () => ({
 jest.mock('@/lib/api', () => ({
   exhibitionsApi: {
     getById: jest.fn(),
-    getTimeSlots: jest.fn(),
     getSafetyTools: jest.fn(),
+  },
+  zonesApi: {
+    list: jest.fn(),
+    getTimeSlots: jest.fn(),
   },
   gamesApi: {
     search: jest.fn(),
@@ -32,6 +35,14 @@ const mockExhibition = {
   title: 'Test Exhibition',
   primary_language: 'fr',
 };
+
+const mockZones = [
+  {
+    id: 'zone-1',
+    name: 'Main Hall',
+    exhibition_id: 'ex-123',
+  },
+];
 
 const mockTimeSlots = [
   {
@@ -94,7 +105,12 @@ describe('SessionSubmissionForm', () => {
       data: mockExhibition,
       error: null,
     });
-    (exhibitionsApi.getTimeSlots as jest.Mock).mockResolvedValue({
+    // Time slots are now loaded via zones (#105)
+    (zonesApi.list as jest.Mock).mockResolvedValue({
+      data: mockZones,
+      error: null,
+    });
+    (zonesApi.getTimeSlots as jest.Mock).mockResolvedValue({
       data: mockTimeSlots,
       error: null,
     });
@@ -135,7 +151,8 @@ describe('SessionSubmissionForm', () => {
 
     await waitFor(() => {
       expect(exhibitionsApi.getById).toHaveBeenCalledWith('ex-123');
-      expect(exhibitionsApi.getTimeSlots).toHaveBeenCalledWith('ex-123');
+      // Time slots are now loaded via zones (#105)
+      expect(zonesApi.list).toHaveBeenCalledWith('ex-123');
       expect(exhibitionsApi.getSafetyTools).toHaveBeenCalledWith('ex-123');
     });
 
@@ -241,7 +258,12 @@ describe('GameSelector', () => {
       data: mockExhibition,
       error: null,
     });
-    (exhibitionsApi.getTimeSlots as jest.Mock).mockResolvedValue({
+    // Time slots are now loaded via zones (#105)
+    (zonesApi.list as jest.Mock).mockResolvedValue({
+      data: mockZones,
+      error: null,
+    });
+    (zonesApi.getTimeSlots as jest.Mock).mockResolvedValue({
       data: mockTimeSlots,
       error: null,
     });
@@ -325,7 +347,12 @@ describe('Form submission', () => {
       data: mockExhibition,
       error: null,
     });
-    (exhibitionsApi.getTimeSlots as jest.Mock).mockResolvedValue({
+    // Time slots are now loaded via zones (#105)
+    (zonesApi.list as jest.Mock).mockResolvedValue({
+      data: mockZones,
+      error: null,
+    });
+    (zonesApi.getTimeSlots as jest.Mock).mockResolvedValue({
       data: mockTimeSlots,
       error: null,
     });

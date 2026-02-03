@@ -12,6 +12,9 @@ import {
   PhysicalTableUpdate,
   BatchTablesCreate,
   BatchTablesResponse,
+  TimeSlot,
+  TimeSlotCreate,
+  TimeSlotUpdate,
 } from '../types';
 
 export const zonesApi = {
@@ -102,5 +105,53 @@ export const zonesApi = {
     tableId: string
   ): Promise<ApiResponse<void>> => {
     return api.delete<void>(`/api/v1/zones/${zoneId}/tables/${tableId}`);
+  },
+
+  // ==========================================================================
+  // Time Slots (Issue #105 - moved from exhibition level to zone level)
+  // ==========================================================================
+
+  /**
+   * List time slots in a zone.
+   */
+  getTimeSlots: async (zoneId: string): Promise<ApiResponse<TimeSlot[]>> => {
+    return api.get<TimeSlot[]>(`/api/v1/zones/${zoneId}/slots`);
+  },
+
+  /**
+   * Create a time slot in a zone.
+   * Requires: Zone manager (organizer, SUPER_ADMIN, or delegated partner).
+   */
+  createTimeSlot: async (
+    zoneId: string,
+    data: TimeSlotCreate
+  ): Promise<ApiResponse<TimeSlot>> => {
+    return api.post<TimeSlot>(`/api/v1/zones/${zoneId}/slots`, data);
+  },
+
+  /**
+   * Update a time slot.
+   * Requires: Zone manager (organizer, SUPER_ADMIN, or delegated partner).
+   */
+  updateTimeSlot: async (
+    zoneId: string,
+    slotId: string,
+    data: TimeSlotUpdate
+  ): Promise<ApiResponse<TimeSlot>> => {
+    return api.put<TimeSlot>(
+      `/api/v1/zones/${zoneId}/slots/${slotId}`,
+      data
+    );
+  },
+
+  /**
+   * Delete a time slot.
+   * Requires: Zone manager (organizer, SUPER_ADMIN, or delegated partner).
+   */
+  deleteTimeSlot: async (
+    zoneId: string,
+    slotId: string
+  ): Promise<ApiResponse<void>> => {
+    return api.delete<void>(`/api/v1/zones/${zoneId}/slots/${slotId}`);
   },
 };

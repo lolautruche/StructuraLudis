@@ -10,7 +10,7 @@ import { Button, Input, Textarea, Select, Checkbox, Card } from '@/components/ui
 import { GameSelector } from './GameSelector';
 import { TimeSlotSelector } from './TimeSlotSelector';
 import { SafetyToolsSelector } from './SafetyToolsSelector';
-import { exhibitionsApi, sessionsApi } from '@/lib/api';
+import { exhibitionsApi, sessionsApi, zonesApi } from '@/lib/api';
 import type { Game, TimeSlot, SafetyTool } from '@/lib/api/types';
 
 // Schema factory that accepts timeSlots for cross-field validation
@@ -161,16 +161,16 @@ export function SessionSubmissionForm({
   const watchedScheduledEnd = watch('scheduled_end');
   const watchedSafetyTools = watch('safety_tools');
 
-  // Load exhibition data
+  // Load exhibition data (#105 - time slots now per zone)
   useEffect(() => {
     async function loadData() {
       setIsLoading(true);
       setLoadError(null);
 
       try {
-        const [exhibitionRes, slotsRes, toolsRes] = await Promise.all([
+        const [exhibitionRes, zonesRes, toolsRes] = await Promise.all([
           exhibitionsApi.getById(exhibitionId),
-          exhibitionsApi.getTimeSlots(exhibitionId),
+          zonesApi.list(exhibitionId),
           exhibitionsApi.getSafetyTools(exhibitionId),
         ]);
 
@@ -179,7 +179,18 @@ export function SessionSubmissionForm({
           return;
         }
 
-        setTimeSlots(slotsRes.data || []);
+        // Load time slots from all zones (#105)
+        const allTimeSlots: TimeSlot[] = [];
+        if (zonesRes.data) {
+          for (const zone of zonesRes.data) {
+            const slotsRes = await zonesApi.getTimeSlots(zone.id);
+            if (slotsRes.data) {
+              allTimeSlots.push(...slotsRes.data);
+            }
+          }
+        }
+
+        setTimeSlots(allTimeSlots);
         setSafetyTools(toolsRes.data || []);
 
         // Set default language from exhibition

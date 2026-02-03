@@ -59,7 +59,7 @@ async def test_exhibition_with_slot(
     second_organizer: dict,
     db_session,
 ) -> dict:
-    """Create an exhibition with a time slot.
+    """Create an exhibition with a zone and time slot (#105 - time slots at zone level).
 
     Both test_organizer and second_organizer get ORGANIZER roles for the exhibition.
     """
@@ -88,7 +88,15 @@ async def test_exhibition_with_slot(
     db_session.add(second_organizer_role)
     await db_session.commit()
 
-    # Create time slot
+    # Create zone first (#105 - time slots are now at zone level)
+    zone_payload = {
+        "name": "Main Hall",
+        "exhibition_id": exhibition_id,
+    }
+    zone_resp = await auth_client.post("/api/v1/zones/", json=zone_payload)
+    zone_id = zone_resp.json()["id"]
+
+    # Create time slot on the zone
     slot_payload = {
         "name": "Afternoon",
         "start_time": "2026-07-01T14:00:00Z",
@@ -97,11 +105,12 @@ async def test_exhibition_with_slot(
         "buffer_time_minutes": 15,
     }
     slot_resp = await auth_client.post(
-        f"/api/v1/exhibitions/{exhibition_id}/slots", json=slot_payload
+        f"/api/v1/zones/{zone_id}/slots", json=slot_payload
     )
 
     return {
         "exhibition_id": exhibition_id,
+        "zone_id": zone_id,
         "time_slot_id": slot_resp.json()["id"],
     }
 

@@ -23,11 +23,31 @@ interface TimeSlotFormProps {
   onSubmit: (data: TimeSlotCreate) => Promise<void>;
   onCancel: () => void;
   isSubmitting: boolean;
+  /** Exhibition start date for defaults and constraints */
+  exhibitionStartDate?: string;
+  /** Exhibition end date for constraints */
+  exhibitionEndDate?: string;
 }
 
 function formatDateTimeLocal(isoString: string): string {
   const date = new Date(isoString);
-  return date.toISOString().slice(0, 16);
+  // Format as local time for datetime-local input (YYYY-MM-DDTHH:MM)
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  const hours = String(date.getHours()).padStart(2, '0');
+  const minutes = String(date.getMinutes()).padStart(2, '0');
+  return `${year}-${month}-${day}T${hours}:${minutes}`;
+}
+
+function formatDateFromDate(date: Date): string {
+  // Format Date object as local time for datetime-local input
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  const hours = String(date.getHours()).padStart(2, '0');
+  const minutes = String(date.getMinutes()).padStart(2, '0');
+  return `${year}-${month}-${day}T${hours}:${minutes}`;
 }
 
 export function TimeSlotForm({
@@ -35,25 +55,45 @@ export function TimeSlotForm({
   onSubmit,
   onCancel,
   isSubmitting,
+  exhibitionStartDate,
+  exhibitionEndDate,
 }: TimeSlotFormProps) {
   const t = useTranslations('Admin');
   const tCommon = useTranslations('Common');
+
+  // Format exhibition dates for datetime-local inputs (min/max constraints)
+  const minDateTime = exhibitionStartDate ? formatDateTimeLocal(exhibitionStartDate) : undefined;
+  const maxDateTime = exhibitionEndDate ? formatDateTimeLocal(exhibitionEndDate) : undefined;
+
+  // Default start time: exhibition start date at 09:00
+  const defaultStartTime = exhibitionStartDate
+    ? formatDateTimeLocal(new Date(new Date(exhibitionStartDate).setHours(9, 0, 0, 0)).toISOString())
+    : '';
+  // Default end time: exhibition start date at 13:00
+  const defaultEndTime = exhibitionStartDate
+    ? formatDateTimeLocal(new Date(new Date(exhibitionStartDate).setHours(13, 0, 0, 0)).toISOString())
+    : '';
 
   const {
     register,
     handleSubmit,
     reset,
+    watch,
+    setValue,
     formState: { errors },
   } = useForm<TimeSlotFormData>({
     resolver: zodResolver(timeSlotSchema),
     defaultValues: {
       name: '',
-      start_time: '',
-      end_time: '',
+      start_time: defaultStartTime,
+      end_time: defaultEndTime,
       max_duration_minutes: 240,
       buffer_time_minutes: 15,
     },
   });
+
+  // Watch start_time to auto-update end_time
+  const startTime = watch('start_time');
 
   useEffect(() => {
     if (slot) {
@@ -67,13 +107,25 @@ export function TimeSlotForm({
     } else {
       reset({
         name: '',
-        start_time: '',
-        end_time: '',
+        start_time: defaultStartTime,
+        end_time: defaultEndTime,
         max_duration_minutes: 240,
         buffer_time_minutes: 15,
       });
     }
-  }, [slot, reset]);
+  }, [slot, reset, defaultStartTime, defaultEndTime]);
+
+  // Auto-update end_time when start_time changes (only for new slots)
+  useEffect(() => {
+    if (!slot && startTime) {
+      const startDate = new Date(startTime);
+      if (!isNaN(startDate.getTime())) {
+        // Set end time to start time + 2 hours
+        const endDate = new Date(startDate.getTime() + 2 * 60 * 60 * 1000);
+        setValue('end_time', formatDateFromDate(endDate));
+      }
+    }
+  }, [startTime, slot, setValue]);
 
   const handleFormSubmit = async (data: TimeSlotFormData) => {
     const payload = {
@@ -100,6 +152,8 @@ export function TimeSlotForm({
           {...register('start_time')}
           type="datetime-local"
           label={t('startTime')}
+          min={minDateTime}
+          max={maxDateTime}
           error={errors.start_time?.message}
         />
 
@@ -107,6 +161,8 @@ export function TimeSlotForm({
           {...register('end_time')}
           type="datetime-local"
           label={t('endTime')}
+          min={minDateTime}
+          max={maxDateTime}
           error={errors.end_time?.message}
         />
       </div>
