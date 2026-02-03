@@ -288,7 +288,7 @@ export function RolesList({ exhibitionId }: RolesListProps) {
                 onFocus={() => setShowSearchResults(true)}
               />
               {/* Search results dropdown */}
-              {showSearchResults && (searchResults.length > 0 || isSearching) && (
+              {showSearchResults && userSearch.length >= 3 && (
                 <div
                   className="absolute z-10 w-full mt-1 rounded-md shadow-lg max-h-60 overflow-auto"
                   style={{ backgroundColor: 'var(--color-bg-primary)', border: '1px solid var(--color-border)' }}
@@ -297,7 +297,7 @@ export function RolesList({ exhibitionId }: RolesListProps) {
                     <div className="p-3 text-sm" style={{ color: 'var(--color-text-muted)' }}>
                       {t('searching')}
                     </div>
-                  ) : (
+                  ) : searchResults.length > 0 ? (
                     searchResults.map((user) => (
                       <button
                         key={user.id}
@@ -315,6 +315,17 @@ export function RolesList({ exhibitionId }: RolesListProps) {
                         )}
                       </button>
                     ))
+                  ) : (
+                    <div className="p-3 text-sm" style={{ color: 'var(--color-text-muted)' }}>
+                      {/* Check if search is an exact email match of an existing team member */}
+                      {roles.some((r) =>
+                        r.user_email?.toLowerCase() === userSearch.toLowerCase()
+                      ) ? (
+                        t('userAlreadyMember')
+                      ) : (
+                        t('noUsersFound')
+                      )}
+                    </div>
                   )}
                 </div>
               )}

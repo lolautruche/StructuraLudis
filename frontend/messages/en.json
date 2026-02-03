@@ -406,6 +406,8 @@
       "searchUserPlaceholder": "Search by name or email (min. 3 chars)...",
       "searching": "Searching...",
       "minChars": "Type at least 3 characters to search",
+      "noUsersFound": "No users found (or already a member)",
+      "userAlreadyMember": "This user is already a team member",
       "userSelected": "Selected: {email}",
       "role": "Role",
       "selectZones": "Zones (required for Partner)",
