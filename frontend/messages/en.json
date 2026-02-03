@@ -363,6 +363,7 @@
     "statuses": {
       "DRAFT": "Draft",
       "PUBLISHED": "Published",
+      "SUSPENDED": "Suspended",
       "ARCHIVED": "Archived"
     },
     "tableStatuses": {
