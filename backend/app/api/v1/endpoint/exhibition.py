@@ -113,6 +113,18 @@ async def list_exhibitions(
             response = ExhibitionRead.model_validate(exhibition)
             response.can_manage = can_manage
             response.user_exhibition_role = user_exhibition_role
+
+            # Check if user is registered (Issue #77)
+            if current_user:
+                reg_result = await db.execute(
+                    select(ExhibitionRegistration).where(
+                        ExhibitionRegistration.user_id == current_user.id,
+                        ExhibitionRegistration.exhibition_id == exhibition.id,
+                        ExhibitionRegistration.cancelled_at.is_(None),
+                    )
+                )
+                response.is_user_registered = reg_result.scalar_one_or_none() is not None
+
             responses.append(response)
 
     return responses

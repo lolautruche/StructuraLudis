@@ -45,7 +45,9 @@ export function ExhibitionCard({ exhibition, locale = 'fr' }: ExhibitionCardProp
           <h3 className="text-xl font-bold text-slate-900 dark:text-white line-clamp-2 hover:text-ludis-primary transition-colors">
             {exhibition.title}
           </h3>
-          {isPast ? (
+          {exhibition.is_user_registered ? (
+            <Badge variant="info" size="sm">{t('registered')}</Badge>
+          ) : isPast ? (
             <Badge variant="default" size="sm">{t('past')}</Badge>
           ) : isOpen ? (
             <Badge variant="success" size="sm">{t('registrationOpen')}</Badge>
