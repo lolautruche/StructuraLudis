@@ -176,6 +176,8 @@ export default function ManageExhibitionPage() {
             <ZoneList
               exhibitionId={exhibition.id}
               partnerMode={isPartner}
+              exhibitionStartDate={exhibition.start_date}
+              exhibitionEndDate={exhibition.end_date}
             />
           )}
           {currentTab === 'roles' && isOrganizer && (

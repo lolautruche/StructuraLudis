@@ -8,6 +8,10 @@ import { TimeSlotForm } from './TimeSlotForm';
 
 interface TimeSlotListProps {
   zoneId: string;
+  /** Exhibition start date for time slot defaults and constraints */
+  exhibitionStartDate?: string;
+  /** Exhibition end date for time slot constraints */
+  exhibitionEndDate?: string;
 }
 
 function formatDateTime(isoString: string): string {
@@ -29,7 +33,7 @@ function formatDuration(minutes: number): string {
   return `${hours}h${mins}`;
 }
 
-export function TimeSlotList({ zoneId }: TimeSlotListProps) {
+export function TimeSlotList({ zoneId, exhibitionStartDate, exhibitionEndDate }: TimeSlotListProps) {
   const t = useTranslations('Admin');
   const tCommon = useTranslations('Common');
 
@@ -195,6 +199,8 @@ export function TimeSlotList({ zoneId }: TimeSlotListProps) {
               onSubmit={handleCreate}
               onCancel={closeForm}
               isSubmitting={isSubmitting}
+              exhibitionStartDate={exhibitionStartDate}
+              exhibitionEndDate={exhibitionEndDate}
             />
           </Card.Content>
         </Card>
@@ -226,6 +232,8 @@ export function TimeSlotList({ zoneId }: TimeSlotListProps) {
                       onSubmit={handleUpdate}
                       onCancel={closeForm}
                       isSubmitting={isSubmitting}
+                      exhibitionStartDate={exhibitionStartDate}
+                      exhibitionEndDate={exhibitionEndDate}
                     />
                   </Card.Content>
                 </Card>
