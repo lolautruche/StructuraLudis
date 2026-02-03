@@ -2,6 +2,17 @@ import { render, screen } from '@testing-library/react';
 import { SessionDetail } from '../SessionDetail';
 import type { GameSession } from '@/lib/api/types';
 
+// Mock ToastContext
+jest.mock('@/contexts/ToastContext', () => ({
+  useToast: () => ({
+    showSuccess: jest.fn(),
+    showError: jest.fn(),
+    showInfo: jest.fn(),
+    showWarning: jest.fn(),
+    showToast: jest.fn(),
+  }),
+}));
+
 // Mock next-intl
 jest.mock('next-intl', () => ({
   useTranslations: (namespace: string) => (key: string, values?: Record<string, unknown>) => {
