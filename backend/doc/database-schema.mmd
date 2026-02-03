@@ -101,7 +101,7 @@ erDiagram
 
     TimeSlot {
         uuid id PK
-        uuid exhibition_id FK
+        uuid zone_id FK "Issue 105 - Moved from exhibition to zone"
         string name
         datetime start_time
         datetime end_time
@@ -279,12 +279,12 @@ erDiagram
     User ||--o{ Notification : "receives"
 
     Exhibition ||--o{ UserExhibitionRole : "has role assignments"
-    Exhibition ||--o{ TimeSlot : "has"
     Exhibition ||--o{ Zone : "contains"
     Exhibition ||--o{ SafetyTool : "defines"
     Exhibition ||--o{ GameSession : "hosts"
 
     Zone ||--o{ PhysicalTable : "contains"
+    Zone ||--o{ TimeSlot : "has (Issue 105)"
 
     PhysicalTable ||--o{ GameSession : "hosts"
 
