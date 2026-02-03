@@ -1,0 +1,23 @@
+{% extends "email/base.html" %}
+
+{% block content %}
+<h2>{{ greeting }}</h2>
+
+<p>{{ intro_text }}</p>
+
+<div class="info-box">
+    <strong>{{ event_label }}:</strong> {{ exhibition_title }}
+</div>
+
+{% if booking_count and booking_count > 0 %}
+<p style="color: #b45309;">{{ bookings_cancelled_text }}</p>
+{% endif %}
+
+{% if action_url %}
+<p style="text-align: center;">
+    <a href="{{ action_url }}" class="button">{{ action_button_text }}</a>
+</p>
+{% endif %}
+
+<p>{{ closing_text }}</p>
+{% endblock %}

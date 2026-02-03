@@ -25,7 +25,7 @@ from app.domain.game.schemas import (
     ModerationCommentRead,
     SessionEndReport,
 )
-from app.domain.exhibition.entity import Exhibition, TimeSlot, PhysicalTable, Zone
+from app.domain.exhibition.entity import Exhibition, TimeSlot, PhysicalTable, Zone, ExhibitionRegistration
 from app.domain.organization.entity import UserGroup
 from app.domain.user.entity import User
 from app.domain.shared.entity import (
@@ -854,6 +854,34 @@ class GameSessionService:
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Can only book validated sessions",
             )
+
+        # Check exhibition registration if required (Issue #77)
+        exhibition_result = await self.db.execute(
+            select(Exhibition).where(Exhibition.id == session.exhibition_id)
+        )
+        exhibition = exhibition_result.scalar_one_or_none()
+        if exhibition and exhibition.requires_registration:
+            # Check if user has an exhibition role (organizers/partners are exempt)
+            user_has_role = await has_exhibition_role(
+                current_user,
+                session.exhibition_id,
+                [ExhibitionRole.ORGANIZER, ExhibitionRole.PARTNER],
+                self.db,
+            )
+            if not user_has_role:
+                registration_result = await self.db.execute(
+                    select(ExhibitionRegistration).where(
+                        ExhibitionRegistration.user_id == current_user.id,
+                        ExhibitionRegistration.exhibition_id == session.exhibition_id,
+                        ExhibitionRegistration.cancelled_at.is_(None),
+                    )
+                )
+                if not registration_result.scalar_one_or_none():
+                    locale = current_user.locale or "en"
+                    raise HTTPException(
+                        status_code=status.HTTP_403_FORBIDDEN,
+                        detail=get_message("registration_required", locale),
+                    )
 
         # Check minimum age requirement
         if session.min_age is not None:

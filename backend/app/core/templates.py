@@ -163,6 +163,14 @@ EMAIL_STRINGS = {
         "changes_requested_action": "Edit Session",
         "changes_requested_closing": "Once you've made the changes, please resubmit your session for review.",
         "comment_label": "Requested changes",
+
+        # Exhibition unregistration (Issue #77)
+        "exhibition_unregistered_subject": "Unregistration confirmed: {exhibition_title}",
+        "exhibition_unregistered_greeting": "Unregistration Confirmed",
+        "exhibition_unregistered_intro": "Your registration for the following event has been cancelled.",
+        "exhibition_unregistered_bookings_cancelled": "Your {booking_count} active booking(s) have also been cancelled.",
+        "exhibition_unregistered_action": "Browse Events",
+        "exhibition_unregistered_closing": "We hope to see you at another event!",
     },
     "fr": {
         # Common
@@ -303,6 +311,14 @@ EMAIL_STRINGS = {
         "changes_requested_action": "Modifier la session",
         "changes_requested_closing": "Une fois les modifications effectuées, veuillez resoumettre votre session pour examen.",
         "comment_label": "Modifications demandées",
+
+        # Exhibition unregistration (Issue #77)
+        "exhibition_unregistered_subject": "Désinscription confirmée : {exhibition_title}",
+        "exhibition_unregistered_greeting": "Désinscription confirmée",
+        "exhibition_unregistered_intro": "Votre inscription à l'événement suivant a été annulée.",
+        "exhibition_unregistered_bookings_cancelled": "Vos {booking_count} réservation(s) active(s) ont également été annulées.",
+        "exhibition_unregistered_action": "Parcourir les événements",
+        "exhibition_unregistered_closing": "Nous espérons vous revoir à un autre événement !",
     },
 }
 
@@ -811,4 +827,34 @@ def render_changes_requested(
         apology_text=get_string("changes_requested_closing", locale),
         action_button_text=get_string("changes_requested_action", locale),
         reason_label=get_string("comment_label", locale),
+    )
+
+
+def render_exhibition_unregistered(
+    locale: str,
+    exhibition_title: str,
+    booking_count: int = 0,
+    action_url: Optional[str] = None,
+) -> tuple[str, str]:
+    """Render exhibition unregistration confirmation email (Issue #77)."""
+    bookings_cancelled_text = ""
+    if booking_count > 0:
+        bookings_cancelled_text = get_string(
+            "exhibition_unregistered_bookings_cancelled",
+            locale,
+            booking_count=booking_count,
+        )
+
+    return render_email_template(
+        "exhibition_unregistered",
+        locale=locale,
+        subject=get_string("exhibition_unregistered_subject", locale, exhibition_title=exhibition_title),
+        exhibition_title=exhibition_title,
+        booking_count=booking_count,
+        bookings_cancelled_text=bookings_cancelled_text,
+        action_url=action_url,
+        greeting=get_string("exhibition_unregistered_greeting", locale),
+        intro_text=get_string("exhibition_unregistered_intro", locale),
+        action_button_text=get_string("exhibition_unregistered_action", locale),
+        closing_text=get_string("exhibition_unregistered_closing", locale),
     )

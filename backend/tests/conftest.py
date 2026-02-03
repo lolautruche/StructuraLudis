@@ -57,7 +57,8 @@ async def db_session(test_engine) -> AsyncGenerator[AsyncSession, None]:
         for table in ["moderation_comments", "bookings", "game_sessions", "physical_tables", "zones",
                       "safety_tools", "time_slots", "games", "game_categories",
                       "user_group_memberships", "group_permissions", "user_groups",
-                      "user_exhibition_roles", "exhibitions", "media", "audit_logs", "users", "organizations"]:
+                      "user_exhibition_roles", "exhibition_registrations", "exhibitions",
+                      "media", "audit_logs", "users", "organizations"]:
             try:
                 await conn.execute(text(f"TRUNCATE TABLE {table} CASCADE"))
             except Exception:

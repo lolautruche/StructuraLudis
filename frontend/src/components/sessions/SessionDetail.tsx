@@ -6,7 +6,7 @@ import { AvailabilityBadge } from './AvailabilityBadge';
 import { SafetyToolsBadges } from './SafetyToolsBadges';
 import { BookingButton } from './BookingButton';
 import { formatDate, formatTime } from '@/lib/utils';
-import type { GameSession, Booking } from '@/lib/api/types';
+import type { GameSession, Booking, Exhibition } from '@/lib/api/types';
 
 interface SessionDetailProps {
   session: GameSession;
@@ -18,6 +18,8 @@ interface SessionDetailProps {
   onCancelBooking?: () => Promise<void>;
   onCheckIn?: () => Promise<void>;
   isLoading?: boolean;
+  /** Exhibition data for registration check (Issue #77) */
+  exhibition?: Exhibition | null;
 }
 
 export function SessionDetail({
@@ -30,6 +32,7 @@ export function SessionDetail({
   onCancelBooking,
   onCheckIn,
   isLoading = false,
+  exhibition,
 }: SessionDetailProps) {
   const t = useTranslations('Session');
   const tTable = useTranslations('GameTable');
@@ -81,6 +84,7 @@ export function SessionDetail({
               onCancelBooking={onCancelBooking}
               onCheckIn={onCheckIn}
               isLoading={isLoading}
+              exhibition={exhibition}
             />
           </div>
         </Card.Content>

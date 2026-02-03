@@ -10,6 +10,7 @@ import {
   type SessionFiltersState,
 } from '@/components/sessions';
 import { SessionCard } from '@/components/sessions/SessionCard';
+import { RegistrationButton } from '@/components/exhibitions';
 import { Button, Card } from '@/components/ui';
 import { sessionsApi, exhibitionsApi } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
@@ -67,33 +68,34 @@ export default function ExhibitionSessionsPage() {
     updateUrl(defaultFilters);
   }, [updateUrl]);
 
-  // Fetch exhibition and sessions
-  useEffect(() => {
-    async function fetchData() {
-      setIsLoading(true);
+  // Fetch data function (can be called to refresh)
+  const fetchData = useCallback(async () => {
+    setIsLoading(true);
 
-      // Fetch exhibition details
-      const exhibitionResponse = await exhibitionsApi.getById(exhibitionId);
-      if (exhibitionResponse.data) {
-        setExhibition(exhibitionResponse.data);
-      }
-
-      // Fetch sessions
-      const sessionsResponse = await sessionsApi.search({
-        exhibition_id: exhibitionId,
-        status: 'VALIDATED',
-        has_available_seats: filters.hasSeats || undefined,
-        language: filters.language || undefined,
-      });
-
-      if (sessionsResponse.data) {
-        setSessions(sessionsResponse.data);
-      }
-      setIsLoading(false);
+    // Fetch exhibition details
+    const exhibitionResponse = await exhibitionsApi.getById(exhibitionId);
+    if (exhibitionResponse.data) {
+      setExhibition(exhibitionResponse.data);
     }
 
-    fetchData();
+    // Fetch sessions
+    const sessionsResponse = await sessionsApi.search({
+      exhibition_id: exhibitionId,
+      status: 'VALIDATED',
+      has_available_seats: filters.hasSeats || undefined,
+      language: filters.language || undefined,
+    });
+
+    if (sessionsResponse.data) {
+      setSessions(sessionsResponse.data);
+    }
+    setIsLoading(false);
   }, [exhibitionId, filters.hasSeats, filters.language]);
+
+  // Fetch exhibition and sessions
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
   // Client-side filtering for text search
   const filteredSessions = useMemo(() => {
@@ -140,7 +142,11 @@ export default function ExhibitionSessionsPage() {
                 )}
               </div>
             </div>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap items-center gap-2">
+              <RegistrationButton
+                exhibition={exhibition}
+                onRegistrationChange={fetchData}
+              />
               {exhibition.can_manage && (
                 <Link href={`/exhibitions/${exhibitionId}/manage`}>
                   <Button variant="secondary">
@@ -149,11 +155,16 @@ export default function ExhibitionSessionsPage() {
                 </Link>
               )}
               {isAuthenticated && (
-                <Link href={`/my/sessions/new?exhibition=${exhibitionId}`}>
-                  <Button variant="primary">
-                    {tExhibition('proposeSession')}
-                  </Button>
-                </Link>
+                // Hide propose session if registration required and not registered (unless user has a role)
+                (!exhibition.requires_registration ||
+                  exhibition.is_user_registered ||
+                  exhibition.user_exhibition_role) && (
+                  <Link href={`/my/sessions/new?exhibition=${exhibitionId}`}>
+                    <Button variant="primary">
+                      {tExhibition('proposeSession')}
+                    </Button>
+                  </Link>
+                )
               )}
             </div>
           </div>

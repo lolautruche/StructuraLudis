@@ -36,6 +36,7 @@ const settingsSchema = z.object({
   is_registration_open: z.boolean(),
   registration_opens_at: z.string().optional().nullable(),
   registration_closes_at: z.string().optional().nullable(),
+  requires_registration: z.boolean(),
   primary_language: z.string().max(10),
 });
 
@@ -65,6 +66,7 @@ export function ExhibitionSettingsForm({
   const {
     register,
     handleSubmit,
+    watch,
     formState: { errors, isSubmitting },
   } = useForm<SettingsFormData>({
     resolver: zodResolver(settingsSchema),
@@ -81,9 +83,12 @@ export function ExhibitionSettingsForm({
       is_registration_open: exhibition.is_registration_open,
       registration_opens_at: formatDateTimeLocal(exhibition.registration_opens_at),
       registration_closes_at: formatDateTimeLocal(exhibition.registration_closes_at),
+      requires_registration: exhibition.requires_registration,
       primary_language: exhibition.primary_language,
     },
   });
+
+  const requiresRegistration = watch('requires_registration');
 
   const onSubmit = async (data: SettingsFormData) => {
     setServerError(null);
@@ -106,6 +111,7 @@ export function ExhibitionSettingsForm({
       registration_closes_at: data.registration_closes_at
         ? new Date(data.registration_closes_at).toISOString()
         : null,
+      requires_registration: data.requires_registration,
       primary_language: data.primary_language,
     };
 
@@ -232,9 +238,20 @@ export function ExhibitionSettingsForm({
           {t('registration')}
         </h3>
 
+        <div className="space-y-1">
+          <Checkbox
+            {...register('requires_registration')}
+            label={t('requiresRegistration')}
+          />
+          <p className="text-xs text-slate-500 dark:text-slate-400 ml-7">
+            {t('requiresRegistrationHelper')}
+          </p>
+        </div>
+
         <Checkbox
           {...register('is_registration_open')}
           label={t('registrationOpen')}
+          disabled={!requiresRegistration}
         />
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

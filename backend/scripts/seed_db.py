@@ -43,6 +43,7 @@ from app.domain.models import (
     Organization,
     UserGroup,
     Exhibition,
+    ExhibitionRegistration,
     TimeSlot,
     Zone,
     PhysicalTable,
@@ -78,6 +79,7 @@ async def clear_data(session):
     await session.execute(delete(TimeSlot))
     await session.execute(delete(PhysicalTable))
     await session.execute(delete(Zone))
+    await session.execute(delete(ExhibitionRegistration))
     await session.execute(delete(UserExhibitionRole))
     await session.execute(delete(Exhibition))
     await session.execute(delete(Game))
@@ -542,6 +544,7 @@ async def seed(force: bool = False):
             country_code="FR",
             timezone="Europe/Paris",
             grace_period_minutes=15,
+            requires_registration=True,
             is_registration_open=True,
             primary_language="fr",
             secondary_languages=["en"],
@@ -1017,6 +1020,7 @@ async def seed(force: bool = False):
 
             # === IN_PROGRESS SESSION ===
             # Session 10: In progress with checked-in players - Friday Afternoon
+            # Note: Only players 8-9 (Isabelle, Julien) to leave players 10-11 (Karine, Lucas) unregistered
             {
                 "game": cthulhu,
                 "gm": gm1,
@@ -1029,7 +1033,7 @@ async def seed(force: bool = False):
                 "safety_tools": ["x-card"],
                 "min_age": 16,
                 "language": "fr",
-                "players": players[8:12],  # 4 checked-in players
+                "players": players[8:10],  # 2 checked-in players (Isabelle, Julien)
                 "checked_in": True,
             },
 
@@ -1167,6 +1171,29 @@ async def seed(force: bool = False):
                     status=BookingStatus.WAITING_LIST,
                 ))
 
+        # =====================================================================
+        # 10. EXHIBITION REGISTRATIONS (Issue #77)
+        # - All GMs must be registered
+        # - Players with sessions must be registered
+        # - Players 10-11 (Karine, Lucas) have no sessions and stay unregistered
+        # =====================================================================
+        # GMs registration
+        for gm in [gm1, gm2, gm3]:
+            session.add(ExhibitionRegistration(
+                id=uuid4(),
+                user_id=gm.id,
+                exhibition_id=exhibition.id,
+            ))
+
+        # Players with sessions: players 0-9 (indices 0 to 9)
+        # Players 10-11 (Karine, Lucas) have no sessions and are not registered
+        for player in players[:10]:
+            session.add(ExhibitionRegistration(
+                id=uuid4(),
+                user_id=player.id,
+                exhibition_id=exhibition.id,
+            ))
+
         await session.commit()
 
         # Summary
@@ -1186,6 +1213,8 @@ async def seed(force: bool = False):
         print(f"  - {len(game_sessions)} game sessions")
         print(f"  - {len(rpg_tables)} RPG tables + {len(singes_tables)} booth tables + {len(board_tables)} board game tables")
         print(f"  - {len(time_slots)} time slots")
+        print(f"  - 13 exhibition registrations (3 GMs + 10 players)")
+        print(f"  - 2 unregistered players (Karine, Lucas)")
         print("=" * 60)
 
 

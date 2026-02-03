@@ -1,9 +1,12 @@
 'use client';
 
+import { useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { Button } from '@/components/ui';
+import { Button, ConfirmDialog } from '@/components/ui';
 import { Link } from '@/i18n/routing';
-import type { GameSession, Booking } from '@/lib/api/types';
+import { exhibitionsApi } from '@/lib/api';
+import { useToast } from '@/contexts/ToastContext';
+import type { GameSession, Booking, Exhibition } from '@/lib/api/types';
 
 interface BookingButtonProps {
   session: GameSession;
@@ -14,6 +17,8 @@ interface BookingButtonProps {
   onCancelBooking?: () => Promise<void>;
   onCheckIn?: () => Promise<void>;
   isLoading?: boolean;
+  /** Exhibition data for registration check (Issue #77) */
+  exhibition?: Exhibition | null;
 }
 
 export function BookingButton({
@@ -25,13 +30,24 @@ export function BookingButton({
   onCancelBooking,
   onCheckIn,
   isLoading = false,
+  exhibition,
 }: BookingButtonProps) {
   const t = useTranslations('Session');
+  const tExhibition = useTranslations('Exhibition');
+  const { showSuccess } = useToast();
+  const [showRegisterDialog, setShowRegisterDialog] = useState(false);
+  const [isRegistering, setIsRegistering] = useState(false);
+  const [registerError, setRegisterError] = useState<string | null>(null);
 
   const availableSeats = session.max_players_count - session.confirmed_players_count;
   const isFull = availableSeats <= 0;
   const canBook = session.status === 'VALIDATED' && session.has_available_seats;
   const canJoinWaitlist = session.status === 'VALIDATED' && isFull;
+
+  // Check if registration is required but user is not registered (Issue #77)
+  const requiresRegistration = exhibition?.requires_registration ?? false;
+  const isUserRegistered = exhibition?.is_user_registered ?? false;
+  const needsRegistration = requiresRegistration && !isUserRegistered;
 
   // Check if check-in is available (30 minutes before start until session starts)
   const now = new Date();
@@ -60,6 +76,62 @@ export function BookingButton({
           {t('loginToBook')}
         </Button>
       </Link>
+    );
+  }
+
+  // Registration required but user not registered (Issue #77)
+  const handleRegisterForEvent = async () => {
+    if (!exhibition) return;
+    setIsRegistering(true);
+    setRegisterError(null);
+    try {
+      const response = await exhibitionsApi.register(exhibition.id);
+      if (response.error) {
+        setRegisterError(response.error.detail || response.error.message);
+      } else {
+        setShowRegisterDialog(false);
+        showSuccess(tExhibition('registrationSuccess', { title: exhibition.title }));
+        // Reload the page to refresh exhibition data
+        window.location.reload();
+      }
+    } catch {
+      setRegisterError(tExhibition('registrationError'));
+    } finally {
+      setIsRegistering(false);
+    }
+  };
+
+  if (needsRegistration && exhibition) {
+    return (
+      <>
+        <div className="flex flex-col gap-2">
+          <p className="text-sm text-amber-600 dark:text-amber-400">
+            {tExhibition('registrationRequiredMessage')}
+          </p>
+          <Button
+            variant="primary"
+            className="w-full sm:w-auto"
+            onClick={() => setShowRegisterDialog(true)}
+          >
+            {tExhibition('registerForEvent')}
+          </Button>
+          {registerError && (
+            <span className="text-xs text-red-600 dark:text-red-400">{registerError}</span>
+          )}
+        </div>
+
+        <ConfirmDialog
+          isOpen={showRegisterDialog}
+          onClose={() => setShowRegisterDialog(false)}
+          onConfirm={handleRegisterForEvent}
+          title={tExhibition('confirmRegisterTitle', { title: exhibition.title })}
+          message={tExhibition('confirmRegisterMessage')}
+          confirmLabel={tExhibition('register')}
+          cancelLabel={tExhibition('cancel')}
+          variant="default"
+          isLoading={isRegistering}
+        />
+      </>
     );
   }
 

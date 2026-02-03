@@ -6,10 +6,10 @@ import { useTranslations, useLocale } from 'next-intl';
 import { Link } from '@/i18n/routing';
 import { Button, ConfirmDialog } from '@/components/ui';
 import { SessionDetail } from '@/components/sessions';
-import { sessionsApi } from '@/lib/api';
+import { sessionsApi, exhibitionsApi } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/contexts/ToastContext';
-import type { GameSession, Booking } from '@/lib/api/types';
+import type { GameSession, Booking, Exhibition } from '@/lib/api/types';
 
 export default function SessionDetailPage() {
   const params = useParams();
@@ -21,6 +21,7 @@ export default function SessionDetailPage() {
 
   const [session, setSession] = useState<GameSession | null>(null);
   const [userBooking, setUserBooking] = useState<Booking | null>(null);
+  const [exhibition, setExhibition] = useState<Exhibition | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isBooking, setIsBooking] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -41,6 +42,11 @@ export default function SessionDetailPage() {
 
     if (sessionResponse.data) {
       setSession(sessionResponse.data);
+      // Fetch exhibition for registration check (Issue #77)
+      const exhibitionResponse = await exhibitionsApi.getById(sessionResponse.data.exhibition_id);
+      if (exhibitionResponse.data) {
+        setExhibition(exhibitionResponse.data);
+      }
     } else {
       setError(sessionResponse.error?.message || 'Session not found');
     }
@@ -227,6 +233,7 @@ export default function SessionDetailPage() {
         onCancelBooking={handleCancelBooking}
         onCheckIn={handleCheckIn}
         isLoading={isBooking}
+        exhibition={exhibition}
       />
 
       {/* Cancel confirmation dialog */}

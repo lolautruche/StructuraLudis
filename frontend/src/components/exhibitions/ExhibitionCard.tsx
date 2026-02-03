@@ -1,7 +1,7 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import { Link } from '@/i18n/routing';
+import { useRouter } from '@/i18n/routing';
 import { Card, Badge, Button } from '@/components/ui';
 import type { Exhibition } from '@/lib/api/types';
 
@@ -23,21 +23,31 @@ function formatDateRange(startDate: string, endDate: string, locale: string): st
 
 export function ExhibitionCard({ exhibition, locale = 'fr' }: ExhibitionCardProps) {
   const t = useTranslations('Exhibition');
+  const router = useRouter();
 
   const isOpen = exhibition.is_registration_open;
   const isPast = new Date(exhibition.end_date) < new Date();
 
+  const handleCardClick = () => {
+    router.push(`/exhibitions/${exhibition.id}/sessions`);
+  };
+
+  const handleManageClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    router.push(`/exhibitions/${exhibition.id}/manage`);
+  };
+
   return (
-    <Card variant="interactive" className="h-full">
+    <Card variant="interactive" className="h-full cursor-pointer" onClick={handleCardClick}>
       <Card.Content className="space-y-4">
         {/* Header: Title + Status */}
         <div className="flex items-start justify-between gap-2">
-          <Link href={`/exhibitions/${exhibition.id}/sessions`}>
-            <h3 className="text-xl font-bold text-slate-900 dark:text-white line-clamp-2 hover:text-ludis-primary transition-colors">
-              {exhibition.title}
-            </h3>
-          </Link>
-          {isPast ? (
+          <h3 className="text-xl font-bold text-slate-900 dark:text-white line-clamp-2 hover:text-ludis-primary transition-colors">
+            {exhibition.title}
+          </h3>
+          {exhibition.is_user_registered ? (
+            <Badge variant="info" size="sm">{t('registered')}</Badge>
+          ) : isPast ? (
             <Badge variant="default" size="sm">{t('past')}</Badge>
           ) : isOpen ? (
             <Badge variant="success" size="sm">{t('registrationOpen')}</Badge>
@@ -71,17 +81,13 @@ export function ExhibitionCard({ exhibition, locale = 'fr' }: ExhibitionCardProp
 
         {/* Footer */}
         <div className="pt-2 border-t border-slate-200 dark:border-slate-700 flex items-center justify-between">
-          <Link href={`/exhibitions/${exhibition.id}/sessions`}>
-            <span className="text-sm text-primary-400 font-medium hover:text-primary-300 transition-colors">
-              {t('viewSessions')} →
-            </span>
-          </Link>
+          <span className="text-sm text-primary-400 font-medium">
+            {t('viewSessions')} →
+          </span>
           {exhibition.can_manage && (
-            <Link href={`/exhibitions/${exhibition.id}/manage`}>
-              <Button variant="secondary" size="sm">
-                {t('manage')}
-              </Button>
-            </Link>
+            <Button variant="secondary" size="sm" onClick={handleManageClick}>
+              {t('manage')}
+            </Button>
           )}
         </div>
       </Card.Content>

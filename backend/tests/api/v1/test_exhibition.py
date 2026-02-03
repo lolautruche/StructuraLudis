@@ -1729,3 +1729,263 @@ class TestUserSearchForRole:
         assert response.status_code == 200
         # Should return results (may be empty if no users match, but endpoint works)
         assert isinstance(response.json(), list)
+
+
+class TestExhibitionRegistration:
+    """Tests for Exhibition Registration endpoints (Issue #77)."""
+
+    async def _create_exhibition(
+        self,
+        auth_client: AsyncClient,
+        organization_id: str,
+        slug: str = "reg-test-exhibition",
+        requires_registration: bool = True,
+        is_registration_open: bool = True,
+    ) -> str:
+        """Helper to create an exhibition for registration tests."""
+        payload = {
+            "title": "Registration Test Exhibition",
+            "slug": slug,
+            "start_date": "2026-06-15T09:00:00Z",
+            "end_date": "2026-06-17T18:00:00Z",
+            "organization_id": organization_id,
+            "is_registration_open": is_registration_open,
+        }
+        resp = await auth_client.post("/api/v1/exhibitions/", json=payload)
+        assert resp.status_code == 201
+        exhibition_id = resp.json()["id"]
+
+        # Update requires_registration (not available at creation in schema)
+        if requires_registration:
+            update_resp = await auth_client.put(
+                f"/api/v1/exhibitions/{exhibition_id}",
+                json={"requires_registration": True}
+            )
+            assert update_resp.status_code == 200
+
+        return exhibition_id
+
+    async def test_register_success(
+        self, client: AsyncClient, auth_client: AsyncClient, test_organizer: dict,
+        test_user: dict
+    ):
+        """User can register for an exhibition."""
+        exhibition_id = await self._create_exhibition(
+            auth_client, test_organizer["organization_id"], "reg-success"
+        )
+
+        # User with verified email registers
+        response = await client.post(
+            f"/api/v1/exhibitions/{exhibition_id}/register",
+            headers={"X-User-ID": test_user["id"]},
+        )
+
+        assert response.status_code == 201
+        data = response.json()
+        assert data["user_id"] == test_user["id"]
+        assert data["exhibition_id"] == exhibition_id
+        assert data["cancelled_at"] is None
+        assert "registered_at" in data
+
+    async def test_register_requires_auth(
+        self, client: AsyncClient, auth_client: AsyncClient, test_organizer: dict
+    ):
+        """Register without auth returns 401."""
+        exhibition_id = await self._create_exhibition(
+            auth_client, test_organizer["organization_id"], "reg-noauth"
+        )
+
+        response = await client.post(f"/api/v1/exhibitions/{exhibition_id}/register")
+
+        assert response.status_code == 401
+
+    async def test_register_when_closed(
+        self, client: AsyncClient, auth_client: AsyncClient, test_organizer: dict,
+        test_user: dict
+    ):
+        """Registration fails when not open."""
+        exhibition_id = await self._create_exhibition(
+            auth_client, test_organizer["organization_id"], "reg-closed",
+            is_registration_open=False
+        )
+
+        response = await client.post(
+            f"/api/v1/exhibitions/{exhibition_id}/register",
+            headers={"X-User-ID": test_user["id"]},
+        )
+
+        assert response.status_code == 400
+        assert "not open" in response.json()["detail"]
+
+    async def test_duplicate_registration_fails(
+        self, client: AsyncClient, auth_client: AsyncClient, test_organizer: dict,
+        test_user: dict
+    ):
+        """Cannot register twice."""
+        exhibition_id = await self._create_exhibition(
+            auth_client, test_organizer["organization_id"], "reg-dup"
+        )
+
+        # First registration
+        response1 = await client.post(
+            f"/api/v1/exhibitions/{exhibition_id}/register",
+            headers={"X-User-ID": test_user["id"]},
+        )
+        assert response1.status_code == 201
+
+        # Second registration fails
+        response2 = await client.post(
+            f"/api/v1/exhibitions/{exhibition_id}/register",
+            headers={"X-User-ID": test_user["id"]},
+        )
+        assert response2.status_code == 409
+        assert "already registered" in response2.json()["detail"]
+
+    async def test_get_registration(
+        self, client: AsyncClient, auth_client: AsyncClient, test_organizer: dict,
+        test_user: dict
+    ):
+        """Can retrieve own registration."""
+        exhibition_id = await self._create_exhibition(
+            auth_client, test_organizer["organization_id"], "reg-get"
+        )
+
+        # Register first
+        await client.post(
+            f"/api/v1/exhibitions/{exhibition_id}/register",
+            headers={"X-User-ID": test_user["id"]},
+        )
+
+        # Get registration
+        response = await client.get(
+            f"/api/v1/exhibitions/{exhibition_id}/registration",
+            headers={"X-User-ID": test_user["id"]},
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["user_id"] == test_user["id"]
+
+    async def test_get_registration_not_registered(
+        self, client: AsyncClient, auth_client: AsyncClient, test_organizer: dict,
+        test_user: dict
+    ):
+        """Get registration returns null if not registered."""
+        exhibition_id = await self._create_exhibition(
+            auth_client, test_organizer["organization_id"], "reg-not"
+        )
+
+        response = await client.get(
+            f"/api/v1/exhibitions/{exhibition_id}/registration",
+            headers={"X-User-ID": test_user["id"]},
+        )
+
+        assert response.status_code == 200
+        assert response.json() is None
+
+    async def test_unregister_success(
+        self, client: AsyncClient, auth_client: AsyncClient, test_organizer: dict,
+        test_user: dict
+    ):
+        """Can unregister from exhibition."""
+        exhibition_id = await self._create_exhibition(
+            auth_client, test_organizer["organization_id"], "reg-unreg"
+        )
+
+        # Register first
+        await client.post(
+            f"/api/v1/exhibitions/{exhibition_id}/register",
+            headers={"X-User-ID": test_user["id"]},
+        )
+
+        # Unregister
+        response = await client.delete(
+            f"/api/v1/exhibitions/{exhibition_id}/registration",
+            headers={"X-User-ID": test_user["id"]},
+        )
+
+        assert response.status_code == 204
+
+        # Verify registration is cancelled (get returns null)
+        get_resp = await client.get(
+            f"/api/v1/exhibitions/{exhibition_id}/registration",
+            headers={"X-User-ID": test_user["id"]},
+        )
+        assert get_resp.status_code == 200
+        assert get_resp.json() is None
+
+    async def test_unregister_not_registered(
+        self, client: AsyncClient, auth_client: AsyncClient, test_organizer: dict,
+        test_user: dict
+    ):
+        """Unregister when not registered returns 404."""
+        exhibition_id = await self._create_exhibition(
+            auth_client, test_organizer["organization_id"], "reg-notfound"
+        )
+
+        response = await client.delete(
+            f"/api/v1/exhibitions/{exhibition_id}/registration",
+            headers={"X-User-ID": test_user["id"]},
+        )
+
+        assert response.status_code == 404
+
+    async def test_exhibition_shows_is_user_registered(
+        self, client: AsyncClient, auth_client: AsyncClient, test_organizer: dict,
+        test_user: dict
+    ):
+        """Exhibition GET shows is_user_registered for authenticated user."""
+        exhibition_id = await self._create_exhibition(
+            auth_client, test_organizer["organization_id"], "reg-flag"
+        )
+
+        # Before registration
+        response1 = await client.get(
+            f"/api/v1/exhibitions/{exhibition_id}",
+            headers={"X-User-ID": test_user["id"]},
+        )
+        assert response1.status_code == 200
+        assert response1.json()["is_user_registered"] is False
+
+        # Register
+        await client.post(
+            f"/api/v1/exhibitions/{exhibition_id}/register",
+            headers={"X-User-ID": test_user["id"]},
+        )
+
+        # After registration
+        response2 = await client.get(
+            f"/api/v1/exhibitions/{exhibition_id}",
+            headers={"X-User-ID": test_user["id"]},
+        )
+        assert response2.status_code == 200
+        assert response2.json()["is_user_registered"] is True
+
+    async def test_re_register_after_cancel(
+        self, client: AsyncClient, auth_client: AsyncClient, test_organizer: dict,
+        test_user: dict
+    ):
+        """Can re-register after cancelling."""
+        exhibition_id = await self._create_exhibition(
+            auth_client, test_organizer["organization_id"], "reg-rereg"
+        )
+
+        # Register
+        await client.post(
+            f"/api/v1/exhibitions/{exhibition_id}/register",
+            headers={"X-User-ID": test_user["id"]},
+        )
+
+        # Unregister
+        await client.delete(
+            f"/api/v1/exhibitions/{exhibition_id}/registration",
+            headers={"X-User-ID": test_user["id"]},
+        )
+
+        # Re-register
+        response = await client.post(
+            f"/api/v1/exhibitions/{exhibition_id}/register",
+            headers={"X-User-ID": test_user["id"]},
+        )
+
+        assert response.status_code == 201

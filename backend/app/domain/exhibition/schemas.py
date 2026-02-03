@@ -90,6 +90,8 @@ class ExhibitionUpdate(BaseModel):
     is_registration_open: Optional[bool] = None
     registration_opens_at: Optional[datetime] = None
     registration_closes_at: Optional[datetime] = None
+    # Registration requirement (Issue #77)
+    requires_registration: Optional[bool] = None
     # Language settings (Issue #39 - JS.03)
     primary_language: Optional[str] = Field(None, max_length=10)
     secondary_languages: Optional[List[str]] = None
@@ -106,6 +108,8 @@ class ExhibitionRead(ExhibitionBase):
     status: ExhibitionStatusEnum
     settings: Optional[dict] = None
     address: Optional[str] = None
+    # Registration requirement (Issue #77)
+    requires_registration: bool = False
     # i18n fields (#34)
     title_i18n: I18nField = None
     description_i18n: I18nField = None
@@ -115,6 +119,13 @@ class ExhibitionRead(ExhibitionBase):
     can_manage: bool = False
     user_exhibition_role: Optional[str] = Field(
         None, description="User's role for this exhibition: ORGANIZER, PARTNER, or null"
+    )
+    # User registration status (Issue #77) - computed for authenticated user
+    is_user_registered: bool = Field(
+        default=False, description="Whether the current user is registered for this exhibition"
+    )
+    registration_count: Optional[int] = Field(
+        None, description="Total number of registered users (only for organizers)"
     )
 
     model_config = ConfigDict(from_attributes=True)
@@ -434,5 +445,20 @@ class ExhibitionRoleRead(BaseModel):
     )
     created_at: datetime
     updated_at: Optional[datetime] = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+# =============================================================================
+# Exhibition Registration Schemas (Issue #77)
+# =============================================================================
+
+class ExhibitionRegistrationRead(BaseModel):
+    """Schema for reading an exhibition registration."""
+    id: UUID
+    user_id: UUID
+    exhibition_id: UUID
+    registered_at: datetime
+    cancelled_at: Optional[datetime] = None
 
     model_config = ConfigDict(from_attributes=True)

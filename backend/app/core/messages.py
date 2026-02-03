@@ -156,6 +156,20 @@ MESSAGES = {
         "fr": "Une catégorie avec ce slug existe déjà",
     },
 
+    # Registration errors (Issue #77)
+    "registration_required": {
+        "en": "You must register for this exhibition before booking sessions",
+        "fr": "Vous devez vous inscrire à cet événement avant de réserver des sessions",
+    },
+    "registration_not_found": {
+        "en": "Registration not found",
+        "fr": "Inscription introuvable",
+    },
+    "unregister_has_bookings": {
+        "en": "You have {count} active booking(s) for this event",
+        "fr": "Vous avez {count} réservation(s) active(s) pour cet événement",
+    },
+
     # Booking errors
     "booking_not_found": {
         "en": "Booking not found",
