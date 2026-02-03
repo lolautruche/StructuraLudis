@@ -276,13 +276,13 @@ class TestDeleteExhibition:
 
 
 class TestTimeSlots:
-    """Tests for TimeSlot endpoints."""
+    """Tests for TimeSlot endpoints (now at zone level - Issue #105)."""
 
     async def test_create_slot_success(
         self, auth_client: AsyncClient, test_organizer: dict
     ):
         """Create time slot returns 201."""
-        # Create exhibition first
+        # Create exhibition and zone first
         exhibition_payload = {
             "title": "Slot Test Exhibition",
             "slug": "slot-test",
@@ -293,7 +293,11 @@ class TestTimeSlots:
         create_resp = await auth_client.post("/api/v1/exhibitions/", json=exhibition_payload)
         exhibition_id = create_resp.json()["id"]
 
-        # Create time slot
+        zone_payload = {"name": "Main Zone", "exhibition_id": exhibition_id}
+        zone_resp = await auth_client.post("/api/v1/zones/", json=zone_payload)
+        zone_id = zone_resp.json()["id"]
+
+        # Create time slot on zone
         slot_payload = {
             "name": "Morning",
             "start_time": "2026-07-01T09:00:00Z",
@@ -302,19 +306,20 @@ class TestTimeSlots:
             "buffer_time_minutes": 15,
         }
         response = await auth_client.post(
-            f"/api/v1/exhibitions/{exhibition_id}/slots", json=slot_payload
+            f"/api/v1/zones/{zone_id}/slots", json=slot_payload
         )
 
         assert response.status_code == 201
         data = response.json()
         assert data["name"] == "Morning"
         assert data["max_duration_minutes"] == 240
+        assert data["zone_id"] == zone_id
 
     async def test_create_slot_outside_exhibition(
         self, auth_client: AsyncClient, test_organizer: dict
     ):
         """Slot outside exhibition dates returns 400."""
-        # Create exhibition first
+        # Create exhibition and zone
         exhibition_payload = {
             "title": "Slot Validation Test",
             "slug": "slot-validation",
@@ -325,6 +330,10 @@ class TestTimeSlots:
         create_resp = await auth_client.post("/api/v1/exhibitions/", json=exhibition_payload)
         exhibition_id = create_resp.json()["id"]
 
+        zone_payload = {"name": "Validation Zone", "exhibition_id": exhibition_id}
+        zone_resp = await auth_client.post("/api/v1/zones/", json=zone_payload)
+        zone_id = zone_resp.json()["id"]
+
         # Try to create slot outside exhibition dates
         slot_payload = {
             "name": "Outside",
@@ -333,7 +342,7 @@ class TestTimeSlots:
             "max_duration_minutes": 240,
         }
         response = await auth_client.post(
-            f"/api/v1/exhibitions/{exhibition_id}/slots", json=slot_payload
+            f"/api/v1/zones/{zone_id}/slots", json=slot_payload
         )
 
         assert response.status_code == 400
@@ -342,7 +351,7 @@ class TestTimeSlots:
         self, auth_client: AsyncClient, test_organizer: dict
     ):
         """List slots returns 200."""
-        # Create exhibition
+        # Create exhibition and zone
         exhibition_payload = {
             "title": "List Slots Test",
             "slug": "list-slots-test",
@@ -353,6 +362,10 @@ class TestTimeSlots:
         create_resp = await auth_client.post("/api/v1/exhibitions/", json=exhibition_payload)
         exhibition_id = create_resp.json()["id"]
 
+        zone_payload = {"name": "List Zone", "exhibition_id": exhibition_id}
+        zone_resp = await auth_client.post("/api/v1/zones/", json=zone_payload)
+        zone_id = zone_resp.json()["id"]
+
         # Create some slots
         for i, name in enumerate(["Morning", "Afternoon", "Evening"]):
             slot_payload = {
@@ -362,11 +375,11 @@ class TestTimeSlots:
                 "max_duration_minutes": 240,
             }
             await auth_client.post(
-                f"/api/v1/exhibitions/{exhibition_id}/slots", json=slot_payload
+                f"/api/v1/zones/{zone_id}/slots", json=slot_payload
             )
 
         # List them
-        response = await auth_client.get(f"/api/v1/exhibitions/{exhibition_id}/slots")
+        response = await auth_client.get(f"/api/v1/zones/{zone_id}/slots")
 
         assert response.status_code == 200
         data = response.json()
@@ -376,7 +389,7 @@ class TestTimeSlots:
         self, auth_client: AsyncClient, test_organizer: dict
     ):
         """Update time slot returns 200 with updated data."""
-        # Create exhibition
+        # Create exhibition and zone
         exhibition_payload = {
             "title": "Update Slot Test",
             "slug": "update-slot-test",
@@ -387,6 +400,10 @@ class TestTimeSlots:
         create_resp = await auth_client.post("/api/v1/exhibitions/", json=exhibition_payload)
         exhibition_id = create_resp.json()["id"]
 
+        zone_payload = {"name": "Update Zone", "exhibition_id": exhibition_id}
+        zone_resp = await auth_client.post("/api/v1/zones/", json=zone_payload)
+        zone_id = zone_resp.json()["id"]
+
         # Create a slot
         slot_payload = {
             "name": "Morning",
@@ -396,7 +413,7 @@ class TestTimeSlots:
             "buffer_time_minutes": 15,
         }
         slot_resp = await auth_client.post(
-            f"/api/v1/exhibitions/{exhibition_id}/slots", json=slot_payload
+            f"/api/v1/zones/{zone_id}/slots", json=slot_payload
         )
         slot_id = slot_resp.json()["id"]
 
@@ -406,7 +423,7 @@ class TestTimeSlots:
             "buffer_time_minutes": 30,
         }
         response = await auth_client.put(
-            f"/api/v1/exhibitions/{exhibition_id}/slots/{slot_id}",
+            f"/api/v1/zones/{zone_id}/slots/{slot_id}",
             json=update_payload,
         )
 
@@ -420,7 +437,7 @@ class TestTimeSlots:
         self, auth_client: AsyncClient, test_organizer: dict
     ):
         """Update non-existent slot returns 404."""
-        # Create exhibition
+        # Create exhibition and zone
         exhibition_payload = {
             "title": "Update Slot 404 Test",
             "slug": "update-slot-404",
@@ -431,9 +448,13 @@ class TestTimeSlots:
         create_resp = await auth_client.post("/api/v1/exhibitions/", json=exhibition_payload)
         exhibition_id = create_resp.json()["id"]
 
+        zone_payload = {"name": "404 Zone", "exhibition_id": exhibition_id}
+        zone_resp = await auth_client.post("/api/v1/zones/", json=zone_payload)
+        zone_id = zone_resp.json()["id"]
+
         fake_slot_id = "00000000-0000-0000-0000-000000000000"
         response = await auth_client.put(
-            f"/api/v1/exhibitions/{exhibition_id}/slots/{fake_slot_id}",
+            f"/api/v1/zones/{zone_id}/slots/{fake_slot_id}",
             json={"name": "Whatever"},
         )
 
@@ -443,7 +464,7 @@ class TestTimeSlots:
         self, auth_client: AsyncClient, test_organizer: dict
     ):
         """Delete time slot returns 204."""
-        # Create exhibition
+        # Create exhibition and zone
         exhibition_payload = {
             "title": "Delete Slot Test",
             "slug": "delete-slot-test",
@@ -454,6 +475,10 @@ class TestTimeSlots:
         create_resp = await auth_client.post("/api/v1/exhibitions/", json=exhibition_payload)
         exhibition_id = create_resp.json()["id"]
 
+        zone_payload = {"name": "Delete Zone", "exhibition_id": exhibition_id}
+        zone_resp = await auth_client.post("/api/v1/zones/", json=zone_payload)
+        zone_id = zone_resp.json()["id"]
+
         # Create a slot
         slot_payload = {
             "name": "To Delete",
@@ -462,25 +487,25 @@ class TestTimeSlots:
             "max_duration_minutes": 240,
         }
         slot_resp = await auth_client.post(
-            f"/api/v1/exhibitions/{exhibition_id}/slots", json=slot_payload
+            f"/api/v1/zones/{zone_id}/slots", json=slot_payload
         )
         slot_id = slot_resp.json()["id"]
 
         # Delete the slot
         response = await auth_client.delete(
-            f"/api/v1/exhibitions/{exhibition_id}/slots/{slot_id}"
+            f"/api/v1/zones/{zone_id}/slots/{slot_id}"
         )
         assert response.status_code == 204
 
         # Verify it's gone
-        list_resp = await auth_client.get(f"/api/v1/exhibitions/{exhibition_id}/slots")
+        list_resp = await auth_client.get(f"/api/v1/zones/{zone_id}/slots")
         assert len(list_resp.json()) == 0
 
     async def test_delete_slot_not_found(
         self, auth_client: AsyncClient, test_organizer: dict
     ):
         """Delete non-existent slot returns 404."""
-        # Create exhibition
+        # Create exhibition and zone
         exhibition_payload = {
             "title": "Delete Slot 404 Test",
             "slug": "delete-slot-404",
@@ -491,9 +516,13 @@ class TestTimeSlots:
         create_resp = await auth_client.post("/api/v1/exhibitions/", json=exhibition_payload)
         exhibition_id = create_resp.json()["id"]
 
+        zone_payload = {"name": "Delete 404 Zone", "exhibition_id": exhibition_id}
+        zone_resp = await auth_client.post("/api/v1/zones/", json=zone_payload)
+        zone_id = zone_resp.json()["id"]
+
         fake_slot_id = "00000000-0000-0000-0000-000000000000"
         response = await auth_client.delete(
-            f"/api/v1/exhibitions/{exhibition_id}/slots/{fake_slot_id}"
+            f"/api/v1/zones/{zone_id}/slots/{fake_slot_id}"
         )
 
         assert response.status_code == 404

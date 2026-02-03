@@ -85,9 +85,6 @@ class Exhibition(Base, TimestampMixin):
     # Relationships
     organization: Mapped["Organization"] = relationship(back_populates="exhibitions")
     created_by: Mapped[Optional["User"]] = relationship()
-    time_slots: Mapped[List["TimeSlot"]] = relationship(
-        back_populates="exhibition", cascade="all, delete-orphan"
-    )
     zones: Mapped[List["Zone"]] = relationship(
         back_populates="exhibition", cascade="all, delete-orphan"
     )
@@ -101,8 +98,9 @@ class Exhibition(Base, TimestampMixin):
 
 class TimeSlot(Base, TimestampMixin):
     """
-    A time slot within an exhibition during which games can be scheduled.
+    A time slot within a zone during which games can be scheduled.
 
+    Each zone can have its own schedule with different time slots (Issue #105).
     Important: All times should be stored in UTC.
     """
     __tablename__ = "time_slots"
@@ -110,8 +108,8 @@ class TimeSlot(Base, TimestampMixin):
     id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
     )
-    exhibition_id: Mapped[uuid.UUID] = mapped_column(
-        ForeignKey("exhibitions.id", ondelete="CASCADE")
+    zone_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("zones.id", ondelete="CASCADE")
     )
     name: Mapped[str] = mapped_column(String(100))
     start_time: Mapped[datetime] = mapped_column(DateTime(timezone=True))
@@ -122,7 +120,7 @@ class TimeSlot(Base, TimestampMixin):
     buffer_time_minutes: Mapped[int] = mapped_column(Integer, default=15)
 
     # Relationships
-    exhibition: Mapped["Exhibition"] = relationship(back_populates="time_slots")
+    zone: Mapped["Zone"] = relationship(back_populates="time_slots")
     game_sessions: Mapped[List["GameSession"]] = relationship(
         back_populates="time_slot"
     )
@@ -169,6 +167,9 @@ class Zone(Base, TimestampMixin):
     exhibition: Mapped["Exhibition"] = relationship(back_populates="zones")
     delegated_to_group: Mapped[Optional["UserGroup"]] = relationship()
     physical_tables: Mapped[List["PhysicalTable"]] = relationship(
+        back_populates="zone", cascade="all, delete-orphan"
+    )
+    time_slots: Mapped[List["TimeSlot"]] = relationship(
         back_populates="zone", cascade="all, delete-orphan"
     )
 

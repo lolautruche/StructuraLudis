@@ -7,7 +7,6 @@ import { z } from 'zod';
 import { useTranslations } from 'next-intl';
 import {
   partnerApi,
-  exhibitionsApi,
   gamesApi,
   zonesApi,
   Game,
@@ -51,8 +50,8 @@ export function SeriesCreator({ exhibitionId, onSuccess, onCancel }: SeriesCreat
   const [isSearchingGames, setIsSearchingGames] = useState(false);
   const [selectedGame, setSelectedGame] = useState<Game | null>(null);
 
-  const [timeSlots, setTimeSlots] = useState<TimeSlot[]>([]);
   const [zones, setZones] = useState<PartnerZone[]>([]);
+  const [timeSlotsByZone, setTimeSlotsByZone] = useState<Record<string, TimeSlot[]>>({});
   const [tablesByZone, setTablesByZone] = useState<Record<string, PhysicalTable[]>>({});
 
   const [isLoading, setIsLoading] = useState(true);
@@ -82,30 +81,35 @@ export function SeriesCreator({ exhibitionId, onSuccess, onCancel }: SeriesCreat
   const selectedTimeSlotIds = watch('time_slot_ids');
   const selectedTableIds = watch('table_ids');
 
-  // Load time slots and partner zones
+  // Load time slots and partner zones (#105 - time slots now per zone)
   useEffect(() => {
     async function loadData() {
       setIsLoading(true);
-
-      // Load time slots
-      const slotsResponse = await exhibitionsApi.getTimeSlots(exhibitionId);
-      if (slotsResponse.data) {
-        setTimeSlots(slotsResponse.data);
-      }
 
       // Load partner zones
       const zonesResponse = await partnerApi.listZones(exhibitionId);
       if (zonesResponse.data) {
         setZones(zonesResponse.data);
 
-        // Load tables for each zone
+        // Load time slots and tables for each zone
+        const timeSlotsMap: Record<string, TimeSlot[]> = {};
         const tablesMap: Record<string, PhysicalTable[]> = {};
+
         for (const zone of zonesResponse.data) {
+          // Load time slots for this zone (#105)
+          const slotsResponse = await zonesApi.getTimeSlots(zone.id);
+          if (slotsResponse.data) {
+            timeSlotsMap[zone.id] = slotsResponse.data;
+          }
+
+          // Load tables for this zone
           const tablesResponse = await zonesApi.getTables(zone.id);
           if (tablesResponse.data) {
             tablesMap[zone.id] = tablesResponse.data;
           }
         }
+
+        setTimeSlotsByZone(timeSlotsMap);
         setTablesByZone(tablesMap);
       }
 
@@ -363,7 +367,7 @@ export function SeriesCreator({ exhibitionId, onSuccess, onCancel }: SeriesCreat
         />
       </div>
 
-      {/* Time Slots Selection */}
+      {/* Time Slots Selection (grouped by zone - #105) */}
       <div>
         <label
           className="block text-sm font-medium mb-2"
@@ -375,50 +379,63 @@ export function SeriesCreator({ exhibitionId, onSuccess, onCancel }: SeriesCreat
           {t('selectTimeSlotsHelp')}
         </p>
 
-        {timeSlots.length === 0 ? (
+        {zones.length === 0 ? (
           <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>
-            {t('noTimeSlots')}
+            {t('noZonesAssigned')}
           </p>
         ) : (
-          <div
-            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 p-3 rounded-lg border"
-            style={{
-              borderColor: 'var(--color-border)',
-              backgroundColor: 'var(--color-bg-secondary)',
-            }}
-          >
-            {timeSlots.map((slot) => {
-              const isSelected = selectedTimeSlotIds?.includes(slot.id);
+          <div className="space-y-3">
+            {zones.map((zone) => {
+              const slots = timeSlotsByZone[zone.id] || [];
+              if (slots.length === 0) return null;
+
               return (
-                <button
-                  key={slot.id}
-                  type="button"
-                  onClick={() => toggleTimeSlot(slot.id)}
-                  className={`p-2 rounded border text-left transition-colors ${
-                    isSelected
-                      ? 'border-ludis-primary bg-ludis-primary/10'
-                      : 'border-transparent hover:border-slate-300 dark:hover:border-slate-600'
-                  }`}
-                  style={{
-                    backgroundColor: isSelected ? undefined : 'var(--color-bg-primary)',
-                  }}
-                >
-                  <div className="flex items-center gap-2">
-                    <Checkbox checked={isSelected} readOnly />
-                    <div>
-                      <div
-                        className="text-sm font-medium"
-                        style={{ color: 'var(--color-text-primary)' }}
-                      >
-                        {slot.name}
-                      </div>
-                      <div className="text-xs" style={{ color: 'var(--color-text-secondary)' }}>
-                        {formatDate(slot.start_time)} {formatTime(slot.start_time)} -{' '}
-                        {formatTime(slot.end_time)}
-                      </div>
+                <Card key={zone.id}>
+                  <Card.Content className="p-3">
+                    <div
+                      className="text-sm font-medium mb-2"
+                      style={{ color: 'var(--color-text-primary)' }}
+                    >
+                      {zone.name}
                     </div>
-                  </div>
-                </button>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                      {slots.map((slot) => {
+                        const isSelected = selectedTimeSlotIds?.includes(slot.id);
+                        return (
+                          <button
+                            key={slot.id}
+                            type="button"
+                            onClick={() => toggleTimeSlot(slot.id)}
+                            className={`p-2 rounded border text-left transition-colors ${
+                              isSelected
+                                ? 'border-ludis-primary bg-ludis-primary/10'
+                                : 'border-transparent hover:border-slate-300 dark:hover:border-slate-600'
+                            }`}
+                            style={{
+                              backgroundColor: isSelected ? undefined : 'var(--color-bg-primary)',
+                            }}
+                          >
+                            <div className="flex items-center gap-2">
+                              <Checkbox checked={isSelected} readOnly />
+                              <div>
+                                <div
+                                  className="text-sm font-medium"
+                                  style={{ color: 'var(--color-text-primary)' }}
+                                >
+                                  {slot.name}
+                                </div>
+                                <div className="text-xs" style={{ color: 'var(--color-text-secondary)' }}>
+                                  {formatDate(slot.start_time)} {formatTime(slot.start_time)} -{' '}
+                                  {formatTime(slot.end_time)}
+                                </div>
+                              </div>
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </Card.Content>
+                </Card>
               );
             })}
           </div>

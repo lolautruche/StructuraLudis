@@ -7,7 +7,6 @@ import { z } from 'zod';
 import { useTranslations } from 'next-intl';
 import {
   partnerApi,
-  exhibitionsApi,
   gamesApi,
   zonesApi,
   Game,
@@ -51,8 +50,8 @@ export function SingleSessionCreator({ exhibitionId, onSuccess, onCancel }: Sing
   const [isSearchingGames, setIsSearchingGames] = useState(false);
   const [selectedGame, setSelectedGame] = useState<Game | null>(null);
 
-  const [timeSlots, setTimeSlots] = useState<TimeSlot[]>([]);
   const [zones, setZones] = useState<PartnerZone[]>([]);
+  const [timeSlotsByZone, setTimeSlotsByZone] = useState<Record<string, TimeSlot[]>>({});
   const [tablesByZone, setTablesByZone] = useState<Record<string, PhysicalTable[]>>({});
 
   const [isLoading, setIsLoading] = useState(true);
@@ -81,30 +80,35 @@ export function SingleSessionCreator({ exhibitionId, onSuccess, onCancel }: Sing
 
   const _selectedTimeSlotId = watch('time_slot_id');
 
-  // Load time slots and partner zones
+  // Load time slots and partner zones (#105 - time slots now per zone)
   useEffect(() => {
     async function loadData() {
       setIsLoading(true);
-
-      // Load time slots
-      const slotsResponse = await exhibitionsApi.getTimeSlots(exhibitionId);
-      if (slotsResponse.data) {
-        setTimeSlots(slotsResponse.data);
-      }
 
       // Load partner zones
       const zonesResponse = await partnerApi.listZones(exhibitionId);
       if (zonesResponse.data) {
         setZones(zonesResponse.data);
 
-        // Load tables for each zone
+        // Load time slots and tables for each zone
+        const timeSlotsMap: Record<string, TimeSlot[]> = {};
         const tablesMap: Record<string, PhysicalTable[]> = {};
+
         for (const zone of zonesResponse.data) {
+          // Load time slots for this zone (#105)
+          const slotsResponse = await zonesApi.getTimeSlots(zone.id);
+          if (slotsResponse.data) {
+            timeSlotsMap[zone.id] = slotsResponse.data;
+          }
+
+          // Load tables for this zone
           const tablesResponse = await zonesApi.getTables(zone.id);
           if (tablesResponse.data) {
             tablesMap[zone.id] = tablesResponse.data;
           }
         }
+
+        setTimeSlotsByZone(timeSlotsMap);
         setTablesByZone(tablesMap);
       }
 
@@ -344,7 +348,7 @@ export function SingleSessionCreator({ exhibitionId, onSuccess, onCancel }: Sing
         />
       </div>
 
-      {/* Time Slot Selection */}
+      {/* Time Slot Selection (grouped by zone - #105) */}
       <Controller
         name="time_slot_id"
         control={control}
@@ -355,10 +359,13 @@ export function SingleSessionCreator({ exhibitionId, onSuccess, onCancel }: Sing
             onChange={field.onChange}
             options={[
               { value: '', label: t('selectTimeSlotPlaceholder') },
-              ...timeSlots.map((slot) => ({
-                value: slot.id,
-                label: `${slot.name} (${new Date(slot.start_time).toLocaleDateString()} ${new Date(slot.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })})`,
-              })),
+              ...zones.flatMap((zone) => {
+                const slots = timeSlotsByZone[zone.id] || [];
+                return slots.map((slot) => ({
+                  value: slot.id,
+                  label: `${zone.name} - ${slot.name} (${new Date(slot.start_time).toLocaleDateString()} ${new Date(slot.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })})`,
+                }));
+              }),
             ]}
             error={errors.time_slot_id?.message}
           />

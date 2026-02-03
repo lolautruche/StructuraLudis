@@ -324,11 +324,13 @@ async def create_partner_session(
             detail=get_message("no_zone_access", locale, zone_name=zone.name),
         )
 
-    # Validate time slot
+    # Validate time slot belongs to a zone in this exhibition (#105)
     slot_result = await db.execute(
-        select(TimeSlot).where(
+        select(TimeSlot)
+        .join(Zone, TimeSlot.zone_id == Zone.id)
+        .where(
             TimeSlot.id == data.time_slot_id,
-            TimeSlot.exhibition_id == data.exhibition_id,
+            Zone.exhibition_id == data.exhibition_id,
         )
     )
     slot = slot_result.scalar_one_or_none()
@@ -490,11 +492,13 @@ async def create_series(
                 detail=get_message("no_zone_access", locale, zone_name=zone.name),
             )
 
-    # Validate time slots
+    # Validate time slots belong to zones in this exhibition (#105)
     slots_result = await db.execute(
-        select(TimeSlot).where(
+        select(TimeSlot)
+        .join(Zone, TimeSlot.zone_id == Zone.id)
+        .where(
             TimeSlot.id.in_(data.time_slot_ids),
-            TimeSlot.exhibition_id == data.exhibition_id,
+            Zone.exhibition_id == data.exhibition_id,
         )
     )
     time_slots = {slot.id: slot for slot in slots_result.scalars().all()}

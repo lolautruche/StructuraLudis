@@ -156,7 +156,8 @@ class TimeSlotCreate(TimeSlotBase):
 class TimeSlotRead(TimeSlotBase):
     """Schema for reading a time slot."""
     id: UUID
-    exhibition_id: UUID
+    zone_id: UUID
+    zone_name: Optional[str] = Field(None, description="Zone name for display")
     created_at: datetime
     updated_at: Optional[datetime] = None
 

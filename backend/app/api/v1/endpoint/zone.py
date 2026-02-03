@@ -11,7 +11,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
-from app.domain.exhibition.entity import Zone, PhysicalTable, Exhibition
+from app.domain.exhibition.entity import Zone, PhysicalTable, Exhibition, TimeSlot
 from app.domain.organization.entity import UserGroup
 from app.domain.exhibition.schemas import (
     ZoneCreate,
@@ -22,6 +22,9 @@ from app.domain.exhibition.schemas import (
     PhysicalTableUpdate,
     BatchTablesCreate,
     BatchTablesResponse,
+    TimeSlotCreate,
+    TimeSlotRead,
+    TimeSlotUpdate,
 )
 from app.domain.user.entity import User
 from app.domain.shared.entity import GlobalRole, ExhibitionRole
@@ -359,3 +362,201 @@ async def delete_table(
         )
 
     await db.delete(table)
+
+
+# =============================================================================
+# Time Slots
+# =============================================================================
+
+@router.get("/{zone_id}/slots", response_model=List[TimeSlotRead])
+async def list_time_slots(
+    zone_id: UUID,
+    db: AsyncSession = Depends(get_db),
+):
+    """List all time slots in a zone."""
+    # Check zone exists
+    result = await db.execute(
+        select(Zone).where(Zone.id == zone_id)
+    )
+    zone = result.scalar_one_or_none()
+    if not zone:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Zone not found",
+        )
+
+    slots = await db.execute(
+        select(TimeSlot)
+        .where(TimeSlot.zone_id == zone_id)
+        .order_by(TimeSlot.start_time)
+    )
+    slots_list = slots.scalars().all()
+
+    # Add zone_name for display
+    return [
+        TimeSlotRead(
+            id=slot.id,
+            zone_id=slot.zone_id,
+            zone_name=zone.name,
+            name=slot.name,
+            start_time=slot.start_time,
+            end_time=slot.end_time,
+            max_duration_minutes=slot.max_duration_minutes,
+            buffer_time_minutes=slot.buffer_time_minutes,
+            created_at=slot.created_at,
+            updated_at=slot.updated_at,
+        )
+        for slot in slots_list
+    ]
+
+
+@router.post(
+    "/{zone_id}/slots",
+    response_model=TimeSlotRead,
+    status_code=status.HTTP_201_CREATED,
+)
+async def create_time_slot(
+    zone_id: UUID,
+    slot_in: TimeSlotCreate,
+    current_user: User = Depends(require_zone_manager),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Create a time slot in a zone.
+
+    Requires: Zone manager (organizer, SUPER_ADMIN, or delegated partner).
+    """
+    from sqlalchemy.orm import selectinload
+
+    # Check zone exists and get exhibition
+    result = await db.execute(
+        select(Zone).options(selectinload(Zone.exhibition)).where(Zone.id == zone_id)
+    )
+    zone = result.scalar_one_or_none()
+    if not zone:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Zone not found",
+        )
+
+    # Validate time slot is within exhibition dates
+    exhibition = zone.exhibition
+    if slot_in.start_time < exhibition.start_date or slot_in.end_time > exhibition.end_date:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Time slot must be within exhibition dates",
+        )
+
+    slot = TimeSlot(
+        zone_id=zone_id,
+        name=slot_in.name,
+        start_time=slot_in.start_time,
+        end_time=slot_in.end_time,
+        max_duration_minutes=slot_in.max_duration_minutes,
+        buffer_time_minutes=slot_in.buffer_time_minutes,
+    )
+    db.add(slot)
+    await db.flush()
+    await db.refresh(slot)
+
+    return TimeSlotRead(
+        id=slot.id,
+        zone_id=slot.zone_id,
+        zone_name=zone.name,
+        name=slot.name,
+        start_time=slot.start_time,
+        end_time=slot.end_time,
+        max_duration_minutes=slot.max_duration_minutes,
+        buffer_time_minutes=slot.buffer_time_minutes,
+        created_at=slot.created_at,
+        updated_at=slot.updated_at,
+    )
+
+
+@router.put(
+    "/{zone_id}/slots/{slot_id}",
+    response_model=TimeSlotRead,
+)
+async def update_time_slot(
+    zone_id: UUID,
+    slot_id: UUID,
+    slot_in: TimeSlotUpdate,
+    current_user: User = Depends(require_zone_manager),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Update a time slot.
+
+    Requires: Zone manager (organizer, SUPER_ADMIN, or delegated partner).
+    """
+    result = await db.execute(
+        select(TimeSlot).where(
+            TimeSlot.id == slot_id,
+            TimeSlot.zone_id == zone_id,
+        )
+    )
+    slot = result.scalar_one_or_none()
+
+    if not slot:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Time slot not found",
+        )
+
+    # Get zone for the response
+    zone_result = await db.execute(
+        select(Zone).where(Zone.id == zone_id)
+    )
+    zone = zone_result.scalar_one()
+
+    update_data = slot_in.model_dump(exclude_unset=True)
+    for field, value in update_data.items():
+        setattr(slot, field, value)
+
+    await db.flush()
+    await db.refresh(slot)
+
+    return TimeSlotRead(
+        id=slot.id,
+        zone_id=slot.zone_id,
+        zone_name=zone.name,
+        name=slot.name,
+        start_time=slot.start_time,
+        end_time=slot.end_time,
+        max_duration_minutes=slot.max_duration_minutes,
+        buffer_time_minutes=slot.buffer_time_minutes,
+        created_at=slot.created_at,
+        updated_at=slot.updated_at,
+    )
+
+
+@router.delete(
+    "/{zone_id}/slots/{slot_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+async def delete_time_slot(
+    zone_id: UUID,
+    slot_id: UUID,
+    current_user: User = Depends(require_zone_manager),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Delete a time slot.
+
+    Requires: Zone manager (organizer, SUPER_ADMIN, or delegated partner).
+    """
+    result = await db.execute(
+        select(TimeSlot).where(
+            TimeSlot.id == slot_id,
+            TimeSlot.zone_id == zone_id,
+        )
+    )
+    slot = result.scalar_one_or_none()
+
+    if not slot:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Time slot not found",
+        )
+
+    await db.delete(slot)

@@ -4,7 +4,7 @@ Tests for Partner API endpoints (Issue #10).
 import pytest
 from uuid import uuid4
 from httpx import AsyncClient
-from sqlalchemy import delete
+from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domain.exhibition.entity import Zone, PhysicalTable, Exhibition, TimeSlot
@@ -204,7 +204,14 @@ class TestPartnerSessions:
         create_resp = await auth_client.post("/api/v1/exhibitions/", json=exhibition_payload)
         exhibition_id = create_resp.json()["id"]
 
-        # Create time slot
+        # Create zone first via API (#105 - time slots at zone level)
+        zone_resp = await auth_client.post(
+            "/api/v1/zones/",
+            json={"name": "Partner Zone", "exhibition_id": exhibition_id, "type": "RPG"}
+        )
+        zone_id = zone_resp.json()["id"]
+
+        # Create time slot on zone
         slot_payload = {
             "name": "Morning",
             "start_time": "2026-07-01T09:00:00Z",
@@ -212,21 +219,17 @@ class TestPartnerSessions:
             "max_duration_minutes": 180,
         }
         slot_resp = await auth_client.post(
-            f"/api/v1/exhibitions/{exhibition_id}/slots", json=slot_payload
+            f"/api/v1/zones/{zone_id}/slots", json=slot_payload
         )
         time_slot_id = slot_resp.json()["id"]
 
-        # Create zone and table
-        zone = Zone(
-            id=uuid4(),
-            exhibition_id=exhibition_id,
-            name="Partner Zone",
-            type=ZoneType.RPG,
-            moderation_required=False,
+        # Get zone from DB for role assignment
+        result = await db_session.execute(
+            select(Zone).where(Zone.id == zone_id)
         )
-        db_session.add(zone)
-        await db_session.flush()
+        zone = result.scalar_one()
 
+        # Create table in the zone
         table = PhysicalTable(
             id=uuid4(),
             zone_id=zone.id,
@@ -309,7 +312,14 @@ class TestPartnerSessions:
         create_resp = await auth_client.post("/api/v1/exhibitions/", json=exhibition_payload)
         exhibition_id = create_resp.json()["id"]
 
-        # Create time slot
+        # Create zone first via API (#105 - time slots at zone level)
+        zone_resp = await auth_client.post(
+            "/api/v1/zones/",
+            json={"name": "Filter Zone", "exhibition_id": exhibition_id, "type": "RPG"}
+        )
+        zone_id = zone_resp.json()["id"]
+
+        # Create time slot on zone
         slot_payload = {
             "name": "Morning",
             "start_time": "2026-07-01T09:00:00Z",
@@ -317,21 +327,17 @@ class TestPartnerSessions:
             "max_duration_minutes": 180,
         }
         slot_resp = await auth_client.post(
-            f"/api/v1/exhibitions/{exhibition_id}/slots", json=slot_payload
+            f"/api/v1/zones/{zone_id}/slots", json=slot_payload
         )
         time_slot_id = slot_resp.json()["id"]
 
-        # Create zone and table
-        zone = Zone(
-            id=uuid4(),
-            exhibition_id=exhibition_id,
-            name="Filter Zone",
-            type=ZoneType.RPG,
-            moderation_required=False,
+        # Get zone from DB for role assignment
+        result = await db_session.execute(
+            select(Zone).where(Zone.id == zone_id)
         )
-        db_session.add(zone)
-        await db_session.flush()
+        zone = result.scalar_one()
 
+        # Create table in the zone
         table = PhysicalTable(
             id=uuid4(),
             zone_id=zone.id,
@@ -421,9 +427,16 @@ class TestSeriesBatchCreate:
         create_resp = await auth_client.post("/api/v1/exhibitions/", json=exhibition_payload)
         exhibition_id = create_resp.json()["id"]
 
-        # Create time slots
+        # Create zone first via API (#105 - time slots at zone level)
+        zone_resp = await auth_client.post(
+            "/api/v1/zones/",
+            json={"name": "Series Zone", "exhibition_id": exhibition_id, "type": "DEMO"}
+        )
+        zone_id = zone_resp.json()["id"]
+
+        # Create time slots on zone
         slot1_resp = await auth_client.post(
-            f"/api/v1/exhibitions/{exhibition_id}/slots",
+            f"/api/v1/zones/{zone_id}/slots",
             json={
                 "name": "Morning",
                 "start_time": "2026-07-01T09:00:00Z",
@@ -432,7 +445,7 @@ class TestSeriesBatchCreate:
             },
         )
         slot2_resp = await auth_client.post(
-            f"/api/v1/exhibitions/{exhibition_id}/slots",
+            f"/api/v1/zones/{zone_id}/slots",
             json={
                 "name": "Afternoon",
                 "start_time": "2026-07-01T14:00:00Z",
@@ -443,17 +456,13 @@ class TestSeriesBatchCreate:
         slot1_id = slot1_resp.json()["id"]
         slot2_id = slot2_resp.json()["id"]
 
-        # Create zone and tables
-        zone = Zone(
-            id=uuid4(),
-            exhibition_id=exhibition_id,
-            name="Series Zone",
-            type=ZoneType.DEMO,
-            moderation_required=False,
+        # Get zone from DB for role assignment
+        result = await db_session.execute(
+            select(Zone).where(Zone.id == zone_id)
         )
-        db_session.add(zone)
-        await db_session.flush()
+        zone = result.scalar_one()
 
+        # Create tables in zone
         table1 = PhysicalTable(
             id=uuid4(),
             zone_id=zone.id,
@@ -538,9 +547,23 @@ class TestSeriesBatchCreate:
         create_resp = await auth_client.post("/api/v1/exhibitions/", json=exhibition_payload)
         exhibition_id = create_resp.json()["id"]
 
-        # Create time slot
+        # Create two zones via API (#105 - time slots at zone level)
+        # Partner only has access to zone1
+        zone1_resp = await auth_client.post(
+            "/api/v1/zones/",
+            json={"name": "Partner Zone", "exhibition_id": exhibition_id, "type": "DEMO"}
+        )
+        zone1_id = zone1_resp.json()["id"]
+
+        zone2_resp = await auth_client.post(
+            "/api/v1/zones/",
+            json={"name": "Other Zone", "exhibition_id": exhibition_id, "type": "DEMO"}
+        )
+        zone2_id = zone2_resp.json()["id"]
+
+        # Create time slot on zone2 (the zone partner doesn't have access to)
         slot_resp = await auth_client.post(
-            f"/api/v1/exhibitions/{exhibition_id}/slots",
+            f"/api/v1/zones/{zone2_id}/slots",
             json={
                 "name": "Morning",
                 "start_time": "2026-07-01T09:00:00Z",
@@ -550,21 +573,16 @@ class TestSeriesBatchCreate:
         )
         slot_id = slot_resp.json()["id"]
 
-        # Create two zones - partner only has access to zone1
-        zone1 = Zone(
-            id=uuid4(),
-            exhibition_id=exhibition_id,
-            name="Partner Zone",
-            type=ZoneType.DEMO,
+        # Get zones from DB for role assignment
+        result = await db_session.execute(
+            select(Zone).where(Zone.id == zone1_id)
         )
-        zone2 = Zone(
-            id=uuid4(),
-            exhibition_id=exhibition_id,
-            name="Other Zone",
-            type=ZoneType.DEMO,
+        zone1 = result.scalar_one()
+
+        result = await db_session.execute(
+            select(Zone).where(Zone.id == zone2_id)
         )
-        db_session.add_all([zone1, zone2])
-        await db_session.flush()
+        zone2 = result.scalar_one()
 
         # Table in zone partner doesn't have access to
         table_other = PhysicalTable(

@@ -2,12 +2,12 @@
 
 import { useState, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
-import { exhibitionsApi, TimeSlot, TimeSlotCreate } from '@/lib/api';
+import { zonesApi, TimeSlot, TimeSlotCreate } from '@/lib/api';
 import { Button, Card, ConfirmDialog } from '@/components/ui';
 import { TimeSlotForm } from './TimeSlotForm';
 
 interface TimeSlotListProps {
-  exhibitionId: string;
+  zoneId: string;
 }
 
 function formatDateTime(isoString: string): string {
@@ -29,7 +29,7 @@ function formatDuration(minutes: number): string {
   return `${hours}h${mins}`;
 }
 
-export function TimeSlotList({ exhibitionId }: TimeSlotListProps) {
+export function TimeSlotList({ zoneId }: TimeSlotListProps) {
   const t = useTranslations('Admin');
   const tCommon = useTranslations('Common');
 
@@ -44,13 +44,13 @@ export function TimeSlotList({ exhibitionId }: TimeSlotListProps) {
   const [deleteSlot, setDeleteSlot] = useState<TimeSlot | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  // Load slots
+  // Load slots for this zone (#105)
   useEffect(() => {
     async function loadSlots() {
       setIsLoading(true);
       setError(null);
 
-      const response = await exhibitionsApi.getTimeSlots(exhibitionId);
+      const response = await zonesApi.getTimeSlots(zoneId);
 
       if (response.error) {
         setError(response.error.message);
@@ -62,13 +62,13 @@ export function TimeSlotList({ exhibitionId }: TimeSlotListProps) {
     }
 
     loadSlots();
-  }, [exhibitionId]);
+  }, [zoneId]);
 
   const handleCreate = async (data: TimeSlotCreate) => {
     setIsSubmitting(true);
     setError(null);
 
-    const response = await exhibitionsApi.createTimeSlot(exhibitionId, data);
+    const response = await zonesApi.createTimeSlot(zoneId, data);
 
     if (response.error) {
       setError(response.error.message);
@@ -91,8 +91,8 @@ export function TimeSlotList({ exhibitionId }: TimeSlotListProps) {
     setIsSubmitting(true);
     setError(null);
 
-    const response = await exhibitionsApi.updateTimeSlot(
-      exhibitionId,
+    const response = await zonesApi.updateTimeSlot(
+      zoneId,
       editingSlot.id,
       data
     );
@@ -121,8 +121,8 @@ export function TimeSlotList({ exhibitionId }: TimeSlotListProps) {
     setIsDeleting(true);
     setError(null);
 
-    const response = await exhibitionsApi.deleteTimeSlot(
-      exhibitionId,
+    const response = await zonesApi.deleteTimeSlot(
+      zoneId,
       deleteSlot.id
     );
 

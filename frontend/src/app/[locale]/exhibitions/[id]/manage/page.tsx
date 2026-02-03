@@ -7,10 +7,10 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from '@/i18n/routing';
 import { exhibitionsApi, Exhibition } from '@/lib/api';
 import { Card } from '@/components/ui';
-import { ExhibitionSettingsForm, TimeSlotList, ZoneList, RolesList } from '@/components/admin';
+import { ExhibitionSettingsForm, ZoneList, RolesList } from '@/components/admin';
 import { PartnerSessionList } from '@/components/partner';
 
-type TabId = 'settings' | 'slots' | 'zones' | 'roles' | 'sessions';
+type TabId = 'settings' | 'zones' | 'roles' | 'sessions';
 
 export default function ManageExhibitionPage() {
   const t = useTranslations('Admin');
@@ -96,13 +96,12 @@ export default function ManageExhibitionPage() {
   const isOrganizer = exhibition.user_exhibition_role === 'ORGANIZER';
   const isPartner = exhibition.user_exhibition_role === 'PARTNER';
 
-  // Build tabs based on role (Issue #10)
-  // ORGANIZER: settings, slots, zones, sessions, roles
-  // PARTNER: zones (filtered), sessions
+  // Build tabs based on role (Issue #10, #105)
+  // ORGANIZER: settings, zones (includes time slots), sessions, roles
+  // PARTNER: zones (filtered, includes time slots), sessions
   const tabs: { id: TabId; label: string }[] = isOrganizer
     ? [
         { id: 'settings', label: t('settings') },
-        { id: 'slots', label: t('timeSlots') },
         { id: 'zones', label: t('zonesAndTables') },
         { id: 'sessions', label: tPartner('sessions') },
         { id: 'roles', label: t('roles.tab') },
@@ -172,9 +171,6 @@ export default function ManageExhibitionPage() {
               exhibition={exhibition}
               onUpdate={setExhibition}
             />
-          )}
-          {currentTab === 'slots' && isOrganizer && (
-            <TimeSlotList exhibitionId={exhibition.id} />
           )}
           {currentTab === 'zones' && (
             <ZoneList

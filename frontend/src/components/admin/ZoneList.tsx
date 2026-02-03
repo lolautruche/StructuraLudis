@@ -6,6 +6,7 @@ import { zonesApi, partnerApi, Zone, ZoneCreate } from '@/lib/api';
 import { Button, Card, Badge, ConfirmDialog, Checkbox } from '@/components/ui';
 import { ZoneForm } from './ZoneForm';
 import { PhysicalTableList } from './PhysicalTableList';
+import { TimeSlotList } from './TimeSlotList';
 
 interface ZoneListProps {
   exhibitionId: string;
@@ -391,8 +392,18 @@ export function ZoneList({ exhibitionId, partnerMode = false }: ZoneListProps) {
                         </div>
                       )}
 
+                      {/* Time Slots section (#105) */}
                       <h5
                         className="font-medium mb-3"
+                        style={{ color: 'var(--color-text-primary)' }}
+                      >
+                        {t('timeSlots')}
+                      </h5>
+                      <TimeSlotList zoneId={zone.id} />
+
+                      {/* Tables section */}
+                      <h5
+                        className="font-medium mb-3 mt-6"
                         style={{ color: 'var(--color-text-primary)' }}
                       >
                         {t('tables')}
