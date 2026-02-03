@@ -10,7 +10,13 @@ from app.domain.shared.entity import Base
 # All entities - order matters for relationship resolution
 from app.domain.organization.entity import Organization, UserGroup, GroupPermission
 from app.domain.user.entity import User, UserGroupMembership
-from app.domain.exhibition.entity import Exhibition, TimeSlot, Zone, PhysicalTable
+from app.domain.exhibition.entity import (
+    Exhibition,
+    TimeSlot,
+    Zone,
+    PhysicalTable,
+    ExhibitionRegistration,
+)
 from app.domain.game.entity import GameCategory, Game, GameSession, Booking
 from app.domain.media.entity import Media, AuditLog
 
@@ -25,6 +31,7 @@ __all__ = [
     "TimeSlot",
     "Zone",
     "PhysicalTable",
+    "ExhibitionRegistration",
     "GameCategory",
     "Game",
     "GameSession",

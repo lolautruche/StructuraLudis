@@ -1,9 +1,10 @@
 """
 Exhibition API endpoints.
 
-CRUD operations + Dashboard + Safety Tools + Roles.
+CRUD operations + Dashboard + Safety Tools + Roles + Registration.
 Note: TimeSlots are now managed at zone level (Issue #105).
 """
+from datetime import datetime, timezone
 from typing import List, Optional
 from uuid import UUID
 
@@ -13,8 +14,8 @@ from sqlalchemy import select, or_, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
-from app.domain.exhibition import Exhibition
-from app.domain.shared.entity import GlobalRole, ExhibitionRole, ExhibitionStatus
+from app.domain.exhibition import Exhibition, ExhibitionRegistration
+from app.domain.shared.entity import GlobalRole, ExhibitionRole, ExhibitionStatus, BookingStatus
 from app.domain.exhibition.entity import SafetyTool, Zone
 from app.domain.exhibition.schemas import (
     ExhibitionCreate,
@@ -29,8 +30,10 @@ from app.domain.exhibition.schemas import (
     ExhibitionRoleCreate,
     ExhibitionRoleRead,
     ExhibitionRoleUpdate,
+    ExhibitionRegistrationRead,
 )
 from app.domain.user.entity import User, UserExhibitionRole
+from app.domain.game.entity import Booking
 from app.api.deps import (
     get_current_active_user,
     get_current_user_optional,
@@ -146,6 +149,8 @@ async def get_exhibition(
     # Check if current user has any role (ORGANIZER or PARTNER) for this exhibition
     user_can_manage = False
     user_exhibition_role = None
+    is_user_registered = False
+    registration_count = None
 
     if current_user:
         user_can_manage = await has_any_exhibition_role(current_user, exhibition, db)
@@ -169,10 +174,31 @@ async def get_exhibition(
                     role = role_assignment.role
                     user_exhibition_role = role.value if hasattr(role, 'value') else str(role)
 
+            # Get registration count for organizers (Issue #77)
+            count_result = await db.execute(
+                select(func.count(ExhibitionRegistration.id)).where(
+                    ExhibitionRegistration.exhibition_id == exhibition_id,
+                    ExhibitionRegistration.cancelled_at.is_(None),
+                )
+            )
+            registration_count = count_result.scalar() or 0
+
+        # Check if user is registered (Issue #77)
+        reg_result = await db.execute(
+            select(ExhibitionRegistration).where(
+                ExhibitionRegistration.user_id == current_user.id,
+                ExhibitionRegistration.exhibition_id == exhibition_id,
+                ExhibitionRegistration.cancelled_at.is_(None),
+            )
+        )
+        is_user_registered = reg_result.scalar_one_or_none() is not None
+
     # Create response with can_manage flag and user role
     response = ExhibitionRead.model_validate(exhibition)
     response.can_manage = user_can_manage
     response.user_exhibition_role = user_exhibition_role
+    response.is_user_registered = is_user_registered
+    response.registration_count = registration_count
 
     return response
 
@@ -782,3 +808,178 @@ async def remove_exhibition_role(
                 )
 
     await db.delete(role)
+
+
+# =============================================================================
+# Exhibition Registration Endpoints (Issue #77)
+# =============================================================================
+
+@router.post(
+    "/{exhibition_id}/register",
+    response_model=ExhibitionRegistrationRead,
+    status_code=status.HTTP_201_CREATED,
+)
+async def register_to_exhibition(
+    exhibition_id: UUID,
+    current_user: User = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Register the current user to an exhibition.
+
+    Requires:
+    - Authenticated user
+    - Email verified
+    - is_registration_open is True
+    - Current date within registration window (if dates defined)
+    - User not already registered (or reactivates cancelled registration)
+    """
+    # Get the exhibition
+    result = await db.execute(
+        select(Exhibition).where(Exhibition.id == exhibition_id)
+    )
+    exhibition = result.scalar_one_or_none()
+
+    if not exhibition:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Exhibition not found",
+        )
+
+    # Check email is verified
+    if not current_user.email_verified:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Email verification required to register",
+        )
+
+    # Check registration is open
+    if not exhibition.is_registration_open:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Registration is not open for this exhibition",
+        )
+
+    # Check registration window
+    now = datetime.now(timezone.utc)
+    if exhibition.registration_opens_at and now < exhibition.registration_opens_at:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Registration has not opened yet",
+        )
+    if exhibition.registration_closes_at and now > exhibition.registration_closes_at:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Registration has closed",
+        )
+
+    # Check existing registration
+    existing_result = await db.execute(
+        select(ExhibitionRegistration).where(
+            ExhibitionRegistration.user_id == current_user.id,
+            ExhibitionRegistration.exhibition_id == exhibition_id,
+        )
+    )
+    existing = existing_result.scalar_one_or_none()
+
+    if existing:
+        if existing.cancelled_at is None:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="You are already registered for this exhibition",
+            )
+        # Reactivate cancelled registration
+        existing.cancelled_at = None
+        existing.registered_at = func.now()
+        await db.flush()
+        await db.refresh(existing)
+        return existing
+
+    # Create new registration
+    registration = ExhibitionRegistration(
+        user_id=current_user.id,
+        exhibition_id=exhibition_id,
+    )
+    db.add(registration)
+    await db.flush()
+    await db.refresh(registration)
+
+    return registration
+
+
+@router.get(
+    "/{exhibition_id}/registration",
+    response_model=Optional[ExhibitionRegistrationRead],
+)
+async def get_my_registration(
+    exhibition_id: UUID,
+    current_user: User = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Get the current user's registration for an exhibition.
+
+    Returns null if not registered or registration was cancelled.
+    """
+    result = await db.execute(
+        select(ExhibitionRegistration).where(
+            ExhibitionRegistration.user_id == current_user.id,
+            ExhibitionRegistration.exhibition_id == exhibition_id,
+            ExhibitionRegistration.cancelled_at.is_(None),
+        )
+    )
+    return result.scalar_one_or_none()
+
+
+@router.delete(
+    "/{exhibition_id}/registration",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+async def unregister_from_exhibition(
+    exhibition_id: UUID,
+    current_user: User = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Cancel the current user's registration for an exhibition.
+
+    Cannot unregister if user has active bookings (CONFIRMED, WAITING_LIST, CHECKED_IN).
+    """
+    # Get registration
+    result = await db.execute(
+        select(ExhibitionRegistration).where(
+            ExhibitionRegistration.user_id == current_user.id,
+            ExhibitionRegistration.exhibition_id == exhibition_id,
+            ExhibitionRegistration.cancelled_at.is_(None),
+        )
+    )
+    registration = result.scalar_one_or_none()
+
+    if not registration:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Registration not found",
+        )
+
+    # Check for active bookings
+    from app.domain.game.entity import GameSession
+    active_bookings = await db.execute(
+        select(Booking).join(GameSession).where(
+            Booking.user_id == current_user.id,
+            GameSession.exhibition_id == exhibition_id,
+            Booking.status.in_([
+                BookingStatus.CONFIRMED,
+                BookingStatus.WAITING_LIST,
+                BookingStatus.CHECKED_IN,
+            ]),
+        )
+    )
+    if active_bookings.scalar_one_or_none():
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Cannot unregister with active bookings. Cancel your bookings first.",
+        )
+
+    # Soft delete - set cancelled_at
+    registration.cancelled_at = datetime.now(timezone.utc)
+    await db.flush()

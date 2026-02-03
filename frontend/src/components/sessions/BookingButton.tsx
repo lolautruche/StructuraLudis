@@ -3,7 +3,7 @@
 import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui';
 import { Link } from '@/i18n/routing';
-import type { GameSession, Booking } from '@/lib/api/types';
+import type { GameSession, Booking, Exhibition } from '@/lib/api/types';
 
 interface BookingButtonProps {
   session: GameSession;
@@ -14,6 +14,8 @@ interface BookingButtonProps {
   onCancelBooking?: () => Promise<void>;
   onCheckIn?: () => Promise<void>;
   isLoading?: boolean;
+  /** Exhibition data for registration check (Issue #77) */
+  exhibition?: Exhibition | null;
 }
 
 export function BookingButton({
@@ -25,13 +27,20 @@ export function BookingButton({
   onCancelBooking,
   onCheckIn,
   isLoading = false,
+  exhibition,
 }: BookingButtonProps) {
   const t = useTranslations('Session');
+  const tExhibition = useTranslations('Exhibition');
 
   const availableSeats = session.max_players_count - session.confirmed_players_count;
   const isFull = availableSeats <= 0;
   const canBook = session.status === 'VALIDATED' && session.has_available_seats;
   const canJoinWaitlist = session.status === 'VALIDATED' && isFull;
+
+  // Check if registration is required but user is not registered (Issue #77)
+  const requiresRegistration = exhibition?.requires_registration ?? false;
+  const isUserRegistered = exhibition?.is_user_registered ?? false;
+  const needsRegistration = requiresRegistration && !isUserRegistered;
 
   // Check if check-in is available (30 minutes before start until session starts)
   const now = new Date();
@@ -58,6 +67,17 @@ export function BookingButton({
       <Link href="/auth/login">
         <Button variant="primary" className="w-full sm:w-auto">
           {t('loginToBook')}
+        </Button>
+      </Link>
+    );
+  }
+
+  // Registration required but user not registered (Issue #77)
+  if (needsRegistration) {
+    return (
+      <Link href={`/exhibitions/${session.exhibition_id}/sessions`}>
+        <Button variant="secondary" className="w-full sm:w-auto">
+          {tExhibition('registrationRequired')}
         </Button>
       </Link>
     );

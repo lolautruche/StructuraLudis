@@ -93,10 +93,19 @@ erDiagram
         boolean is_registration_open "Issue 39"
         datetime registration_opens_at "Issue 39"
         datetime registration_closes_at "Issue 39"
+        boolean requires_registration "Issue 77 - Optional registration requirement"
         string primary_language "Issue 39"
         jsonb secondary_languages "Issue 39"
         datetime created_at
         datetime updated_at
+    }
+
+    ExhibitionRegistration {
+        uuid id PK
+        uuid user_id FK
+        uuid exhibition_id FK
+        datetime registered_at
+        datetime cancelled_at "nullable - soft delete"
     }
 
     TimeSlot {
@@ -271,6 +280,7 @@ erDiagram
 
     User ||--o{ UserGroupMembership : "belongs to"
     User ||--o{ UserExhibitionRole : "has exhibition roles"
+    User ||--o{ ExhibitionRegistration : "registers to (Issue 77)"
     User ||--o{ Exhibition : "creates (main organizer)"
     User ||--o{ GameSession : "creates"
     User ||--o{ Booking : "books"
@@ -279,6 +289,7 @@ erDiagram
     User ||--o{ Notification : "receives"
 
     Exhibition ||--o{ UserExhibitionRole : "has role assignments"
+    Exhibition ||--o{ ExhibitionRegistration : "has registrations (Issue 77)"
     Exhibition ||--o{ Zone : "contains"
     Exhibition ||--o{ SafetyTool : "defines"
     Exhibition ||--o{ GameSession : "hosts"

@@ -12,6 +12,7 @@ import {
   ExhibitionRoleCreate,
   ExhibitionRoleUpdate,
   UserSearchResult,
+  ExhibitionRegistration,
 } from '../types';
 
 export const exhibitionsApi = {
@@ -112,5 +113,33 @@ export const exhibitionsApi = {
     roleId: string
   ): Promise<ApiResponse<void>> => {
     return api.delete<void>(`/api/v1/exhibitions/${exhibitionId}/roles/${roleId}`);
+  },
+
+  // ==========================================================================
+  // Exhibition Registration (Issue #77)
+  // ==========================================================================
+
+  /**
+   * Register the current user to an exhibition.
+   * Requires authenticated user with verified email.
+   */
+  register: async (exhibitionId: string): Promise<ApiResponse<ExhibitionRegistration>> => {
+    return api.post<ExhibitionRegistration>(`/api/v1/exhibitions/${exhibitionId}/register`);
+  },
+
+  /**
+   * Get the current user's registration for an exhibition.
+   * Returns null if not registered.
+   */
+  getRegistration: async (exhibitionId: string): Promise<ApiResponse<ExhibitionRegistration | null>> => {
+    return api.get<ExhibitionRegistration | null>(`/api/v1/exhibitions/${exhibitionId}/registration`);
+  },
+
+  /**
+   * Cancel the current user's registration for an exhibition.
+   * Cannot unregister if user has active bookings.
+   */
+  unregister: async (exhibitionId: string): Promise<ApiResponse<void>> => {
+    return api.delete<void>(`/api/v1/exhibitions/${exhibitionId}/registration`);
   },
 };

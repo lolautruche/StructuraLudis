@@ -229,6 +229,7 @@ export interface Exhibition {
   is_registration_open: boolean;
   registration_opens_at: string | null;
   registration_closes_at: string | null;
+  requires_registration: boolean;
   primary_language: string;
   secondary_languages: string[] | null;
   title_i18n: Record<string, string> | null;
@@ -238,6 +239,9 @@ export interface Exhibition {
   // Permission flags (computed based on authenticated user)
   can_manage: boolean;
   user_exhibition_role: ExhibitionRole | null;
+  // Registration status (Issue #77)
+  is_user_registered: boolean;
+  registration_count?: number;
 }
 
 export interface ExhibitionUpdate {
@@ -254,10 +258,22 @@ export interface ExhibitionUpdate {
   is_registration_open?: boolean;
   registration_opens_at?: string | null;
   registration_closes_at?: string | null;
+  requires_registration?: boolean;
   primary_language?: string;
   secondary_languages?: string[];
   title_i18n?: Record<string, string>;
   description_i18n?: Record<string, string>;
+}
+
+/**
+ * Exhibition registration types (Issue #77).
+ */
+export interface ExhibitionRegistration {
+  id: string;
+  user_id: string;
+  exhibition_id: string;
+  registered_at: string;
+  cancelled_at: string | null;
 }
 
 /**

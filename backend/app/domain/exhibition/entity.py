@@ -1,13 +1,13 @@
 """
 Exhibition domain entities.
 
-Contains: Exhibition, TimeSlot, Zone, PhysicalTable
+Contains: Exhibition, TimeSlot, Zone, PhysicalTable, ExhibitionRegistration
 """
 from datetime import datetime
 from typing import List, Optional, TYPE_CHECKING
 import uuid
 
-from sqlalchemy import DateTime, ForeignKey, Integer, String
+from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, UniqueConstraint, func
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -78,6 +78,9 @@ class Exhibition(Base, TimestampMixin):
     primary_language: Mapped[str] = mapped_column(String(10), default="en")
     secondary_languages: Mapped[Optional[List[str]]] = mapped_column(JSONB, nullable=True)
 
+    # Registration requirement (Issue #77)
+    requires_registration: Mapped[bool] = mapped_column(Boolean, default=False)
+
     status: Mapped[ExhibitionStatus] = mapped_column(
         String(20), default=ExhibitionStatus.DRAFT
     )
@@ -92,6 +95,9 @@ class Exhibition(Base, TimestampMixin):
         back_populates="exhibition", cascade="all, delete-orphan"
     )
     game_sessions: Mapped[List["GameSession"]] = relationship(
+        back_populates="exhibition", cascade="all, delete-orphan"
+    )
+    registrations: Mapped[List["ExhibitionRegistration"]] = relationship(
         back_populates="exhibition", cascade="all, delete-orphan"
     )
 
@@ -228,4 +234,38 @@ class PhysicalTable(Base, TimestampMixin):
     zone: Mapped["Zone"] = relationship(back_populates="physical_tables")
     game_sessions: Mapped[List["GameSession"]] = relationship(
         back_populates="physical_table"
+    )
+
+
+class ExhibitionRegistration(Base):
+    """
+    Player registration to an exhibition (Issue #77).
+
+    Users can register to exhibitions to track participation
+    and optionally be required before booking sessions.
+    """
+    __tablename__ = "exhibition_registrations"
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE")
+    )
+    exhibition_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("exhibitions.id", ondelete="CASCADE")
+    )
+    registered_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+    cancelled_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+
+    # Relationships
+    user: Mapped["User"] = relationship()
+    exhibition: Mapped["Exhibition"] = relationship(back_populates="registrations")
+
+    __table_args__ = (
+        UniqueConstraint('user_id', 'exhibition_id', name='uq_user_exhibition_registration'),
     )
