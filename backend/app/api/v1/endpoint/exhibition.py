@@ -9,7 +9,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
-from sqlalchemy import select
+from sqlalchemy import select, or_, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
@@ -473,20 +473,25 @@ async def search_users_for_role(
     )
     existing_user_ids = {row[0] for row in existing_users.fetchall()}
 
-    # Search users by email or name
-    result = await db.execute(
+    # Build the query with proper OR handling for nullable full_name
+    query = (
         select(User)
         .where(
             User.is_active == True,
-            (
-                User.email.ilike(search_pattern) |
-                User.full_name.ilike(search_pattern)
+            or_(
+                func.lower(User.email).like(search_pattern),
+                func.lower(func.coalesce(User.full_name, "")).like(search_pattern),
             ),
-            ~User.id.in_(existing_user_ids) if existing_user_ids else True,
         )
         .order_by(User.full_name.asc(), User.email.asc())
         .limit(20)
     )
+
+    # Add exclusion for users already assigned (only if there are some)
+    if existing_user_ids:
+        query = query.where(~User.id.in_(existing_user_ids))
+
+    result = await db.execute(query)
     users = result.scalars().all()
 
     return [
