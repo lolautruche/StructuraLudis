@@ -1,7 +1,7 @@
 # Roadmap & Priorities
 
 This document tracks prioritization decisions and project progress.
-**Last updated**: 2026-02-02
+**Last updated**: 2026-02-03
 
 ---
 
@@ -54,6 +54,7 @@ This document tracks prioritization decisions and project progress.
 
 | Issue | Title | Job Stories | Notes |
 |-------|-------|-------------|-------|
+| [#108](https://github.com/lolautruche/StructuraLudis/issues/108) | Batch time slot creation & flexible session start | JS.A2b, JS.B2 | Pattern-based slot creation + flexible start within slot bounds |
 | [#62](https://github.com/lolautruche/StructuraLudis/issues/62) | Notification Center & Bell | JS.C2, JS.C3 | In-app notifications |
 | [#38](https://github.com/lolautruche/StructuraLudis/issues/38) | Smart check-in reminders | JS.C3 | Automated reminders |
 | [#74](https://github.com/lolautruche/StructuraLudis/issues/74) | Magic link authentication | JS.X1 variant | Passwordless login |
