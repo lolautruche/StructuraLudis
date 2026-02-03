@@ -26,6 +26,7 @@ from app.core.templates import (
     render_session_approved,
     render_session_rejected,
     render_changes_requested,
+    render_exhibition_unregistered,
 )
 from app.domain.notification.entity import Notification
 from app.domain.notification.schemas import NotificationType, NotificationChannel
@@ -591,6 +592,45 @@ class NotificationService:
                 "session_id": str(context.session_id),
                 "exhibition_id": str(context.exhibition_id),
                 "comment": comment,
+            },
+        )
+
+        # Send email
+        return await self._send_email(recipient, subject, html_body, notification)
+
+    # =========================================================================
+    # Exhibition Registration Notifications (Issue #77)
+    # =========================================================================
+
+    async def notify_exhibition_unregistered(
+        self,
+        recipient: NotificationRecipient,
+        exhibition_title: str,
+        booking_count: int = 0,
+        action_url: Optional[str] = None,
+    ) -> bool:
+        """
+        Notify a user that they have unregistered from an exhibition.
+
+        Channels: Email, In-App
+        """
+        subject, html_body = render_exhibition_unregistered(
+            locale=recipient.locale,
+            exhibition_title=exhibition_title,
+            booking_count=booking_count,
+            action_url=action_url,
+        )
+
+        # Create in-app notification
+        notification = await self._create_notification_record(
+            user_id=recipient.user_id,
+            notification_type=NotificationType.SESSION_CANCELLED,  # Reuse type for now
+            channel=NotificationChannel.EMAIL,
+            subject=subject,
+            body=f"Your registration for {exhibition_title} has been cancelled.",
+            context={
+                "exhibition_title": exhibition_title,
+                "booking_count": booking_count,
             },
         )
 

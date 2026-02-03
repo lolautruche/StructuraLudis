@@ -66,6 +66,7 @@ export function ExhibitionSettingsForm({
   const {
     register,
     handleSubmit,
+    watch,
     formState: { errors, isSubmitting },
   } = useForm<SettingsFormData>({
     resolver: zodResolver(settingsSchema),
@@ -86,6 +87,8 @@ export function ExhibitionSettingsForm({
       primary_language: exhibition.primary_language,
     },
   });
+
+  const requiresRegistration = watch('requires_registration');
 
   const onSubmit = async (data: SettingsFormData) => {
     setServerError(null);
@@ -235,11 +238,6 @@ export function ExhibitionSettingsForm({
           {t('registration')}
         </h3>
 
-        <Checkbox
-          {...register('is_registration_open')}
-          label={t('registrationOpen')}
-        />
-
         <div className="space-y-1">
           <Checkbox
             {...register('requires_registration')}
@@ -249,6 +247,12 @@ export function ExhibitionSettingsForm({
             {t('requiresRegistrationHelper')}
           </p>
         </div>
+
+        <Checkbox
+          {...register('is_registration_open')}
+          label={t('registrationOpen')}
+          disabled={!requiresRegistration}
+        />
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Input

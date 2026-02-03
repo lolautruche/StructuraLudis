@@ -137,9 +137,11 @@ export const exhibitionsApi = {
 
   /**
    * Cancel the current user's registration for an exhibition.
-   * Cannot unregister if user has active bookings.
+   * If force=true, cancels all active bookings as well.
+   * If force=false and user has active bookings, returns 409 with booking count.
    */
-  unregister: async (exhibitionId: string): Promise<ApiResponse<void>> => {
-    return api.delete<void>(`/api/v1/exhibitions/${exhibitionId}/registration`);
+  unregister: async (exhibitionId: string, force: boolean = false): Promise<ApiResponse<void>> => {
+    const params = force ? '?force=true' : '';
+    return api.delete<void>(`/api/v1/exhibitions/${exhibitionId}/registration${params}`);
   },
 };

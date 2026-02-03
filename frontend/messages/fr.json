@@ -295,6 +295,8 @@
     "unregister": "Annuler l'inscription",
     "registered": "Inscrit",
     "registrationRequired": "Inscription requise",
+    "registrationRequiredMessage": "Vous devez vous inscrire à cet événement pour réserver cette session.",
+    "registerForEvent": "S'inscrire à l'événement",
     "loginToRegister": "Connectez-vous pour vous inscrire",
     "emailVerificationRequired": "Veuillez d'abord vérifier votre email",
     "registrationOpensAt": "Inscriptions ouvertes le {date}",
@@ -304,7 +306,15 @@
     "confirmUnregister": "Oui, annuler",
     "registrationError": "Échec de l'inscription",
     "unregistrationError": "Échec de l'annulation de l'inscription",
-    "hasActiveBookings": "Impossible de se désinscrire avec des réservations actives"
+    "hasActiveBookings": "Impossible de se désinscrire avec des réservations actives",
+    "confirmRegisterTitle": "S'inscrire à {title} ?",
+    "confirmRegisterMessage": "En vous inscrivant, vous pourrez réserver des places aux sessions de jeu et proposer vos propres parties.\n\n⚠️ Cette inscription ne remplace pas l'achat d'un billet pour l'événement. Veuillez vous assurer d'avoir votre entrée auprès de l'organisateur.",
+    "registrationSuccess": "Vous êtes inscrit à {title}",
+    "unregistrationSuccess": "Votre inscription a été annulée",
+    "confirmForceUnregisterTitle": "Annuler l'inscription et les réservations ?",
+    "confirmForceUnregisterMessage": "Vous avez {count, plural, one {# réservation active} other {# réservations actives}} pour cet événement. En confirmant, toutes vos réservations seront annulées.",
+    "confirmForceUnregister": "Je confirme la désinscription",
+    "cancel": "Annuler"
   },
   "SafetyTools": {
     "xCard": "X-Card",

@@ -861,18 +861,27 @@ class GameSessionService:
         )
         exhibition = exhibition_result.scalar_one_or_none()
         if exhibition and exhibition.requires_registration:
-            registration_result = await self.db.execute(
-                select(ExhibitionRegistration).where(
-                    ExhibitionRegistration.user_id == current_user.id,
-                    ExhibitionRegistration.exhibition_id == session.exhibition_id,
-                    ExhibitionRegistration.cancelled_at.is_(None),
-                )
+            # Check if user has an exhibition role (organizers/partners are exempt)
+            user_has_role = await has_exhibition_role(
+                current_user,
+                session.exhibition_id,
+                [ExhibitionRole.ORGANIZER, ExhibitionRole.PARTNER],
+                self.db,
             )
-            if not registration_result.scalar_one_or_none():
-                raise HTTPException(
-                    status_code=status.HTTP_403_FORBIDDEN,
-                    detail="You must register for this exhibition before booking sessions",
+            if not user_has_role:
+                registration_result = await self.db.execute(
+                    select(ExhibitionRegistration).where(
+                        ExhibitionRegistration.user_id == current_user.id,
+                        ExhibitionRegistration.exhibition_id == session.exhibition_id,
+                        ExhibitionRegistration.cancelled_at.is_(None),
+                    )
                 )
+                if not registration_result.scalar_one_or_none():
+                    locale = current_user.locale or "en"
+                    raise HTTPException(
+                        status_code=status.HTTP_403_FORBIDDEN,
+                        detail=get_message("registration_required", locale),
+                    )
 
         # Check minimum age requirement
         if session.min_age is not None:

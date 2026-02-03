@@ -155,11 +155,16 @@ export default function ExhibitionSessionsPage() {
                 </Link>
               )}
               {isAuthenticated && (
-                <Link href={`/my/sessions/new?exhibition=${exhibitionId}`}>
-                  <Button variant="primary">
-                    {tExhibition('proposeSession')}
-                  </Button>
-                </Link>
+                // Hide propose session if registration required and not registered (unless user has a role)
+                (!exhibition.requires_registration ||
+                  exhibition.is_user_registered ||
+                  exhibition.user_exhibition_role) && (
+                  <Link href={`/my/sessions/new?exhibition=${exhibitionId}`}>
+                    <Button variant="primary">
+                      {tExhibition('proposeSession')}
+                    </Button>
+                  </Link>
+                )
               )}
             </div>
           </div>

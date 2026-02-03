@@ -6,6 +6,7 @@ import { Button, ConfirmDialog } from '@/components/ui';
 import { Link } from '@/i18n/routing';
 import { exhibitionsApi } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/contexts/ToastContext';
 import type { Exhibition } from '@/lib/api/types';
 
 interface RegistrationButtonProps {
@@ -19,8 +20,12 @@ export function RegistrationButton({
 }: RegistrationButtonProps) {
   const t = useTranslations('Exhibition');
   const { isAuthenticated, user } = useAuth();
+  const { showSuccess } = useToast();
   const [isLoading, setIsLoading] = useState(false);
+  const [showRegisterDialog, setShowRegisterDialog] = useState(false);
   const [showUnregisterDialog, setShowUnregisterDialog] = useState(false);
+  const [showForceUnregisterDialog, setShowForceUnregisterDialog] = useState(false);
+  const [activeBookingCount, setActiveBookingCount] = useState(0);
   const [error, setError] = useState<string | null>(null);
 
   // Don't show the button if registration is not required
@@ -48,6 +53,8 @@ export function RegistrationButton({
       if (response.error) {
         setError(response.error.detail || response.error.message);
       } else {
+        setShowRegisterDialog(false);
+        showSuccess(t('registrationSuccess', { title: exhibition.title }));
         onRegistrationChange?.();
       }
     } catch {
@@ -57,15 +64,31 @@ export function RegistrationButton({
     }
   };
 
-  const handleUnregister = async () => {
+  const handleUnregister = async (force: boolean = false) => {
     setIsLoading(true);
     setError(null);
     try {
-      const response = await exhibitionsApi.unregister(exhibition.id);
+      const response = await exhibitionsApi.unregister(exhibition.id, force);
       if (response.error) {
-        setError(response.error.detail || response.error.message);
+        // Check if it's a 409 with active bookings
+        const detail = response.error.detail as { code?: string; booking_count?: number; message?: string } | string;
+        if (
+          response.error.status === 409 &&
+          typeof detail === 'object' &&
+          detail?.code === 'has_active_bookings'
+        ) {
+          // Show the force confirmation dialog
+          setActiveBookingCount(detail.booking_count || 0);
+          setShowUnregisterDialog(false);
+          setShowForceUnregisterDialog(true);
+        } else {
+          const message = typeof detail === 'object' ? detail?.message : detail;
+          setError(message || response.error.message);
+        }
       } else {
         setShowUnregisterDialog(false);
+        setShowForceUnregisterDialog(false);
+        showSuccess(t('unregistrationSuccess'));
         onRegistrationChange?.();
       }
     } catch {
@@ -79,7 +102,7 @@ export function RegistrationButton({
   if (!isAuthenticated) {
     return (
       <Link href="/auth/login">
-        <Button variant="primary" size="sm">
+        <Button variant="primary">
           {t('loginToRegister')}
         </Button>
       </Link>
@@ -110,11 +133,23 @@ export function RegistrationButton({
         <ConfirmDialog
           isOpen={showUnregisterDialog}
           onClose={() => setShowUnregisterDialog(false)}
-          onConfirm={handleUnregister}
+          onConfirm={() => handleUnregister(false)}
           title={t('confirmUnregisterTitle')}
           message={error || t('confirmUnregisterMessage')}
           confirmLabel={t('confirmUnregister')}
           cancelLabel={t('keepRegistration')}
+          variant="danger"
+          isLoading={isLoading}
+        />
+
+        <ConfirmDialog
+          isOpen={showForceUnregisterDialog}
+          onClose={() => setShowForceUnregisterDialog(false)}
+          onConfirm={() => handleUnregister(true)}
+          title={t('confirmForceUnregisterTitle')}
+          message={t('confirmForceUnregisterMessage', { count: activeBookingCount })}
+          confirmLabel={t('confirmForceUnregister')}
+          cancelLabel={t('cancel')}
           variant="danger"
           isLoading={isLoading}
         />
@@ -125,7 +160,7 @@ export function RegistrationButton({
   // Registration not open
   if (!exhibition.is_registration_open) {
     return (
-      <Button variant="secondary" size="sm" disabled>
+      <Button variant="secondary" disabled>
         {t('registrationClosed')}
       </Button>
     );
@@ -140,7 +175,7 @@ export function RegistrationButton({
       minute: '2-digit',
     });
     return (
-      <Button variant="secondary" size="sm" disabled>
+      <Button variant="secondary" disabled>
         {t('registrationOpensAt', { date: formattedDate })}
       </Button>
     );
@@ -149,7 +184,7 @@ export function RegistrationButton({
   // After registration window
   if (isAfterWindow) {
     return (
-      <Button variant="secondary" size="sm" disabled>
+      <Button variant="secondary" disabled>
         {t('registrationClosed')}
       </Button>
     );
@@ -159,7 +194,7 @@ export function RegistrationButton({
   if (user && !user.email_verified) {
     return (
       <div className="flex flex-col gap-1">
-        <Button variant="secondary" size="sm" disabled>
+        <Button variant="secondary" disabled>
           {t('register')}
         </Button>
         <span className="text-xs text-amber-600 dark:text-amber-400">
@@ -171,18 +206,30 @@ export function RegistrationButton({
 
   // Can register
   return (
-    <div className="flex flex-col gap-1">
-      <Button
-        variant="success"
-        size="sm"
-        onClick={handleRegister}
+    <>
+      <div className="flex flex-col gap-1">
+        <Button
+          variant="success"
+          onClick={() => setShowRegisterDialog(true)}
+        >
+          {t('register')}
+        </Button>
+        {error && (
+          <span className="text-xs text-red-600 dark:text-red-400">{error}</span>
+        )}
+      </div>
+
+      <ConfirmDialog
+        isOpen={showRegisterDialog}
+        onClose={() => setShowRegisterDialog(false)}
+        onConfirm={handleRegister}
+        title={t('confirmRegisterTitle', { title: exhibition.title })}
+        message={t('confirmRegisterMessage')}
+        confirmLabel={t('register')}
+        cancelLabel={t('cancel')}
+        variant="default"
         isLoading={isLoading}
-      >
-        {t('register')}
-      </Button>
-      {error && (
-        <span className="text-xs text-red-600 dark:text-red-400">{error}</span>
-      )}
-    </div>
+      />
+    </>
   );
 }

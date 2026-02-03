@@ -542,6 +542,7 @@ async def seed(force: bool = False):
             country_code="FR",
             timezone="Europe/Paris",
             grace_period_minutes=15,
+            requires_registration=True,
             is_registration_open=True,
             primary_language="fr",
             secondary_languages=["en"],

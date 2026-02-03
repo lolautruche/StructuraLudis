@@ -8,12 +8,14 @@ from datetime import datetime, timezone
 from typing import List, Optional
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel
 from sqlalchemy import select, or_, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.config import settings
 from app.core.database import get_db
+from app.core.messages import get_message
 from app.domain.exhibition import Exhibition, ExhibitionRegistration
 from app.domain.shared.entity import GlobalRole, ExhibitionRole, ExhibitionStatus, BookingStatus
 from app.domain.exhibition.entity import SafetyTool, Zone
@@ -41,6 +43,11 @@ from app.api.deps import (
     require_exhibition_organizer,
 )
 from app.services.exhibition import ExhibitionService
+from app.services.notification import (
+    NotificationService,
+    NotificationRecipient,
+    SessionNotificationContext,
+)
 
 router = APIRouter()
 
@@ -937,14 +944,18 @@ async def get_my_registration(
 )
 async def unregister_from_exhibition(
     exhibition_id: UUID,
+    force: bool = Query(False, description="Force unregister and cancel all active bookings"),
     current_user: User = Depends(get_current_active_user),
     db: AsyncSession = Depends(get_db),
 ):
     """
     Cancel the current user's registration for an exhibition.
 
-    Cannot unregister if user has active bookings (CONFIRMED, WAITING_LIST, CHECKED_IN).
+    If force=false and user has active bookings, returns 409 Conflict with booking count.
+    If force=true, cancels all active bookings and then unregisters.
     """
+    locale = current_user.locale or "en"
+
     # Get registration
     result = await db.execute(
         select(ExhibitionRegistration).where(
@@ -958,12 +969,12 @@ async def unregister_from_exhibition(
     if not registration:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Registration not found",
+            detail=get_message("registration_not_found", locale),
         )
 
     # Check for active bookings
     from app.domain.game.entity import GameSession
-    active_bookings = await db.execute(
+    active_bookings_result = await db.execute(
         select(Booking).join(GameSession).where(
             Booking.user_id == current_user.id,
             GameSession.exhibition_id == exhibition_id,
@@ -974,12 +985,88 @@ async def unregister_from_exhibition(
             ]),
         )
     )
-    if active_bookings.scalar_one_or_none():
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Cannot unregister with active bookings. Cancel your bookings first.",
-        )
+    active_bookings = active_bookings_result.scalars().all()
+
+    # Get exhibition for notifications
+    exhibition_result = await db.execute(
+        select(Exhibition).where(Exhibition.id == exhibition_id)
+    )
+    exhibition = exhibition_result.scalar_one_or_none()
+
+    cancelled_booking_count = 0
+    sessions_to_notify = []  # List of (session, gm_user) tuples
+
+    if active_bookings:
+        if not force:
+            # Return conflict with booking count so frontend can show confirmation
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail={
+                    "code": "has_active_bookings",
+                    "message": get_message("unregister_has_bookings", locale, count=len(active_bookings)),
+                    "booking_count": len(active_bookings),
+                },
+            )
+        else:
+            # Force mode: cancel all active bookings and collect session info for GM notifications
+            from sqlalchemy.orm import selectinload
+            for booking in active_bookings:
+                booking.status = BookingStatus.CANCELLED
+                booking.cancelled_at = datetime.now(timezone.utc)
+                cancelled_booking_count += 1
+
+                # Load session with GM info for notification
+                session_result = await db.execute(
+                    select(GameSession)
+                    .options(selectinload(GameSession.created_by_user))
+                    .where(GameSession.id == booking.game_session_id)
+                )
+                session = session_result.scalar_one_or_none()
+                if session and session.created_by_user:
+                    sessions_to_notify.append((session, session.created_by_user))
 
     # Soft delete - set cancelled_at
     registration.cancelled_at = datetime.now(timezone.utc)
     await db.flush()
+
+    # Send notifications
+    notification_service = NotificationService(db)
+
+    # 1. Notify the user who unregistered
+    if exhibition:
+        user_recipient = NotificationRecipient(
+            user_id=current_user.id,
+            email=current_user.email,
+            full_name=current_user.full_name,
+            locale=locale,
+        )
+        await notification_service.notify_exhibition_unregistered(
+            recipient=user_recipient,
+            exhibition_title=exhibition.title,
+            booking_count=cancelled_booking_count,
+            action_url=f"{settings.FRONTEND_URL}/exhibitions",
+        )
+
+    # 2. Notify GMs for each cancelled booking
+    for session, gm in sessions_to_notify:
+        gm_recipient = NotificationRecipient(
+            user_id=gm.id,
+            email=gm.email,
+            full_name=gm.full_name,
+            locale=gm.locale or "en",
+        )
+        context = SessionNotificationContext(
+            session_id=session.id,
+            session_title=session.title,
+            exhibition_id=exhibition_id,
+            exhibition_title=exhibition.title if exhibition else "",
+            scheduled_start=session.scheduled_start,
+            scheduled_end=session.scheduled_end,
+            player_name=current_user.full_name or current_user.email,
+            max_players=session.max_players_count,
+        )
+        await notification_service.notify_gm_player_cancelled(
+            gm_recipient=gm_recipient,
+            context=context,
+            action_url=f"{settings.FRONTEND_URL}/sessions/{session.id}",
+        )
