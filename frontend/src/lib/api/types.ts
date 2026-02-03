@@ -235,8 +235,9 @@ export interface Exhibition {
   description_i18n: Record<string, string> | null;
   created_at: string;
   updated_at: string | null;
-  // Permission flag (computed based on authenticated user)
+  // Permission flags (computed based on authenticated user)
   can_manage: boolean;
+  user_exhibition_role: ExhibitionRole | null;
 }
 
 export interface ExhibitionUpdate {
@@ -401,6 +402,8 @@ export interface Zone {
   description: string | null;
   type: ZoneType;
   delegated_to_group_id: string | null;
+  moderation_required: boolean;
+  allow_public_proposals: boolean;
   name_i18n: Record<string, string> | null;
   description_i18n: Record<string, string> | null;
   created_at: string;
@@ -413,12 +416,15 @@ export interface ZoneCreate {
   description?: string;
   type?: ZoneType;
   delegated_to_group_id?: string;
+  allow_public_proposals?: boolean;
 }
 
 export interface ZoneUpdate {
   name?: string;
   description?: string;
   type?: ZoneType;
+  moderation_required?: boolean;
+  allow_public_proposals?: boolean;
 }
 
 /**
@@ -503,6 +509,12 @@ export interface SessionUpdateRequest {
   scheduled_end?: string;
 }
 
+export interface SessionModerateRequest {
+  action: 'approve' | 'reject' | 'request_changes';
+  rejection_reason?: string;
+  comment?: string;
+}
+
 /**
  * Admin types (SuperAdmin portal).
  */
@@ -573,4 +585,64 @@ export interface ExhibitionCreate {
   timezone: string;
   primary_language: string;
   grace_period_minutes?: number;
+}
+
+/**
+ * Partner types (Issue #10).
+ */
+export interface PartnerZone {
+  id: string;
+  exhibition_id: string;
+  name: string;
+  description: string | null;
+  type: ZoneType;
+  moderation_required: boolean;
+  allow_public_proposals: boolean;
+  table_count: number;
+  pending_sessions_count: number;
+  validated_sessions_count: number;
+}
+
+export interface PartnerSession {
+  id: string;
+  exhibition_id: string;
+  time_slot_id: string;
+  game_id: string;
+  physical_table_id: string;
+  title: string;
+  description: string | null;
+  language: string;
+  min_age: number | null;
+  max_players_count: number;
+  status: SessionStatus;
+  scheduled_start: string;
+  scheduled_end: string;
+  created_at: string;
+  game_title: string;
+  zone_name: string;
+  table_label: string;
+  available_seats: number;
+  confirmed_players_count: number;
+}
+
+export interface SeriesCreateRequest {
+  exhibition_id: string;
+  game_id: string;
+  title: string;
+  description?: string;
+  language?: string;
+  min_age?: number;
+  max_players_count: number;
+  safety_tools?: string[];
+  is_accessible_disability?: boolean;
+  provided_by_group_id?: string;
+  time_slot_ids: string[];
+  table_ids: string[];
+  duration_minutes: number;
+}
+
+export interface SeriesCreateResponse {
+  created_count: number;
+  sessions: GameSession[];
+  warnings: string[];
 }

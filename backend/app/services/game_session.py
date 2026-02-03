@@ -11,6 +11,8 @@ from fastapi import HTTPException, status
 from sqlalchemy import select, func, and_, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.messages import get_message
+
 from app.domain.game.entity import GameSession, Game, GameCategory, Booking, ModerationComment
 from app.domain.game.schemas import (
     GameSessionCreate,
@@ -35,6 +37,11 @@ from app.domain.shared.entity import (
     PhysicalTableStatus,
 )
 from app.api.deps.permissions import has_exhibition_role, can_manage_zone
+from app.services.notification import (
+    NotificationService,
+    NotificationRecipient,
+    SessionNotificationContext,
+)
 
 
 class GameSessionService:
@@ -219,6 +226,7 @@ class GameSessionService:
         self,
         data: GameSessionCreate,
         current_user: User,
+        locale: str = "en",
     ) -> GameSession:
         """
         Create a new game session.
@@ -234,7 +242,7 @@ class GameSessionService:
         if not exhibition:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail="Exhibition not found",
+                detail=get_message("exhibition_not_found", locale),
             )
 
         # Validate time slot belongs to exhibition
@@ -242,12 +250,12 @@ class GameSessionService:
         if not time_slot:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail="Time slot not found",
+                detail=get_message("time_slot_not_found", locale),
             )
         if time_slot.exhibition_id != data.exhibition_id:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Time slot does not belong to this exhibition",
+                detail=get_message("slot_not_in_exhibition", locale),
             )
 
         # Validate game exists
@@ -255,19 +263,19 @@ class GameSessionService:
         if not game:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail="Game not found",
+                detail=get_message("game_not_found", locale),
             )
 
         # Validate schedule within time slot
         if data.scheduled_start < time_slot.start_time:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Session cannot start before time slot",
+                detail=get_message("session_before_slot", locale),
             )
         if data.scheduled_end > time_slot.end_time:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Session cannot end after time slot",
+                detail=get_message("session_exceeds_slot", locale),
             )
 
         # Validate duration
@@ -275,8 +283,9 @@ class GameSessionService:
         if duration_minutes > time_slot.max_duration_minutes:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Session duration ({int(duration_minutes)} min) exceeds "
-                       f"maximum allowed ({time_slot.max_duration_minutes} min)",
+                detail=get_message("session_duration_max_exceeded", locale,
+                                   duration=int(duration_minutes),
+                                   max_minutes=time_slot.max_duration_minutes),
             )
 
         # Check GM schedule overlap - cannot run two sessions at the same time
@@ -289,9 +298,10 @@ class GameSessionService:
         if gm_session_conflict:
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
-                detail=f"You are already running session '{gm_session_conflict.title}' "
-                       f"({gm_session_conflict.scheduled_start.strftime('%H:%M')} - "
-                       f"{gm_session_conflict.scheduled_end.strftime('%H:%M')})",
+                detail=get_message("session_conflict", locale,
+                                   title=gm_session_conflict.title,
+                                   start=gm_session_conflict.scheduled_start.strftime('%H:%M'),
+                                   end=gm_session_conflict.scheduled_end.strftime('%H:%M')),
             )
 
         # Check GM booking overlap - cannot be a player at another table
@@ -304,9 +314,10 @@ class GameSessionService:
         if gm_booking_conflict:
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
-                detail=f"You are registered as a player for session '{gm_booking_conflict.title}' "
-                       f"({gm_booking_conflict.scheduled_start.strftime('%H:%M')} - "
-                       f"{gm_booking_conflict.scheduled_end.strftime('%H:%M')})",
+                detail=get_message("booking_conflict", locale,
+                                   title=gm_booking_conflict.title,
+                                   start=gm_booking_conflict.scheduled_start.strftime('%H:%M'),
+                                   end=gm_booking_conflict.scheduled_end.strftime('%H:%M')),
             )
 
         session = GameSession(
@@ -492,6 +503,7 @@ class GameSessionService:
         session_id: UUID,
         data: GameSessionModerate,
         current_user: User,
+        locale: str = "en",
     ) -> GameSession:
         """
         Approve, reject, or request changes on a session (#30).
@@ -506,16 +518,17 @@ class GameSessionService:
         if not session:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail="Game session not found",
+                detail=get_message("session_not_found", locale),
             )
 
-        # Check moderator permissions (#99)
+        # Check moderator permissions (#99, #10)
         # Allowed: SUPER_ADMIN, ADMIN, exhibition ORGANIZER, or PARTNER managing the zone
         can_moderate = await has_exhibition_role(
             current_user, session.exhibition_id, [ExhibitionRole.ORGANIZER], self.db
         )
 
-        # Check if user is a partner with access to the zone
+        # Check if user is a partner with access to the zone (#10)
+        # Partners can moderate sessions in their assigned zones
         if not can_moderate and session.physical_table_id:
             zone_result = await self.db.execute(
                 select(Zone)
@@ -529,13 +542,13 @@ class GameSessionService:
         if not can_moderate:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail="Only organizers or zone managers can moderate sessions",
+                detail=get_message("only_organizers_or_zone_managers", locale),
             )
 
         if session.status != SessionStatus.PENDING_MODERATION:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Cannot moderate a {session.status.value} session",
+                detail=get_message("cannot_moderate_status", locale, status=session.status.value),
             )
 
         if data.action == "approve":
@@ -557,7 +570,79 @@ class GameSessionService:
         await self.db.flush()
         await self.db.refresh(session)
 
+        # Send notification to session creator
+        await self._notify_moderation_result(
+            session=session,
+            action=data.action,
+            rejection_reason=data.rejection_reason,
+            comment=data.comment,
+            locale=locale,
+        )
+
         return session
+
+    async def _notify_moderation_result(
+        self,
+        session: GameSession,
+        action: str,
+        rejection_reason: Optional[str] = None,
+        comment: Optional[str] = None,
+        locale: str = "en",
+    ) -> None:
+        """Send notification to session creator about moderation result."""
+        # Get session creator info
+        creator_result = await self.db.execute(
+            select(User).where(User.id == session.created_by_user_id)
+        )
+        creator = creator_result.scalar_one_or_none()
+        if not creator:
+            return
+
+        # Get exhibition info
+        exhibition_result = await self.db.execute(
+            select(Exhibition).where(Exhibition.id == session.exhibition_id)
+        )
+        exhibition = exhibition_result.scalar_one_or_none()
+        if not exhibition:
+            return
+
+        # Prepare notification context
+        recipient = NotificationRecipient(
+            user_id=creator.id,
+            email=creator.email,
+            full_name=creator.full_name,
+            locale=creator.locale or locale,
+        )
+
+        context = SessionNotificationContext(
+            session_id=session.id,
+            session_title=session.title,
+            exhibition_id=exhibition.id,
+            exhibition_title=exhibition.title,
+            scheduled_start=session.scheduled_start,
+            scheduled_end=session.scheduled_end,
+        )
+
+        # Send appropriate notification
+        notification_service = NotificationService(self.db)
+
+        if action == "approve":
+            await notification_service.notify_session_approved(
+                recipient=recipient,
+                context=context,
+            )
+        elif action == "reject":
+            await notification_service.notify_session_rejected(
+                recipient=recipient,
+                context=context,
+                rejection_reason=rejection_reason,
+            )
+        elif action == "request_changes":
+            await notification_service.notify_changes_requested(
+                recipient=recipient,
+                context=context,
+                comment=comment,
+            )
 
     async def cancel_session(
         self,
@@ -1140,13 +1225,15 @@ class GameSessionService:
             query = query.where(GameSession.id != exclude_session_id)
 
         result = await self.db.execute(query)
-        return result.scalar_one_or_none()
+        # Use first() instead of scalar_one_or_none() in case multiple sessions conflict
+        return result.scalars().first()
 
     async def assign_table(
         self,
         session_id: UUID,
         table_id: UUID,
         current_user: User,
+        locale: str = "en",
     ) -> GameSession:
         """
         Assign a physical table to a session.
@@ -1160,19 +1247,10 @@ class GameSessionService:
         if not session:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail="Game session not found",
+                detail=get_message("session_not_found", locale),
             )
 
-        # Check permission (#99)
-        if not await has_exhibition_role(
-            current_user, session.exhibition_id, [ExhibitionRole.ORGANIZER], self.db
-        ):
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Only organizers can assign tables",
-            )
-
-        # Check table exists
+        # Check table exists first (needed for permission check)
         result = await self.db.execute(
             select(PhysicalTable).where(PhysicalTable.id == table_id)
         )
@@ -1180,8 +1258,49 @@ class GameSessionService:
         if not table:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail="Physical table not found",
+                detail=get_message("table_not_found", locale),
             )
+
+        # Check permission (#99, #10)
+        # Allowed: SUPER_ADMIN, ADMIN, exhibition ORGANIZER, or PARTNER managing the zone
+        can_assign = await has_exhibition_role(
+            current_user, session.exhibition_id, [ExhibitionRole.ORGANIZER], self.db
+        )
+
+        # Get zone for permission checks (#10)
+        zone_result = await self.db.execute(
+            select(Zone).where(Zone.id == table.zone_id)
+        )
+        zone = zone_result.scalar_one_or_none()
+
+        # Check if user is a partner with access to the zone containing this table (#10)
+        if not can_assign:
+            if zone and await can_manage_zone(current_user, zone, self.db):
+                can_assign = True
+
+        if not can_assign:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=get_message("only_organizers_or_zone_managers", locale),
+            )
+
+        # Check if zone allows public proposals (#10)
+        # If the session was created by a regular user (not organizer/partner),
+        # the zone must allow public proposals
+        if zone and session.created_by_user_id:
+            # Get the session creator
+            creator_result = await self.db.execute(
+                select(User).where(User.id == session.created_by_user_id)
+            )
+            creator = creator_result.scalar_one_or_none()
+            if creator:
+                # Check if creator can manage the zone
+                creator_can_manage = await can_manage_zone(creator, zone, self.db)
+                if not creator_can_manage and not zone.allow_public_proposals:
+                    raise HTTPException(
+                        status_code=status.HTTP_403_FORBIDDEN,
+                        detail=get_message("zone_no_public_proposals", locale, zone_name=zone.name),
+                    )
 
         # Get buffer time from time slot
         time_slot = await self._get_time_slot(session.time_slot_id)
@@ -1197,10 +1316,11 @@ class GameSessionService:
         )
 
         if conflicting:
+            start_time = conflicting.scheduled_start.strftime("%H:%M")
+            end_time = conflicting.scheduled_end.strftime("%H:%M")
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
-                detail=f"Table collision: another session '{conflicting.title}' "
-                       f"is scheduled from {conflicting.scheduled_start} to {conflicting.scheduled_end}",
+                detail=get_message("table_collision", locale, title=conflicting.title, start=start_time, end=end_time),
             )
 
         session.physical_table_id = table_id

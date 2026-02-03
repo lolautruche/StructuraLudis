@@ -155,6 +155,16 @@ class Zone(Base, TimestampMixin):
         ForeignKey("user_groups.id", ondelete="SET NULL"), nullable=True
     )
 
+    # Session moderation (Issue #10 - JS.D3)
+    # When True, public session proposals require moderation
+    # Partner sessions are always auto-validated regardless of this setting
+    moderation_required: Mapped[bool] = mapped_column(default=True)
+
+    # Public session proposals (Issue #10)
+    # When True, public users can propose sessions on tables in this zone
+    # When False, only partners/organizers can create sessions
+    allow_public_proposals: Mapped[bool] = mapped_column(default=False)
+
     # Relationships
     exhibition: Mapped["Exhibition"] = relationship(back_populates="zones")
     delegated_to_group: Mapped[Optional["UserGroup"]] = relationship()

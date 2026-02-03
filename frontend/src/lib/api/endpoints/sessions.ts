@@ -3,7 +3,7 @@
  */
 
 import { api } from '../client';
-import { ApiResponse, Booking, GameSession, SessionCreateRequest, SessionUpdateRequest } from '../types';
+import { ApiResponse, Booking, GameSession, SessionCreateRequest, SessionUpdateRequest, SessionModerateRequest } from '../types';
 
 export interface SessionSearchParams {
   q?: string;
@@ -117,5 +117,19 @@ export const sessionsApi = {
    */
   getMyBooking: async (sessionId: string): Promise<ApiResponse<Booking | null>> => {
     return api.get<Booking | null>(`/api/v1/sessions/${sessionId}/my-booking`);
+  },
+
+  /**
+   * Assign a physical table to a session.
+   */
+  assignTable: async (sessionId: string, tableId: string): Promise<ApiResponse<GameSession>> => {
+    return api.post<GameSession>(`/api/v1/sessions/${sessionId}/assign-table?table_id=${tableId}`);
+  },
+
+  /**
+   * Moderate a session (approve, reject, or request changes).
+   */
+  moderate: async (sessionId: string, moderation: SessionModerateRequest): Promise<ApiResponse<GameSession>> => {
+    return api.post<GameSession>(`/api/v1/sessions/${sessionId}/moderate`, moderation);
   },
 };

@@ -77,14 +77,34 @@ async def list_exhibitions(
     responses = []
     for exhibition in all_exhibitions:
         can_manage = False
+        user_exhibition_role = None
+
         if current_user:
             # Check if user has any role (ORGANIZER or PARTNER) for this exhibition
             can_manage = await has_any_exhibition_role(current_user, exhibition, db)
+
+            # Get specific role if user can manage
+            if can_manage:
+                if is_admin:
+                    user_exhibition_role = "ORGANIZER"  # Admins have full access
+                else:
+                    role_result = await db.execute(
+                        select(UserExhibitionRole).where(
+                            UserExhibitionRole.user_id == current_user.id,
+                            UserExhibitionRole.exhibition_id == exhibition.id,
+                        )
+                    )
+                    role_assignment = role_result.scalar_one_or_none()
+                    if role_assignment:
+                        # Handle both enum and string (depending on SQLAlchemy mapping)
+                        role = role_assignment.role
+                        user_exhibition_role = role.value if hasattr(role, 'value') else str(role)
 
         # Filter: show if PUBLISHED, or if user is admin, or if user can manage
         if exhibition.status == ExhibitionStatus.PUBLISHED or is_admin or can_manage:
             response = ExhibitionRead.model_validate(exhibition)
             response.can_manage = can_manage
+            response.user_exhibition_role = user_exhibition_role
             responses.append(response)
 
     return responses
@@ -127,12 +147,34 @@ async def get_exhibition(
 
     # Check if current user has any role (ORGANIZER or PARTNER) for this exhibition
     user_can_manage = False
+    user_exhibition_role = None
+
     if current_user:
         user_can_manage = await has_any_exhibition_role(current_user, exhibition, db)
 
-    # Create response with can_manage flag
+        # Get specific role if user can manage
+        if user_can_manage:
+            # Check for super admin or admin (they can manage all exhibitions)
+            if current_user.global_role in [GlobalRole.SUPER_ADMIN, GlobalRole.ADMIN]:
+                user_exhibition_role = "ORGANIZER"  # Admins have full access
+            else:
+                # Get user's exhibition role
+                role_result = await db.execute(
+                    select(UserExhibitionRole).where(
+                        UserExhibitionRole.user_id == current_user.id,
+                        UserExhibitionRole.exhibition_id == exhibition_id,
+                    )
+                )
+                role_assignment = role_result.scalar_one_or_none()
+                if role_assignment:
+                    # Handle both enum and string (depending on SQLAlchemy mapping)
+                    role = role_assignment.role
+                    user_exhibition_role = role.value if hasattr(role, 'value') else str(role)
+
+    # Create response with can_manage flag and user role
     response = ExhibitionRead.model_validate(exhibition)
     response.can_manage = user_can_manage
+    response.user_exhibition_role = user_exhibition_role
 
     return response
 

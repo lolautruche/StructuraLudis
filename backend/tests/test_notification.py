@@ -97,13 +97,13 @@ class TestEmailTemplates:
         """Renders booking confirmation in French."""
         subject, html = render_booking_confirmed(
             locale="fr",
-            session_title="Aventure JDR",
+            session_title="Aventure JdR",
             exhibition_title="GameCon 2026",
             scheduled_start=datetime(2026, 7, 15, 14, 0, tzinfo=timezone.utc),
         )
 
         assert "confirmée" in subject.lower()
-        assert "Aventure JDR" in html
+        assert "Aventure JdR" in html
 
     def test_render_session_cancelled_with_reason(self):
         """Renders cancellation with reason."""
@@ -181,7 +181,7 @@ class TestEmailTemplates:
         """Renders new player registration email for GM in French."""
         subject, html = render_new_player_registration(
             locale="fr",
-            session_title="Aventure JDR",
+            session_title="Aventure JdR",
             exhibition_title="GameCon 2026",
             scheduled_start=datetime(2026, 7, 15, 14, 0, tzinfo=timezone.utc),
             player_name="Jean Joueur",
@@ -189,7 +189,7 @@ class TestEmailTemplates:
             max_players=4,
         )
 
-        assert "Aventure JDR" in subject
+        assert "Aventure JdR" in subject
         assert "inscrit" in subject.lower()
         assert "Jean Joueur" in html
 
@@ -238,7 +238,7 @@ class TestEmailTemplates:
         """Renders player cancelled email for GM in French."""
         subject, html = render_player_cancelled(
             locale="fr",
-            session_title="Campagne JDR",
+            session_title="Campagne JdR",
             exhibition_title="GameCon 2026",
             scheduled_start=datetime(2026, 7, 15, 14, 0, tzinfo=timezone.utc),
             player_name="Jean Joueur",

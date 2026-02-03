@@ -2329,12 +2329,13 @@ class TestDelegatedModeration:
         second_organizer_resp = await second_auth_client.get("/api/v1/users/me")
         second_organizer_id = second_organizer_resp.json()["id"]
 
-        # Create a zone for this exhibition
+        # Create a zone for this exhibition with partner validation enabled (#10)
         zone = Zone(
             id=uuid4(),
             exhibition_id=test_exhibition_with_slot["exhibition_id"],
             name="Partner Zone",
             type=ZoneType.RPG,
+            moderation_required=False,
         )
         db_session.add(zone)
         await db_session.flush()

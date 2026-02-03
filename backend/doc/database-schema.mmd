@@ -120,6 +120,8 @@ erDiagram
         jsonb name_i18n "Issue 34 - i18n translations"
         jsonb description_i18n "Issue 34 - i18n translations"
         enum type "RPG|BOARD_GAME|WARGAME|TCG|DEMO|MIXED"
+        boolean moderation_required "Issue 10 - Public sessions need moderation"
+        boolean allow_public_proposals "Issue 10 - Public can propose sessions"
         datetime created_at
         datetime updated_at
     }

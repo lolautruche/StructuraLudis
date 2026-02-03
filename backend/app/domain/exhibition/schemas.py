@@ -111,8 +111,11 @@ class ExhibitionRead(ExhibitionBase):
     description_i18n: I18nField = None
     created_at: datetime
     updated_at: Optional[datetime] = None
-    # Permission flag (computed based on authenticated user)
+    # Permission flags (computed based on authenticated user)
     can_manage: bool = False
+    user_exhibition_role: Optional[str] = Field(
+        None, description="User's role for this exhibition: ORGANIZER, PARTNER, or null"
+    )
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -186,6 +189,16 @@ class ZoneBase(BaseModel):
     name: str = Field(..., min_length=1, max_length=100)
     description: Optional[str] = None
     type: ZoneType = Field(default=ZoneType.MIXED)
+    # Session moderation (Issue #10 - JS.D3)
+    moderation_required: bool = Field(
+        default=True,
+        description="When True, public session proposals require moderation. Partner sessions are always auto-validated."
+    )
+    # Public session proposals (Issue #10)
+    allow_public_proposals: bool = Field(
+        default=False,
+        description="When True, public users can propose sessions on tables in this zone."
+    )
 
 
 class ZoneCreate(ZoneBase):
@@ -202,6 +215,16 @@ class ZoneUpdate(BaseModel):
     name: Optional[str] = Field(None, min_length=1, max_length=100)
     description: Optional[str] = None
     type: Optional[ZoneType] = None
+    # Session moderation (Issue #10 - JS.D3)
+    moderation_required: Optional[bool] = Field(
+        None,
+        description="When True, public session proposals require moderation. Partner sessions are always auto-validated."
+    )
+    # Public session proposals (Issue #10)
+    allow_public_proposals: Optional[bool] = Field(
+        None,
+        description="When True, public users can propose sessions on tables in this zone."
+    )
     # i18n fields (#34)
     name_i18n: I18nField = Field(None, description="Translations for name")
     description_i18n: I18nField = Field(None, description="Translations for description")

@@ -446,3 +446,80 @@ class SessionReportRead(BaseModel):
     actual_player_count: Optional[int] = None
     table_condition: Optional[str] = None
     end_notes: Optional[str] = None
+
+
+# =============================================================================
+# Series Creation Schemas (#10 - Partner Zone Management)
+# =============================================================================
+
+class SeriesCreate(BaseModel):
+    """
+    Schema for batch creating a series of sessions (Issue #10).
+
+    A "Series" is a set of sessions with the same game and settings,
+    scheduled across multiple time slots, rotating through tables.
+    Example: "90-minute demo rotation" - same demo runs every slot on different tables.
+    """
+    exhibition_id: UUID
+    game_id: UUID
+    title: str = Field(..., min_length=1, max_length=255)
+    description: Optional[str] = None
+    language: str = Field(default="en", max_length=10)
+    min_age: Optional[int] = Field(None, ge=0, le=99)
+    max_players_count: int = Field(..., ge=1, le=100)
+    safety_tools: Optional[List[str]] = None
+    is_accessible_disability: bool = False
+    provided_by_group_id: Optional[UUID] = Field(
+        None, description="Partner group for 'Organized by' display"
+    )
+
+    # Series-specific fields
+    time_slot_ids: List[UUID] = Field(
+        ..., min_length=1, description="Time slots to create sessions for"
+    )
+    table_ids: List[UUID] = Field(
+        ..., min_length=1, description="Tables to rotate through"
+    )
+    duration_minutes: int = Field(
+        ..., ge=15, le=720, description="Session duration in minutes"
+    )
+
+
+class SeriesCreateResponse(BaseModel):
+    """Response for series creation."""
+    created_count: int = Field(..., description="Number of sessions created")
+    sessions: List[GameSessionRead] = Field(
+        default_factory=list, description="Created sessions"
+    )
+    warnings: List[str] = Field(
+        default_factory=list,
+        description="Warnings (e.g., 'Table X unavailable at slot Y, skipped')"
+    )
+
+
+class PartnerSessionCreate(BaseModel):
+    """
+    Schema for creating a single session by a partner (Issue #10).
+
+    Similar to SeriesCreate but for a single session with a single table.
+    Auto-validates if the zone has partner_validation_enabled.
+    """
+    exhibition_id: UUID
+    game_id: UUID
+    title: str = Field(..., min_length=1, max_length=255)
+    description: Optional[str] = None
+    language: str = Field(default="", max_length=10)
+    min_age: Optional[int] = Field(None, ge=0, le=99)
+    max_players_count: int = Field(..., ge=1, le=100)
+    safety_tools: Optional[List[str]] = None
+    is_accessible_disability: bool = False
+    provided_by_group_id: Optional[UUID] = Field(
+        None, description="Partner group for 'Organized by' display"
+    )
+
+    # Single session specific fields
+    time_slot_id: UUID = Field(..., description="Time slot for the session")
+    table_id: UUID = Field(..., description="Table for the session")
+    duration_minutes: int = Field(
+        ..., ge=15, le=720, description="Session duration in minutes"
+    )

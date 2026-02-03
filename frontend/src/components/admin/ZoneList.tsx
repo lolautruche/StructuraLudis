@@ -1,14 +1,15 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useTranslations } from 'next-intl';
-import { zonesApi, Zone, ZoneCreate } from '@/lib/api';
-import { Button, Card, Badge, ConfirmDialog } from '@/components/ui';
+import { zonesApi, partnerApi, Zone, ZoneCreate } from '@/lib/api';
+import { Button, Card, Badge, ConfirmDialog, Checkbox } from '@/components/ui';
 import { ZoneForm } from './ZoneForm';
 import { PhysicalTableList } from './PhysicalTableList';
 
 interface ZoneListProps {
   exhibitionId: string;
+  partnerMode?: boolean;
 }
 
 const ZONE_TYPE_COLORS: Record<string, 'default' | 'success' | 'warning' | 'danger'> = {
@@ -20,7 +21,7 @@ const ZONE_TYPE_COLORS: Record<string, 'default' | 'success' | 'warning' | 'dang
   DEMO: 'default',
 };
 
-export function ZoneList({ exhibitionId }: ZoneListProps) {
+export function ZoneList({ exhibitionId, partnerMode = false }: ZoneListProps) {
   const t = useTranslations('Admin');
   const tCommon = useTranslations('Common');
 
@@ -37,24 +38,48 @@ export function ZoneList({ exhibitionId }: ZoneListProps) {
   const [isDeleting, setIsDeleting] = useState(false);
 
   // Load zones
-  useEffect(() => {
-    async function loadZones() {
-      setIsLoading(true);
-      setError(null);
+  const loadZones = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
 
+    if (partnerMode) {
+      // In partner mode, use partner API to get only assigned zones
+      const response = await partnerApi.listZones(exhibitionId);
+      if (response.error) {
+        setError(response.error.message);
+      } else if (response.data) {
+        // Convert PartnerZone to Zone for compatibility
+        const convertedZones: Zone[] = response.data.map((pz) => ({
+          id: pz.id,
+          exhibition_id: pz.exhibition_id,
+          name: pz.name,
+          description: pz.description,
+          type: pz.type,
+          delegated_to_group_id: null,
+          moderation_required: pz.moderation_required,
+          allow_public_proposals: pz.allow_public_proposals ?? false,
+          name_i18n: null,
+          description_i18n: null,
+          created_at: '',
+          updated_at: null,
+        }));
+        setZones(convertedZones);
+      }
+    } else {
       const response = await zonesApi.list(exhibitionId);
-
       if (response.error) {
         setError(response.error.message);
       } else if (response.data) {
         setZones(response.data);
       }
-
-      setIsLoading(false);
     }
 
+    setIsLoading(false);
+  }, [exhibitionId, partnerMode]);
+
+  useEffect(() => {
     loadZones();
-  }, [exhibitionId]);
+  }, [loadZones]);
 
   const handleCreate = async (data: ZoneCreate) => {
     setIsSubmitting(true);
@@ -74,7 +99,7 @@ export function ZoneList({ exhibitionId }: ZoneListProps) {
     setIsSubmitting(false);
   };
 
-  const handleUpdate = async (data: ZoneCreate) => {
+  const handleUpdate = async (data: ZoneCreate & { moderation_required?: boolean }) => {
     if (!editingZone) return;
 
     setIsSubmitting(true);
@@ -84,6 +109,7 @@ export function ZoneList({ exhibitionId }: ZoneListProps) {
       name: data.name,
       description: data.description,
       type: data.type,
+      moderation_required: data.moderation_required,
     });
 
     if (response.error) {
@@ -140,6 +166,26 @@ export function ZoneList({ exhibitionId }: ZoneListProps) {
     setEditingZone(null);
   };
 
+  // Partner mode: update zone settings (allow_public_proposals, moderation_required)
+  const handlePartnerSettingChange = async (
+    zoneId: string,
+    setting: 'allow_public_proposals' | 'moderation_required',
+    value: boolean
+  ) => {
+    setError(null);
+
+    const response = await zonesApi.update(zoneId, { [setting]: value });
+
+    if (response.error) {
+      setError(response.error.message);
+    } else if (response.data) {
+      // Update local state
+      setZones((prev) =>
+        prev.map((z) => (z.id === zoneId ? { ...z, [setting]: value } : z))
+      );
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="animate-pulse space-y-3">
@@ -161,8 +207,8 @@ export function ZoneList({ exhibitionId }: ZoneListProps) {
         </div>
       )}
 
-      {/* Add button */}
-      {!isFormOpen && !editingZone && (
+      {/* Add button - only for organizers, not partners */}
+      {!partnerMode && !isFormOpen && !editingZone && (
         <div className="flex justify-end">
           <Button variant="primary" onClick={openCreateForm}>
             {t('addZone')}
@@ -170,8 +216,8 @@ export function ZoneList({ exhibitionId }: ZoneListProps) {
         </div>
       )}
 
-      {/* Create form */}
-      {isFormOpen && (
+      {/* Create form - only for organizers */}
+      {!partnerMode && isFormOpen && (
         <Card>
           <Card.Content>
             <h4
@@ -259,31 +305,92 @@ export function ZoneList({ exhibitionId }: ZoneListProps) {
                       <Badge variant={ZONE_TYPE_COLORS[zone.type]}>
                         {t(`zoneTypes.${zone.type}`)}
                       </Badge>
-                      <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
-                        <Button
-                          variant="secondary"
-                          size="sm"
-                          onClick={() => openEditForm(zone)}
-                        >
-                          {tCommon('edit')}
-                        </Button>
-                        <Button
-                          variant="danger"
-                          size="sm"
-                          onClick={() => setDeleteZone(zone)}
-                        >
-                          {tCommon('delete')}
-                        </Button>
-                      </div>
+                      {/* Show if zone accepts public proposals */}
+                      {zone.allow_public_proposals && (
+                        <Badge variant="success">
+                          {t('publicProposalsOpen')}
+                        </Badge>
+                      )}
+                      {/* Edit/Delete buttons - only for organizers */}
+                      {!partnerMode && (
+                        <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
+                          <Button
+                            variant="secondary"
+                            size="sm"
+                            onClick={() => openEditForm(zone)}
+                          >
+                            {tCommon('edit')}
+                          </Button>
+                          <Button
+                            variant="danger"
+                            size="sm"
+                            onClick={() => setDeleteZone(zone)}
+                          >
+                            {tCommon('delete')}
+                          </Button>
+                        </div>
+                      )}
                     </div>
                   </div>
 
-                  {/* Tables section (expanded) */}
+                  {/* Expanded section */}
                   {expandedZoneId === zone.id && (
                     <div
                       className="p-4 border-t"
                       style={{ borderColor: 'var(--color-border)' }}
                     >
+                      {/* Zone settings - editable in partner mode, read-only for organizers */}
+                      {partnerMode ? (
+                        <div className="mb-4 space-y-3">
+                          <div className="flex items-center gap-3">
+                            <Checkbox
+                              id={`allow_public_${zone.id}`}
+                              checked={zone.allow_public_proposals}
+                              onChange={(e) => handlePartnerSettingChange(zone.id, 'allow_public_proposals', e.target.checked)}
+                            />
+                            <label
+                              htmlFor={`allow_public_${zone.id}`}
+                              className="text-sm cursor-pointer"
+                              style={{ color: 'var(--color-text-primary)' }}
+                            >
+                              {t('allowPublicProposals')}
+                            </label>
+                          </div>
+                          {/* Only show moderation checkbox if public proposals enabled */}
+                          {zone.allow_public_proposals && (
+                            <div className="flex items-center gap-3">
+                              <Checkbox
+                                id={`moderation_${zone.id}`}
+                                checked={zone.moderation_required}
+                                onChange={(e) => handlePartnerSettingChange(zone.id, 'moderation_required', e.target.checked)}
+                              />
+                              <label
+                                htmlFor={`moderation_${zone.id}`}
+                                className="text-sm cursor-pointer"
+                                style={{ color: 'var(--color-text-primary)' }}
+                              >
+                                {t('moderationRequired')}
+                              </label>
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        <div className="mb-4 flex flex-wrap gap-2">
+                          {zone.allow_public_proposals ? (
+                            <Badge variant="success">{t('publicProposalsEnabled')}</Badge>
+                          ) : (
+                            <Badge variant="default">{t('publicProposalsDisabled')}</Badge>
+                          )}
+                          {zone.allow_public_proposals && (
+                            zone.moderation_required ? (
+                              <Badge variant="warning">{t('moderationEnabled')}</Badge>
+                            ) : (
+                              <Badge variant="default">{t('moderationDisabled')}</Badge>
+                            )
+                          )}
+                        </div>
+                      )}
+
                       <h5
                         className="font-medium mb-3"
                         style={{ color: 'var(--color-text-primary)' }}
