@@ -2,12 +2,12 @@
 
 import { useState, useEffect } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
-import { useRouter } from '@/i18n/routing';
-import { exhibitionsApi } from '@/lib/api';
+import { useRouter, Link } from '@/i18n/routing';
+import { userApi } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { ExhibitionCard } from '@/components/exhibitions';
-import { Card } from '@/components/ui';
-import type { Exhibition } from '@/lib/api/types';
+import { Card, Button } from '@/components/ui';
+import type { MyExhibitions } from '@/lib/api/types';
 
 export default function MyEventsPage() {
   const t = useTranslations('MyEvents');
@@ -15,7 +15,7 @@ export default function MyEventsPage() {
   const router = useRouter();
   const { isAuthenticated, isLoading: authLoading } = useAuth();
 
-  const [exhibitions, setExhibitions] = useState<Exhibition[]>([]);
+  const [myExhibitions, setMyExhibitions] = useState<MyExhibitions | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   // Redirect if not authenticated
@@ -25,32 +25,30 @@ export default function MyEventsPage() {
     }
   }, [authLoading, isAuthenticated, router]);
 
-  // Fetch exhibitions user can manage
+  // Fetch my exhibitions
   useEffect(() => {
-    async function fetchExhibitions() {
+    async function fetchMyExhibitions() {
       setIsLoading(true);
-      const response = await exhibitionsApi.list();
+      const response = await userApi.getMyExhibitions();
       if (response.data) {
-        // Filter to only exhibitions user can manage
-        const manageable = response.data.filter((e) => e.can_manage);
-        // Sort by start_date
-        const sorted = manageable.sort(
-          (a, b) =>
-            new Date(b.start_date).getTime() - new Date(a.start_date).getTime()
-        );
-        setExhibitions(sorted);
+        setMyExhibitions(response.data);
       }
       setIsLoading(false);
     }
 
     if (isAuthenticated) {
-      fetchExhibitions();
+      fetchMyExhibitions();
     }
   }, [isAuthenticated]);
 
   if (authLoading || !isAuthenticated) {
     return null;
   }
+
+  const hasOrganized = myExhibitions && myExhibitions.organized.length > 0;
+  const hasRegistered = myExhibitions && myExhibitions.registered.length > 0;
+  const hasBoth = hasOrganized && hasRegistered;
+  const hasNone = !hasOrganized && !hasRegistered;
 
   return (
     <div className="space-y-6">
@@ -77,7 +75,8 @@ export default function MyEventsPage() {
             </Card>
           ))}
         </div>
-      ) : exhibitions.length === 0 ? (
+      ) : hasNone ? (
+        /* Empty state */
         <Card>
           <Card.Content className="text-center py-12">
             <div className="text-4xl mb-4">📅</div>
@@ -87,20 +86,57 @@ export default function MyEventsPage() {
             >
               {t('noEvents')}
             </h3>
-            <p style={{ color: 'var(--color-text-secondary)' }}>
+            <p className="mb-4" style={{ color: 'var(--color-text-secondary)' }}>
               {t('noEventsDescription')}
             </p>
+            <Link href="/exhibitions">
+              <Button variant="primary">{t('browseEvents')}</Button>
+            </Link>
           </Card.Content>
         </Card>
       ) : (
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {exhibitions.map((exhibition) => (
-            <ExhibitionCard
-              key={exhibition.id}
-              exhibition={exhibition}
-              locale={locale}
-            />
-          ))}
+        <div className="space-y-8">
+          {/* Organized exhibitions */}
+          {hasOrganized && (
+            <section>
+              {hasBoth && (
+                <h2 className="text-lg font-semibold mb-4 flex items-center gap-2" style={{ color: 'var(--color-text-primary)' }}>
+                  <span>📋</span>
+                  {t('organizedSection')}
+                </h2>
+              )}
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {myExhibitions!.organized.map((exhibition) => (
+                  <ExhibitionCard
+                    key={exhibition.id}
+                    exhibition={exhibition}
+                    locale={locale}
+                  />
+                ))}
+              </div>
+            </section>
+          )}
+
+          {/* Registered exhibitions */}
+          {hasRegistered && (
+            <section>
+              {hasBoth && (
+                <h2 className="text-lg font-semibold mb-4 flex items-center gap-2" style={{ color: 'var(--color-text-primary)' }}>
+                  <span>🎮</span>
+                  {t('registeredSection')}
+                </h2>
+              )}
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {myExhibitions!.registered.map((exhibition) => (
+                  <ExhibitionCard
+                    key={exhibition.id}
+                    exhibition={exhibition}
+                    locale={locale}
+                  />
+                ))}
+              </div>
+            </section>
+          )}
         </div>
       )}
     </div>

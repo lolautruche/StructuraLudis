@@ -277,6 +277,14 @@ export interface ExhibitionRegistration {
 }
 
 /**
+ * My exhibitions response (Issue #96 - JS.C11).
+ */
+export interface MyExhibitions {
+  organized: Exhibition[];
+  registered: Exhibition[];
+}
+
+/**
  * Pagination.
  */
 export interface PaginatedResponse<T> {

@@ -550,3 +550,156 @@ class TestUserAgenda:
         assert "session1_role" in conflict
         assert "session2_title" in conflict
         assert "session2_role" in conflict
+
+
+class TestMyExhibitions:
+    """Tests for My Exhibitions endpoint (Issue #96 - JS.C11)."""
+
+    async def test_my_exhibitions_empty(
+        self,
+        auth_client: AsyncClient,
+    ):
+        """Returns empty lists when user has no exhibitions."""
+        response = await auth_client.get("/api/v1/users/me/exhibitions")
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["organized"] == []
+        assert data["registered"] == []
+
+    async def test_my_exhibitions_with_organized_and_registered(
+        self,
+        auth_client: AsyncClient,
+        test_organizer: dict,
+        db_session,
+    ):
+        """Returns both organized and registered exhibitions correctly."""
+        from app.domain.exhibition.entity import Exhibition, ExhibitionRegistration
+        from app.domain.organization.entity import Organization
+        from app.domain.user.entity import UserExhibitionRole
+        from app.domain.shared.entity import ExhibitionStatus, ExhibitionRole
+        from datetime import datetime, timezone
+
+        user_id = auth_client.headers.get("X-User-ID")
+
+        # Create organization
+        org = Organization(id=uuid4(), name="Test Org", slug="test-org-myex")
+        db_session.add(org)
+
+        # Create exhibition user organizes (PUBLISHED)
+        organized_exhibition = Exhibition(
+            id=uuid4(),
+            organization_id=org.id,
+            created_by_id=user_id,
+            title="My Organized Event",
+            slug="my-organized-event",
+            start_date=datetime(2026, 8, 1, tzinfo=timezone.utc),
+            end_date=datetime(2026, 8, 3, tzinfo=timezone.utc),
+            status=ExhibitionStatus.PUBLISHED,
+        )
+        db_session.add(organized_exhibition)
+
+        # Assign organizer role
+        org_role = UserExhibitionRole(
+            id=uuid4(),
+            user_id=user_id,
+            exhibition_id=organized_exhibition.id,
+            role=ExhibitionRole.ORGANIZER,
+        )
+        db_session.add(org_role)
+
+        # Create another exhibition user is only registered to (PUBLISHED)
+        registered_exhibition = Exhibition(
+            id=uuid4(),
+            organization_id=org.id,
+            created_by_id=user_id,  # Use same user as creator for FK
+            title="Event I Attend",
+            slug="event-i-attend",
+            start_date=datetime(2026, 9, 1, tzinfo=timezone.utc),
+            end_date=datetime(2026, 9, 3, tzinfo=timezone.utc),
+            status=ExhibitionStatus.PUBLISHED,
+        )
+        db_session.add(registered_exhibition)
+
+        # Register to the second exhibition (no role)
+        registration = ExhibitionRegistration(
+            id=uuid4(),
+            user_id=user_id,
+            exhibition_id=registered_exhibition.id,
+        )
+        db_session.add(registration)
+        await db_session.commit()
+
+        response = await auth_client.get("/api/v1/users/me/exhibitions")
+
+        assert response.status_code == 200
+        data = response.json()
+
+        # Should have 1 organized and 1 registered
+        assert len(data["organized"]) == 1
+        assert data["organized"][0]["id"] == str(organized_exhibition.id)
+        assert data["organized"][0]["can_manage"] is True
+
+        assert len(data["registered"]) == 1
+        assert data["registered"][0]["id"] == str(registered_exhibition.id)
+        assert data["registered"][0]["is_user_registered"] is True
+        assert data["registered"][0]["can_manage"] is False
+
+    async def test_my_exhibitions_organizer_not_duplicated(
+        self,
+        auth_client: AsyncClient,
+        test_organizer: dict,
+        db_session,
+    ):
+        """Organizer should not appear in registered list even if also registered."""
+        from app.domain.exhibition.entity import Exhibition, ExhibitionRegistration
+        from app.domain.organization.entity import Organization
+        from app.domain.user.entity import UserExhibitionRole
+        from app.domain.shared.entity import ExhibitionStatus, ExhibitionRole
+        from datetime import datetime, timezone
+
+        user_id = auth_client.headers.get("X-User-ID")
+
+        # Create organization
+        org = Organization(id=uuid4(), name="Dup Org", slug="dup-org")
+        db_session.add(org)
+
+        # Create exhibition
+        exhibition = Exhibition(
+            id=uuid4(),
+            organization_id=org.id,
+            created_by_id=user_id,
+            title="Dup Test Event",
+            slug="dup-test-event",
+            start_date=datetime(2026, 10, 1, tzinfo=timezone.utc),
+            end_date=datetime(2026, 10, 3, tzinfo=timezone.utc),
+            status=ExhibitionStatus.PUBLISHED,
+        )
+        db_session.add(exhibition)
+
+        # Assign organizer role
+        org_role = UserExhibitionRole(
+            id=uuid4(),
+            user_id=user_id,
+            exhibition_id=exhibition.id,
+            role=ExhibitionRole.ORGANIZER,
+        )
+        db_session.add(org_role)
+
+        # ALSO register (should not appear twice)
+        registration = ExhibitionRegistration(
+            id=uuid4(),
+            user_id=user_id,
+            exhibition_id=exhibition.id,
+        )
+        db_session.add(registration)
+        await db_session.commit()
+
+        response = await auth_client.get("/api/v1/users/me/exhibitions")
+
+        assert response.status_code == 200
+        data = response.json()
+
+        # Should appear in organized only (not duplicated in registered)
+        assert len(data["organized"]) == 1
+        assert data["registered"] == []

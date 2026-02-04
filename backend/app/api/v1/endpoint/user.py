@@ -26,10 +26,13 @@ from app.domain.user.schemas import (
     MyBookingSummary,
     UserAgenda,
     SessionConflict,
+    MyExhibitions,
 )
 from app.domain.game.entity import GameSession, Booking
-from app.domain.exhibition.entity import Exhibition, Zone, PhysicalTable
-from app.domain.shared.entity import SessionStatus, BookingStatus
+from app.domain.exhibition.entity import Exhibition, Zone, PhysicalTable, ExhibitionRegistration
+from app.domain.exhibition.schemas import ExhibitionRead
+from app.domain.user.entity import UserExhibitionRole
+from app.domain.shared.entity import SessionStatus, BookingStatus, ExhibitionStatus, GlobalRole
 from app.api.deps import get_current_active_user
 
 router = APIRouter()
@@ -632,3 +635,87 @@ async def get_my_agenda(
         my_bookings=my_bookings,
         conflicts=conflicts,
     )
+
+
+# =============================================================================
+# My Exhibitions (Issue #96 - JS.C11)
+# =============================================================================
+
+@router.get("/me/exhibitions", response_model=MyExhibitions)
+async def get_my_exhibitions(
+    current_user: User = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Get exhibitions the user organizes and is registered to (JS.C11).
+
+    Returns:
+    - organized: exhibitions user can manage (organizer/partner role)
+    - registered: exhibitions user is registered to (excluding organized ones)
+    """
+    # Get all published exhibitions
+    result = await db.execute(
+        select(Exhibition).where(Exhibition.status == ExhibitionStatus.PUBLISHED)
+    )
+    all_exhibitions = result.scalars().all()
+
+    organized = []
+    registered = []
+    organized_ids = set()
+
+    # Check user roles for each exhibition
+    for exhibition in all_exhibitions:
+        # Check if user has a role (organizer/partner)
+        role_result = await db.execute(
+            select(UserExhibitionRole).where(
+                UserExhibitionRole.user_id == current_user.id,
+                UserExhibitionRole.exhibition_id == exhibition.id,
+            )
+        )
+        role = role_result.scalar_one_or_none()
+
+        # Also check for super admin
+        is_admin = current_user.global_role == GlobalRole.SUPER_ADMIN
+
+        if role or is_admin:
+            # User can manage this exhibition
+            response = ExhibitionRead.model_validate(exhibition)
+            response.can_manage = True
+            response.user_exhibition_role = (
+                "ORGANIZER" if is_admin else
+                (role.role.value if hasattr(role.role, 'value') else str(role.role))
+            )
+            response.is_user_registered = True  # Organizers are implicitly "registered"
+            organized.append(response)
+            organized_ids.add(exhibition.id)
+
+    # Get exhibitions user is registered to (excluding ones they organize)
+    reg_result = await db.execute(
+        select(ExhibitionRegistration).where(
+            ExhibitionRegistration.user_id == current_user.id,
+            ExhibitionRegistration.cancelled_at.is_(None),
+        )
+    )
+    registrations = reg_result.scalars().all()
+
+    for reg in registrations:
+        if reg.exhibition_id not in organized_ids:
+            # Get the exhibition
+            exhibition_result = await db.execute(
+                select(Exhibition).where(
+                    Exhibition.id == reg.exhibition_id,
+                    Exhibition.status == ExhibitionStatus.PUBLISHED,
+                )
+            )
+            exhibition = exhibition_result.scalar_one_or_none()
+            if exhibition:
+                response = ExhibitionRead.model_validate(exhibition)
+                response.can_manage = False
+                response.is_user_registered = True
+                registered.append(response)
+
+    # Sort by start date (newest first)
+    organized.sort(key=lambda e: e.start_date, reverse=True)
+    registered.sort(key=lambda e: e.start_date, reverse=True)
+
+    return MyExhibitions(organized=organized, registered=registered)

@@ -202,9 +202,12 @@
   },
   "MyEvents": {
     "title": "Mes événements",
-    "subtitle": "Événements que vous pouvez gérer",
-    "noEvents": "Aucun événement à gérer",
-    "noEventsDescription": "Vous n'avez pas encore d'événement assigné."
+    "subtitle": "Événements que vous organisez et auxquels vous participez",
+    "organizedSection": "Événements que j'organise",
+    "registeredSection": "Événements auxquels je participe",
+    "noEvents": "Aucun événement",
+    "noEventsDescription": "Vous n'êtes inscrit à aucun événement et n'en organisez aucun.",
+    "browseEvents": "Parcourir les événements"
   },
   "Agenda": {
     "title": "Mon agenda",
