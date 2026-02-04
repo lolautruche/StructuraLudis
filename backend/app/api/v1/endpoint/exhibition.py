@@ -63,15 +63,58 @@ async def list_exhibitions(
     db: AsyncSession = Depends(get_db),
     skip: int = 0,
     limit: int = 100,
+    # Filters (Issue #95 - JS.C10)
+    region: Optional[str] = Query(None, description="Filter by region"),
+    month: Optional[int] = Query(None, ge=1, le=12, description="Filter by month (1-12)"),
+    year: Optional[int] = Query(None, ge=2020, le=2100, description="Filter by year"),
+    registration_open: Optional[bool] = Query(None, description="Filter by registration status"),
+    status: Optional[ExhibitionStatus] = Query(None, description="Filter by exhibition status"),
 ):
     """
-    Retrieve all exhibitions with pagination.
+    Retrieve all exhibitions with pagination and optional filters.
+
+    Filters (Issue #95):
+    - region: Filter by geographic region
+    - month: Filter by month (1-12)
+    - year: Filter by year
+    - registration_open: Filter by registration status (true=open only)
+    - status: Filter by exhibition status
 
     For anonymous users and regular users: only PUBLISHED exhibitions.
     For admins (SUPER_ADMIN, ADMIN): all exhibitions.
     For organizers: PUBLISHED + exhibitions they can manage.
     """
-    query = select(Exhibition).offset(skip).limit(limit)
+    query = select(Exhibition)
+
+    # Apply filters (Issue #95)
+    if region:
+        query = query.where(Exhibition.region == region)
+    if month and year:
+        # Filter exhibitions that overlap with the given month
+        from calendar import monthrange
+        from datetime import datetime
+        first_day = datetime(year, month, 1)
+        last_day = datetime(year, month, monthrange(year, month)[1], 23, 59, 59)
+        # Exhibition overlaps if it starts before month ends AND ends after month starts
+        query = query.where(
+            Exhibition.start_date <= last_day,
+            Exhibition.end_date >= first_day,
+        )
+    elif year:
+        # Filter exhibitions in the given year
+        from datetime import datetime
+        year_start = datetime(year, 1, 1)
+        year_end = datetime(year, 12, 31, 23, 59, 59)
+        query = query.where(
+            Exhibition.start_date <= year_end,
+            Exhibition.end_date >= year_start,
+        )
+    if registration_open is True:
+        query = query.where(Exhibition.is_registration_open == True)
+    if status:
+        query = query.where(Exhibition.status == status)
+
+    query = query.offset(skip).limit(limit)
     result = await db.execute(query)
     all_exhibitions = result.scalars().all()
 

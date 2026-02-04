@@ -317,7 +317,35 @@
     "confirmForceUnregisterTitle": "Cancel registration and bookings?",
     "confirmForceUnregisterMessage": "You have {count, plural, one {# active booking} other {# active bookings}} for this event. By confirming, all your bookings will be cancelled.",
     "confirmForceUnregister": "Confirm unregistration",
-    "cancel": "Cancel"
+    "cancel": "Cancel",
+    "noEventsWithFilters": "No matching events",
+    "noEventsWithFiltersDescription": "No events match your selected filters. Try adjusting your criteria.",
+    "filters": {
+      "region": "Region",
+      "allRegions": "All regions",
+      "year": "Year",
+      "allYears": "All years",
+      "month": "Month",
+      "allMonths": "All months",
+      "registrationOpen": "Registration open",
+      "activeFilters": "{count, plural, one {# filter} other {# filters}} active",
+      "clearAll": "Clear filters",
+      "resultsCount": "{count, plural, one {# event found} other {# events found}}"
+    },
+    "months": {
+      "january": "January",
+      "february": "February",
+      "march": "March",
+      "april": "April",
+      "may": "May",
+      "june": "June",
+      "july": "July",
+      "august": "August",
+      "september": "September",
+      "october": "October",
+      "november": "November",
+      "december": "December"
+    }
   },
   "SafetyTools": {
     "xCard": "X-Card",
