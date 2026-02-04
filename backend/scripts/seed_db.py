@@ -542,6 +542,7 @@ async def seed(force: bool = False):
             location_name="Eurexpo Lyon",
             city="Chassieu",
             country_code="FR",
+            region="AUVERGNE_RHONE_ALPES",
             timezone="Europe/Paris",
             grace_period_minutes=15,
             requires_registration=True,

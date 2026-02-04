@@ -6,6 +6,7 @@ import { useRouter } from '@/i18n/routing';
 import { adminApi, ExhibitionCreate } from '@/lib/api';
 import { Card, Input, Textarea, Button, Select } from '@/components/ui';
 import { useToast } from '@/contexts/ToastContext';
+import { REGIONS } from '@/components/admin/ExhibitionSettingsForm';
 
 const LANGUAGES = [
   { value: 'fr', label: 'Français' },
@@ -45,6 +46,7 @@ export default function CreateExhibitionPage() {
     location_name: '',
     city: '',
     country_code: 'FR',
+    region: '',
     timezone: 'Europe/Paris',
     primary_language: 'fr',
     grace_period_minutes: 15,
@@ -254,6 +256,26 @@ export default function CreateExhibitionPage() {
                   placeholder="FR"
                 />
               </div>
+            </div>
+
+            <div>
+              <label
+                htmlFor="region"
+                className="block text-sm font-medium mb-1"
+                style={{ color: 'var(--color-text-secondary)' }}
+              >
+                {t('region')}
+              </label>
+              <Select
+                id="region"
+                name="region"
+                options={[
+                  { value: '', label: t('selectRegion') },
+                  ...REGIONS.map((r) => ({ value: r.value, label: t(r.labelKey) })),
+                ]}
+                value={formData.region || ''}
+                onChange={handleChange}
+              />
             </div>
           </Card.Content>
         </Card>

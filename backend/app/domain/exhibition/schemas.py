@@ -34,6 +34,7 @@ class ExhibitionBase(BaseModel):
     location_name: Optional[str] = Field(None, max_length=255)
     city: Optional[str] = Field(None, max_length=100)
     country_code: Optional[str] = Field(None, min_length=2, max_length=2)
+    region: Optional[str] = Field(None, max_length=50, description="Geographic region for filtering")
     timezone: str = Field(default="UTC", max_length=50)
     grace_period_minutes: int = Field(default=15, ge=0, le=120)
 
@@ -83,6 +84,7 @@ class ExhibitionUpdate(BaseModel):
     location_name: Optional[str] = Field(None, max_length=255)
     city: Optional[str] = Field(None, max_length=100)
     country_code: Optional[str] = Field(None, min_length=2, max_length=2)
+    region: Optional[str] = Field(None, max_length=50)
     timezone: Optional[str] = Field(None, max_length=50)
     grace_period_minutes: Optional[int] = Field(None, ge=0, le=120)
     status: Optional[ExhibitionStatusEnum] = None
@@ -108,6 +110,8 @@ class ExhibitionRead(ExhibitionBase):
     status: ExhibitionStatusEnum
     settings: Optional[dict] = None
     address: Optional[str] = None
+    # Region for filtering (Issue #94)
+    region: Optional[str] = None
     # Registration requirement (Issue #77)
     requires_registration: bool = False
     # i18n fields (#34)

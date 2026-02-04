@@ -21,6 +21,38 @@ const LANGUAGES = [
   { value: 'fr', label: 'Francais' },
 ];
 
+// Regions for geographic filtering (Issue #94)
+// French metropolitan regions, overseas regions, and neighboring countries
+export const REGIONS = [
+  // French metropolitan regions
+  { value: 'ILE_DE_FRANCE', labelKey: 'regions.ILE_DE_FRANCE' },
+  { value: 'AUVERGNE_RHONE_ALPES', labelKey: 'regions.AUVERGNE_RHONE_ALPES' },
+  { value: 'BOURGOGNE_FRANCHE_COMTE', labelKey: 'regions.BOURGOGNE_FRANCHE_COMTE' },
+  { value: 'BRETAGNE', labelKey: 'regions.BRETAGNE' },
+  { value: 'CENTRE_VAL_DE_LOIRE', labelKey: 'regions.CENTRE_VAL_DE_LOIRE' },
+  { value: 'GRAND_EST', labelKey: 'regions.GRAND_EST' },
+  { value: 'HAUTS_DE_FRANCE', labelKey: 'regions.HAUTS_DE_FRANCE' },
+  { value: 'NORMANDIE', labelKey: 'regions.NORMANDIE' },
+  { value: 'NOUVELLE_AQUITAINE', labelKey: 'regions.NOUVELLE_AQUITAINE' },
+  { value: 'OCCITANIE', labelKey: 'regions.OCCITANIE' },
+  { value: 'PAYS_DE_LA_LOIRE', labelKey: 'regions.PAYS_DE_LA_LOIRE' },
+  { value: 'PROVENCE_ALPES_COTE_AZUR', labelKey: 'regions.PROVENCE_ALPES_COTE_AZUR' },
+  { value: 'CORSE', labelKey: 'regions.CORSE' },
+  // French overseas regions
+  { value: 'GUADELOUPE', labelKey: 'regions.GUADELOUPE' },
+  { value: 'MARTINIQUE', labelKey: 'regions.MARTINIQUE' },
+  { value: 'GUYANE', labelKey: 'regions.GUYANE' },
+  { value: 'LA_REUNION', labelKey: 'regions.LA_REUNION' },
+  { value: 'MAYOTTE', labelKey: 'regions.MAYOTTE' },
+  // Neighboring countries
+  { value: 'BELGIQUE', labelKey: 'regions.BELGIQUE' },
+  { value: 'LUXEMBOURG', labelKey: 'regions.LUXEMBOURG' },
+  { value: 'ALLEMAGNE', labelKey: 'regions.ALLEMAGNE' },
+  { value: 'SUISSE', labelKey: 'regions.SUISSE' },
+  { value: 'ITALIE', labelKey: 'regions.ITALIE' },
+  { value: 'ESPAGNE', labelKey: 'regions.ESPAGNE' },
+];
+
 const STATUS_VALUES = ['DRAFT', 'PUBLISHED', 'SUSPENDED', 'ARCHIVED'] as const;
 
 const settingsSchema = z.object({
@@ -30,6 +62,7 @@ const settingsSchema = z.object({
   end_date: z.string().min(1),
   location_name: z.string().max(255).optional().nullable(),
   city: z.string().max(100).optional().nullable(),
+  region: z.string().max(50).optional().nullable(),
   timezone: z.string().max(50),
   grace_period_minutes: z.coerce.number().min(0).max(120),
   status: z.enum(['DRAFT', 'PUBLISHED', 'SUSPENDED', 'ARCHIVED']),
@@ -77,6 +110,7 @@ export function ExhibitionSettingsForm({
       end_date: formatDateTimeLocal(exhibition.end_date),
       location_name: exhibition.location_name || '',
       city: exhibition.city || '',
+      region: exhibition.region || '',
       timezone: exhibition.timezone,
       grace_period_minutes: exhibition.grace_period_minutes,
       status: exhibition.status,
@@ -101,6 +135,7 @@ export function ExhibitionSettingsForm({
       end_date: new Date(data.end_date).toISOString(),
       location_name: data.location_name || undefined,
       city: data.city || undefined,
+      region: data.region || undefined,
       timezone: data.timezone,
       grace_period_minutes: data.grace_period_minutes,
       status: data.status,
@@ -220,6 +255,16 @@ export function ExhibitionSettingsForm({
             error={errors.city?.message}
           />
         </div>
+
+        <Select
+          {...register('region')}
+          label={t('region')}
+          options={[
+            { value: '', label: t('selectRegion') },
+            ...REGIONS.map((r) => ({ value: r.value, label: t(r.labelKey) })),
+          ]}
+          error={errors.region?.message}
+        />
 
         <Select
           {...register('timezone')}
