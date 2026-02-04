@@ -15,6 +15,7 @@ import {
   MyBookingSummary,
   UserAgenda,
   Booking,
+  MyExhibitions,
 } from '../types';
 
 export const userApi = {
@@ -95,5 +96,13 @@ export const userApi = {
    */
   checkIn: async (bookingId: string): Promise<ApiResponse<Booking>> => {
     return api.post<Booking>(`/api/v1/bookings/${bookingId}/check-in`);
+  },
+
+  /**
+   * Get my exhibitions (organized + registered).
+   * Issue #96 - JS.C11.
+   */
+  getMyExhibitions: async (): Promise<ApiResponse<MyExhibitions>> => {
+    return api.get<MyExhibitions>('/api/v1/users/me/exhibitions');
   },
 };

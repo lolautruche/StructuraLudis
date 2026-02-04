@@ -140,3 +140,25 @@ class UserAgenda(BaseModel):
     )
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class MyExhibitions(BaseModel):
+    """
+    User's exhibitions overview (Issue #96 - JS.C11).
+
+    Shows exhibitions the user organizes (with management access)
+    and exhibitions the user is registered to.
+    """
+    organized: List["ExhibitionRead"] = Field(
+        default_factory=list,
+        description="Exhibitions I can manage (organizer/partner)"
+    )
+    registered: List["ExhibitionRead"] = Field(
+        default_factory=list,
+        description="Exhibitions I'm registered to (as participant)"
+    )
+
+
+# Forward reference for ExhibitionRead (imported at runtime)
+from app.domain.exhibition.schemas import ExhibitionRead
+MyExhibitions.model_rebuild()

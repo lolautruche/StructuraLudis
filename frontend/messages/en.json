@@ -202,9 +202,12 @@
   },
   "MyEvents": {
     "title": "My Events",
-    "subtitle": "Events you can manage",
-    "noEvents": "No events to manage",
-    "noEventsDescription": "You don't have any events assigned to you yet."
+    "subtitle": "Events you organize and participate in",
+    "organizedSection": "Events I organize",
+    "registeredSection": "Events I participate in",
+    "noEvents": "No events",
+    "noEventsDescription": "You're not registered to any event and don't organize any.",
+    "browseEvents": "Browse events"
   },
   "Agenda": {
     "title": "My Agenda",
