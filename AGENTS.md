@@ -1,8 +1,11 @@
 # Project Context: Structura Ludis
 
 ## Project Knowledge Base
-- **PRD**: Detailed requirements are located in `doc/PRD.md`.
-- **Database Schema**: Visualization and definitions are in `backend/doc/database-schema.mmd`.
+- See @doc/PRD.md for product requirements.
+- See @doc/ROADMAP.md for feature prioritization.
+- See @doc/PROJECT-CONTEXT.md for project context.
+- See @backend/doc/database-schema.mmd for DB Mermaid schema.
+- See @backend/doc/session-workflow.md for session workflow.
 
 ## Tech Stack
 - **Backend**: Python 3.12, FastAPI, SQLAlchemy 2.0 (Async), Pydantic v2.
