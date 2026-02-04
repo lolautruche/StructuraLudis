@@ -171,6 +171,9 @@ class Zone(Base, TimestampMixin):
     # When False, only partners/organizers can create sessions
     allow_public_proposals: Mapped[bool] = mapped_column(default=False)
 
+    # Table prefix for automatic numbering (Issue #93)
+    table_prefix: Mapped[Optional[str]] = mapped_column(String(30), nullable=True)
+
     # Relationships
     exhibition: Mapped["Exhibition"] = relationship(back_populates="zones")
     delegated_to_group: Mapped[Optional["UserGroup"]] = relationship()

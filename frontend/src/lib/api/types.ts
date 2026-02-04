@@ -432,6 +432,7 @@ export interface Zone {
   delegated_to_group_id: string | null;
   moderation_required: boolean;
   allow_public_proposals: boolean;
+  table_prefix: string | null; // Issue #93 - Automatic table numbering prefix
   name_i18n: Record<string, string> | null;
   description_i18n: Record<string, string> | null;
   created_at: string;
@@ -445,6 +446,7 @@ export interface ZoneCreate {
   type?: ZoneType;
   delegated_to_group_id?: string;
   allow_public_proposals?: boolean;
+  table_prefix?: string; // Issue #93
 }
 
 export interface ZoneUpdate {
@@ -453,6 +455,7 @@ export interface ZoneUpdate {
   type?: ZoneType;
   moderation_required?: boolean;
   allow_public_proposals?: boolean;
+  table_prefix?: string; // Issue #93
 }
 
 /**
@@ -481,6 +484,7 @@ export interface BatchTablesCreate {
   count: number;
   starting_number?: number;
   capacity?: number;
+  fill_gaps?: boolean; // Issue #93 - Fill gaps in existing numbering
 }
 
 export interface BatchTablesResponse {

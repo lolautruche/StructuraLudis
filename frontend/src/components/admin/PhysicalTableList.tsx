@@ -1,14 +1,40 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useTranslations } from 'next-intl';
 import { zonesApi, PhysicalTable } from '@/lib/api';
 import { Button, Badge, ConfirmDialog } from '@/components/ui';
 import { BatchTableCreator } from './BatchTableCreator';
 import { useToast } from '@/contexts/ToastContext';
 
+/**
+ * Natural sort comparator for table labels.
+ * Handles labels like "JDR-1", "JDR-2", "JDR-10" correctly.
+ */
+function naturalSortCompare(a: string, b: string): number {
+  // Split into prefix and number parts
+  const aMatch = a.match(/^(.*?)(\d+)$/);
+  const bMatch = b.match(/^(.*?)(\d+)$/);
+
+  if (aMatch && bMatch) {
+    const [, aPrefix, aNum] = aMatch;
+    const [, bPrefix, bNum] = bMatch;
+
+    // If prefixes are the same, compare numbers
+    if (aPrefix === bPrefix) {
+      return parseInt(aNum, 10) - parseInt(bNum, 10);
+    }
+    // Otherwise compare prefixes alphabetically
+    return aPrefix.localeCompare(bPrefix);
+  }
+
+  // Fallback to regular string comparison
+  return a.localeCompare(b);
+}
+
 interface PhysicalTableListProps {
   zoneId: string;
+  zonePrefix?: string | null; // Issue #93
 }
 
 const STATUS_COLORS: Record<string, 'success' | 'warning' | 'danger' | 'default'> = {
@@ -18,7 +44,7 @@ const STATUS_COLORS: Record<string, 'success' | 'warning' | 'danger' | 'default'
   MAINTENANCE: 'danger',
 };
 
-export function PhysicalTableList({ zoneId }: PhysicalTableListProps) {
+export function PhysicalTableList({ zoneId, zonePrefix }: PhysicalTableListProps) {
   const t = useTranslations('Admin');
   const tCommon = useTranslations('Common');
   const { showSuccess, showError } = useToast();
@@ -52,12 +78,16 @@ export function PhysicalTableList({ zoneId }: PhysicalTableListProps) {
   }, [zoneId]);
 
   const handleTablesCreated = (newTables: PhysicalTable[]) => {
-    setTables((prev) =>
-      [...prev, ...newTables].sort((a, b) => a.label.localeCompare(b.label))
-    );
+    setTables((prev) => [...prev, ...newTables]);
     setShowBatchCreator(false);
     showSuccess(t('tablesCreated', { count: newTables.length }));
   };
+
+  // Sort tables using natural sort for display
+  const sortedTables = useMemo(
+    () => [...tables].sort((a, b) => naturalSortCompare(a.label, b.label)),
+    [tables]
+  );
 
   const handleDelete = async () => {
     if (!deleteTable) return;
@@ -114,6 +144,7 @@ export function PhysicalTableList({ zoneId }: PhysicalTableListProps) {
           </h5>
           <BatchTableCreator
             zoneId={zoneId}
+            zonePrefix={zonePrefix}
             onTablesCreated={handleTablesCreated}
             onCancel={() => setShowBatchCreator(false)}
           />
@@ -129,7 +160,7 @@ export function PhysicalTableList({ zoneId }: PhysicalTableListProps) {
       )}
 
       {/* Table list */}
-      {tables.length === 0 ? (
+      {sortedTables.length === 0 ? (
         <div
           className="text-sm py-4 text-center"
           style={{ color: 'var(--color-text-muted)' }}
@@ -138,7 +169,7 @@ export function PhysicalTableList({ zoneId }: PhysicalTableListProps) {
         </div>
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
-          {tables.map((table) => (
+          {sortedTables.map((table) => (
             <div
               key={table.id}
               className="flex items-center justify-between p-2 rounded border text-sm"

@@ -14,6 +14,7 @@ const zoneSchema = z.object({
   name: z.string().min(1).max(100),
   description: z.string().max(500).optional().nullable(),
   type: z.enum(['RPG', 'BOARD_GAME', 'WARGAME', 'TCG', 'DEMO', 'MIXED']),
+  table_prefix: z.string().max(30).optional().nullable(), // Issue #93
   moderation_required: z.boolean(),
   allow_public_proposals: z.boolean(),
 });
@@ -50,6 +51,7 @@ export function ZoneForm({
       name: '',
       description: '',
       type: 'MIXED',
+      table_prefix: '',
       moderation_required: true,
       allow_public_proposals: false,
     },
@@ -63,6 +65,7 @@ export function ZoneForm({
         name: zone.name,
         description: zone.description || '',
         type: zone.type,
+        table_prefix: zone.table_prefix || '',
         moderation_required: zone.moderation_required ?? true,
         allow_public_proposals: zone.allow_public_proposals ?? false,
       });
@@ -71,6 +74,7 @@ export function ZoneForm({
         name: '',
         description: '',
         type: 'MIXED',
+        table_prefix: '',
         moderation_required: true,
         allow_public_proposals: false,
       });
@@ -78,11 +82,12 @@ export function ZoneForm({
   }, [zone, reset]);
 
   const handleFormSubmit = async (data: ZoneFormData) => {
-    const payload: ZoneCreate & { moderation_required?: boolean; allow_public_proposals?: boolean } = {
+    const payload: ZoneCreate & { moderation_required?: boolean; allow_public_proposals?: boolean; table_prefix?: string } = {
       exhibition_id: exhibitionId,
       name: data.name,
       description: data.description || undefined,
       type: data.type,
+      table_prefix: data.table_prefix || undefined,
       allow_public_proposals: data.allow_public_proposals,
       moderation_required: data.moderation_required,
     };
@@ -113,6 +118,14 @@ export function ZoneForm({
           label: t(`zoneTypes.${type}`),
         }))}
         error={errors.type?.message}
+      />
+
+      <Input
+        {...register('table_prefix')}
+        label={t('tablePrefix')}
+        placeholder={t('tablePrefixPlaceholder')}
+        helperText={t('tablePrefixHelp')}
+        error={errors.table_prefix?.message}
       />
 
       {/* Allow public proposals toggle */}
