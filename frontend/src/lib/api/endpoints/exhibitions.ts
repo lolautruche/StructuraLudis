@@ -15,6 +15,17 @@ import {
   ExhibitionRegistration,
 } from '../types';
 
+/**
+ * Filters for exhibition list (Issue #95).
+ */
+export interface ExhibitionFilters {
+  region?: string;
+  month?: number;
+  year?: number;
+  registration_open?: boolean;
+  status?: string;
+}
+
 export const exhibitionsApi = {
   /**
    * Get exhibition by ID.
@@ -24,10 +35,21 @@ export const exhibitionsApi = {
   },
 
   /**
-   * List all exhibitions.
+   * List all exhibitions with optional filters (Issue #95).
    */
-  list: async (): Promise<ApiResponse<Exhibition[]>> => {
-    return api.get<Exhibition[]>('/api/v1/exhibitions/');
+  list: async (filters?: ExhibitionFilters): Promise<ApiResponse<Exhibition[]>> => {
+    const params = new URLSearchParams();
+    if (filters?.region) params.append('region', filters.region);
+    if (filters?.month) params.append('month', filters.month.toString());
+    if (filters?.year) params.append('year', filters.year.toString());
+    if (filters?.registration_open !== undefined) {
+      params.append('registration_open', filters.registration_open.toString());
+    }
+    if (filters?.status) params.append('status', filters.status);
+
+    const queryString = params.toString();
+    const url = queryString ? `/api/v1/exhibitions/?${queryString}` : '/api/v1/exhibitions/';
+    return api.get<Exhibition[]>(url);
   },
 
   /**
