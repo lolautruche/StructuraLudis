@@ -59,6 +59,8 @@ class Exhibition(Base, TimestampMixin):
     address: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
     city: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
     country_code: Mapped[Optional[str]] = mapped_column(String(2), nullable=True)
+    # Region for geographic filtering (Issue #94)
+    region: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
 
     # Configuration (Issue #6, #12, #39)
     timezone: Mapped[str] = mapped_column(String(50), default="UTC")

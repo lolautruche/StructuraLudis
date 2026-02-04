@@ -222,6 +222,7 @@ export interface Exhibition {
   location_name: string | null;
   city: string | null;
   country_code: string | null;
+  region: string | null;
   address: string | null;
   status: ExhibitionStatus;
   settings: Record<string, unknown> | null;
@@ -252,6 +253,7 @@ export interface ExhibitionUpdate {
   location_name?: string;
   city?: string;
   country_code?: string;
+  region?: string;
   timezone?: string;
   grace_period_minutes?: number;
   status?: ExhibitionStatus;
@@ -608,6 +610,7 @@ export interface ExhibitionCreate {
   location_name?: string;
   city?: string;
   country_code?: string;
+  region?: string;
   timezone: string;
   primary_language: string;
   grace_period_minutes?: number;
