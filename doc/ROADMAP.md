@@ -1,7 +1,7 @@
 # Roadmap & Priorities
 
 This document tracks prioritization decisions and project progress.
-**Last updated**: 2026-02-03
+**Last updated**: 2026-02-04
 
 ---
 
@@ -17,7 +17,6 @@ This document tracks prioritization decisions and project progress.
 | [#93](https://github.com/lolautruche/StructuraLudis/issues/93) | Zone-level table prefix | JS.A0 | Smart numbering option |
 | [#94](https://github.com/lolautruche/StructuraLudis/issues/94) | Event region field | JS.A10 | Predefined region list |
 | [#95](https://github.com/lolautruche/StructuraLudis/issues/95) | Event list filters | JS.C10 | Region, date, status filters |
-| [#96](https://github.com/lolautruche/StructuraLudis/issues/96) | My Events overview | JS.C11 | Organized + registered events |
 
 #### Game Database
 
@@ -74,6 +73,7 @@ This document tracks prioritization decisions and project progress.
 
 | Issue | Title | Job Stories | Date |
 |-------|-------|-------------|------|
+| [#96](https://github.com/lolautruche/StructuraLudis/issues/96) | My Events overview | JS.C11 | 2026-02-04 |
 | [#77](https://github.com/lolautruche/StructuraLudis/issues/77) | Player registration to exhibitions | - | 2026-02-03 |
 | [#105](https://github.com/lolautruche/StructuraLudis/issues/105) | Move time slots to zone level | JS.D1, JS.A2 | 2026-02-03 |
 | [#10](https://github.com/lolautruche/StructuraLudis/issues/10) | Partner Zone Management | JS.D1 | 2026-02-02 |
