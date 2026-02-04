@@ -188,12 +188,19 @@ class ExhibitionService:
         data: BatchTablesCreate,
     ) -> List[PhysicalTable]:
         """
-        Batch create physical tables in a zone.
+        Batch create physical tables in a zone (Issue #93).
+
+        Features:
+        - Uses zone's table_prefix if no prefix provided
+        - Auto-calculates starting_number from existing tables if not provided
+        - fill_gaps option: fill gaps in existing numbering before continuing
 
         Validates:
         - Zone exists
         - Generated labels are unique within the zone
         """
+        import re
+
         # Get zone
         result = await self.db.execute(
             select(Zone).where(Zone.id == zone_id)
@@ -205,16 +212,59 @@ class ExhibitionService:
                 detail="Zone not found",
             )
 
+        # Determine prefix: request > zone > default
+        prefix = data.prefix or zone.table_prefix or "Table "
+
         # Get existing labels in zone
         existing_labels = await self.db.execute(
             select(PhysicalTable.label).where(PhysicalTable.zone_id == zone_id)
         )
         existing_set = {row[0] for row in existing_labels.fetchall()}
 
+        # Extract existing numbers for this prefix
+        # Match labels like "JDR-1", "JDR-2", "Table 1", etc.
+        prefix_pattern = re.escape(prefix)
+        number_pattern = re.compile(rf"^{prefix_pattern}(\d+)$")
+        existing_numbers = set()
+        for label in existing_set:
+            match = number_pattern.match(label)
+            if match:
+                existing_numbers.add(int(match.group(1)))
+
+        # Determine numbers to use
+        numbers_to_create = []
+
+        if data.fill_gaps and existing_numbers:
+            # Find gaps in the sequence
+            max_existing = max(existing_numbers)
+            all_possible = set(range(1, max_existing + 1))
+            gaps = sorted(all_possible - existing_numbers)
+
+            # Use gaps first
+            numbers_to_create.extend(gaps[:data.count])
+
+            # If we need more, continue from max + 1
+            remaining = data.count - len(numbers_to_create)
+            if remaining > 0:
+                next_num = max_existing + 1
+                for _ in range(remaining):
+                    numbers_to_create.append(next_num)
+                    next_num += 1
+        else:
+            # Sequential numbering
+            if data.starting_number is not None:
+                start = data.starting_number
+            elif existing_numbers:
+                start = max(existing_numbers) + 1
+            else:
+                start = 1
+
+            numbers_to_create = list(range(start, start + data.count))
+
         # Generate new tables
         tables = []
-        for i in range(data.count):
-            label = f"{data.prefix}{data.starting_number + i}"
+        for num in numbers_to_create:
+            label = f"{prefix}{num}"
 
             if label in existing_set:
                 raise HTTPException(

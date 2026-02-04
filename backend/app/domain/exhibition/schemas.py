@@ -215,6 +215,12 @@ class ZoneBase(BaseModel):
         default=False,
         description="When True, public users can propose sessions on tables in this zone."
     )
+    # Table prefix for automatic numbering (Issue #93)
+    table_prefix: Optional[str] = Field(
+        None,
+        max_length=30,
+        description="Prefix for table labels (e.g., 'JDR' creates JDR-1, JDR-2, etc.)"
+    )
 
 
 class ZoneCreate(ZoneBase):
@@ -241,6 +247,8 @@ class ZoneUpdate(BaseModel):
         None,
         description="When True, public users can propose sessions on tables in this zone."
     )
+    # Table prefix (Issue #93)
+    table_prefix: Optional[str] = Field(None, max_length=30)
     # i18n fields (#34)
     name_i18n: I18nField = Field(None, description="Translations for name")
     description_i18n: I18nField = Field(None, description="Translations for description")
@@ -302,11 +310,18 @@ class PhysicalTableUpdate(BaseModel):
 
 
 class BatchTablesCreate(BaseModel):
-    """Schema for batch creating physical tables."""
-    prefix: str = Field(default="Table ", max_length=30)
+    """Schema for batch creating physical tables (Issue #93)."""
+    # Prefix is optional - if not provided, uses zone's table_prefix
+    prefix: Optional[str] = Field(None, max_length=30)
     count: int = Field(..., ge=1, le=200)
-    starting_number: int = Field(default=1, ge=1)
+    # Starting number is optional - if not provided, auto-continues from highest existing
+    starting_number: Optional[int] = Field(None, ge=1)
     capacity: int = Field(default=6, ge=1, le=20)
+    # Smart numbering: fill gaps in existing numbering before continuing sequence
+    fill_gaps: bool = Field(
+        default=False,
+        description="When true, fill gaps in existing numbering before continuing sequence"
+    )
 
 
 class BatchTablesResponse(BaseModel):

@@ -63,6 +63,7 @@ export function ZoneList({ exhibitionId, partnerMode = false, exhibitionStartDat
           delegated_to_group_id: null,
           moderation_required: pz.moderation_required,
           allow_public_proposals: pz.allow_public_proposals ?? false,
+          table_prefix: null, // PartnerZone doesn't have table_prefix
           name_i18n: null,
           description_i18n: null,
           created_at: '',
@@ -104,7 +105,7 @@ export function ZoneList({ exhibitionId, partnerMode = false, exhibitionStartDat
     setIsSubmitting(false);
   };
 
-  const handleUpdate = async (data: ZoneCreate & { moderation_required?: boolean }) => {
+  const handleUpdate = async (data: ZoneCreate & { moderation_required?: boolean; table_prefix?: string }) => {
     if (!editingZone) return;
 
     setIsSubmitting(true);
@@ -114,6 +115,7 @@ export function ZoneList({ exhibitionId, partnerMode = false, exhibitionStartDat
       name: data.name,
       description: data.description,
       type: data.type,
+      table_prefix: data.table_prefix,
       moderation_required: data.moderation_required,
     });
 
@@ -416,7 +418,7 @@ export function ZoneList({ exhibitionId, partnerMode = false, exhibitionStartDat
                       >
                         {t('tables')}
                       </h5>
-                      <PhysicalTableList zoneId={zone.id} />
+                      <PhysicalTableList zoneId={zone.id} zonePrefix={zone.table_prefix} />
                     </div>
                   )}
                 </div>

@@ -474,6 +474,197 @@ class TestBatchCreateTables:
         assert response.status_code == 403
 
 
+class TestZoneTablePrefix:
+    """Tests for zone table_prefix feature (#93)."""
+
+    async def test_create_zone_with_table_prefix(
+        self, auth_client: AsyncClient, test_organizer: dict
+    ):
+        """Create zone with table_prefix returns 201."""
+        # Create exhibition
+        exhibition_payload = {
+            "title": "Table Prefix Test",
+            "slug": "table-prefix-test",
+            "start_date": "2026-07-01T08:00:00Z",
+            "end_date": "2026-07-03T22:00:00Z",
+            "organization_id": test_organizer["organization_id"],
+        }
+        create_resp = await auth_client.post("/api/v1/exhibitions/", json=exhibition_payload)
+        exhibition_id = create_resp.json()["id"]
+
+        zone_payload = {
+            "name": "RPG Zone",
+            "exhibition_id": exhibition_id,
+            "table_prefix": "JDR-",
+        }
+
+        response = await auth_client.post("/api/v1/zones/", json=zone_payload)
+
+        assert response.status_code == 201
+        data = response.json()
+        assert data["table_prefix"] == "JDR-"
+
+    async def test_batch_create_uses_zone_prefix(
+        self, auth_client: AsyncClient, test_organizer: dict
+    ):
+        """Batch create without prefix uses zone's table_prefix."""
+        # Create exhibition
+        exhibition_payload = {
+            "title": "Zone Prefix Batch Test",
+            "slug": "zone-prefix-batch-test",
+            "start_date": "2026-07-01T08:00:00Z",
+            "end_date": "2026-07-03T22:00:00Z",
+            "organization_id": test_organizer["organization_id"],
+        }
+        create_resp = await auth_client.post("/api/v1/exhibitions/", json=exhibition_payload)
+        exhibition_id = create_resp.json()["id"]
+
+        # Create zone with prefix
+        zone_payload = {
+            "name": "RPG Zone",
+            "exhibition_id": exhibition_id,
+            "table_prefix": "RPG-",
+        }
+        zone_resp = await auth_client.post("/api/v1/zones/", json=zone_payload)
+        zone_id = zone_resp.json()["id"]
+
+        # Create tables WITHOUT specifying prefix
+        tables_payload = {"count": 3}
+
+        response = await auth_client.post(
+            f"/api/v1/zones/{zone_id}/batch-tables", json=tables_payload
+        )
+
+        assert response.status_code == 201
+        data = response.json()
+        assert data["tables"][0]["label"] == "RPG-1"
+        assert data["tables"][1]["label"] == "RPG-2"
+        assert data["tables"][2]["label"] == "RPG-3"
+
+    async def test_batch_create_auto_starting_number(
+        self, auth_client: AsyncClient, test_organizer: dict
+    ):
+        """Batch create without starting_number auto-continues from highest."""
+        # Create exhibition
+        exhibition_payload = {
+            "title": "Auto Start Test",
+            "slug": "auto-start-test",
+            "start_date": "2026-07-01T08:00:00Z",
+            "end_date": "2026-07-03T22:00:00Z",
+            "organization_id": test_organizer["organization_id"],
+        }
+        create_resp = await auth_client.post("/api/v1/exhibitions/", json=exhibition_payload)
+        exhibition_id = create_resp.json()["id"]
+
+        # Create zone
+        zone_payload = {"name": "Auto Zone", "exhibition_id": exhibition_id}
+        zone_resp = await auth_client.post("/api/v1/zones/", json=zone_payload)
+        zone_id = zone_resp.json()["id"]
+
+        # Create first batch (T1-T5)
+        resp1 = await auth_client.post(
+            f"/api/v1/zones/{zone_id}/batch-tables",
+            json={"prefix": "T", "count": 5, "starting_number": 1},
+        )
+        assert resp1.status_code == 201
+
+        # Create second batch WITHOUT starting_number (should be T6-T8)
+        resp2 = await auth_client.post(
+            f"/api/v1/zones/{zone_id}/batch-tables",
+            json={"prefix": "T", "count": 3},
+        )
+
+        assert resp2.status_code == 201
+        data = resp2.json()
+        assert data["tables"][0]["label"] == "T6"
+        assert data["tables"][1]["label"] == "T7"
+        assert data["tables"][2]["label"] == "T8"
+
+    async def test_batch_create_fill_gaps(
+        self, auth_client: AsyncClient, test_organizer: dict
+    ):
+        """Batch create with fill_gaps fills gaps in existing numbering."""
+        # Create exhibition
+        exhibition_payload = {
+            "title": "Fill Gaps Test",
+            "slug": "fill-gaps-test",
+            "start_date": "2026-07-01T08:00:00Z",
+            "end_date": "2026-07-03T22:00:00Z",
+            "organization_id": test_organizer["organization_id"],
+        }
+        create_resp = await auth_client.post("/api/v1/exhibitions/", json=exhibition_payload)
+        exhibition_id = create_resp.json()["id"]
+
+        # Create zone
+        zone_payload = {"name": "Gaps Zone", "exhibition_id": exhibition_id}
+        zone_resp = await auth_client.post("/api/v1/zones/", json=zone_payload)
+        zone_id = zone_resp.json()["id"]
+
+        # Create tables T1, T2, T5 (gaps at 3, 4)
+        await auth_client.post(
+            f"/api/v1/zones/{zone_id}/batch-tables",
+            json={"prefix": "T", "count": 2, "starting_number": 1},
+        )
+        await auth_client.post(
+            f"/api/v1/zones/{zone_id}/batch-tables",
+            json={"prefix": "T", "count": 1, "starting_number": 5},
+        )
+
+        # Create 4 more tables with fill_gaps=true
+        # Should create T3, T4, T6, T7 (fills gaps first, then continues)
+        response = await auth_client.post(
+            f"/api/v1/zones/{zone_id}/batch-tables",
+            json={"prefix": "T", "count": 4, "fill_gaps": True},
+        )
+
+        assert response.status_code == 201
+        data = response.json()
+        labels = [t["label"] for t in data["tables"]]
+        assert labels == ["T3", "T4", "T6", "T7"]
+
+    async def test_batch_create_fill_gaps_more_than_gaps(
+        self, auth_client: AsyncClient, test_organizer: dict
+    ):
+        """Batch create with fill_gaps continues after filling all gaps."""
+        # Create exhibition
+        exhibition_payload = {
+            "title": "Fill Gaps More Test",
+            "slug": "fill-gaps-more-test",
+            "start_date": "2026-07-01T08:00:00Z",
+            "end_date": "2026-07-03T22:00:00Z",
+            "organization_id": test_organizer["organization_id"],
+        }
+        create_resp = await auth_client.post("/api/v1/exhibitions/", json=exhibition_payload)
+        exhibition_id = create_resp.json()["id"]
+
+        # Create zone
+        zone_payload = {"name": "More Gaps Zone", "exhibition_id": exhibition_id}
+        zone_resp = await auth_client.post("/api/v1/zones/", json=zone_payload)
+        zone_id = zone_resp.json()["id"]
+
+        # Create tables T1, T3 (gap at 2)
+        await auth_client.post(
+            f"/api/v1/zones/{zone_id}/batch-tables",
+            json={"prefix": "T", "count": 1, "starting_number": 1},
+        )
+        await auth_client.post(
+            f"/api/v1/zones/{zone_id}/batch-tables",
+            json={"prefix": "T", "count": 1, "starting_number": 3},
+        )
+
+        # Create 3 tables with fill_gaps=true
+        # Should create T2 (fills gap), T4, T5 (continues)
+        response = await auth_client.post(
+            f"/api/v1/zones/{zone_id}/batch-tables",
+            json={"prefix": "T", "count": 3, "fill_gaps": True},
+        )
+
+        assert response.status_code == 201
+        data = response.json()
+        labels = [t["label"] for t in data["tables"]]
+        assert labels == ["T2", "T4", "T5"]
+
+
 class TestZoneDelegation:
     """Tests for zone delegation to partners."""
 
