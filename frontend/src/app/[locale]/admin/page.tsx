@@ -50,6 +50,7 @@ function RequestStatusBadge({ status, t }: { status: EventRequestStatus; t: (key
     CHANGES_REQUESTED: 'warning',
     APPROVED: 'success',
     REJECTED: 'danger',
+    CANCELLED: 'default',
   };
 
   const labels: Record<EventRequestStatus, string> = {
@@ -57,6 +58,7 @@ function RequestStatusBadge({ status, t }: { status: EventRequestStatus; t: (key
     CHANGES_REQUESTED: t('changesRequested'),
     APPROVED: t('approved'),
     REJECTED: t('rejected'),
+    CANCELLED: t('cancelled'),
   };
 
   return (

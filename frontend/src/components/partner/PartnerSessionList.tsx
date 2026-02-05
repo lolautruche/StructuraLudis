@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useTranslations } from 'next-intl';
 import { partnerApi, sessionsApi, PartnerSession, PartnerZone, SessionStatus } from '@/lib/api';
 import { Badge, Button, Select, Card, ModerationDialog, ModerationAction } from '@/components/ui';
+import { Link } from '@/i18n/routing';
 import { useToast } from '@/contexts/ToastContext';
 import { SeriesCreator } from './SeriesCreator';
 import { SingleSessionCreator } from './SingleSessionCreator';
@@ -375,6 +376,15 @@ export function PartnerSessionList({ exhibitionId }: PartnerSessionListProps) {
 
                 {/* Actions based on session status */}
                 <div className="flex gap-2 ml-4">
+                  {/* Edit button for editable sessions */}
+                  {!['FINISHED', 'CANCELLED', 'IN_PROGRESS'].includes(session.status) && (
+                    <Link href={`/sessions/${session.id}/edit`}>
+                      <Button size="sm" variant="secondary">
+                        {tCommon('edit')}
+                      </Button>
+                    </Link>
+                  )}
+
                   {/* Submit button for DRAFT sessions */}
                   {session.status === 'DRAFT' && (
                     <Button

@@ -164,7 +164,9 @@ describe('SessionDetail', () => {
 
     render(<SessionDetail session={session} />);
 
-    expect(screen.getByText('Full')).toBeInTheDocument();
+    // "Full" can appear in multiple places: AvailabilityBadge and BookingButton
+    const fullTexts = screen.getAllByText('Full');
+    expect(fullTexts.length).toBeGreaterThanOrEqual(1);
   });
 
   it('renders waitlist info when there is a waitlist', () => {

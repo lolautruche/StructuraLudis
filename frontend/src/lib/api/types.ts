@@ -172,6 +172,8 @@ export interface Booking {
   status: BookingStatus;
   checked_in_at: string | null;
   registered_at: string;
+  user_name?: string | null;
+  user_email?: string | null;
 }
 
 /**
@@ -684,7 +686,7 @@ export interface SeriesCreateResponse {
  * Event request types (Issue #92).
  * Self-service event creation workflow.
  */
-export type EventRequestStatus = 'PENDING' | 'CHANGES_REQUESTED' | 'APPROVED' | 'REJECTED';
+export type EventRequestStatus = 'PENDING' | 'CHANGES_REQUESTED' | 'APPROVED' | 'REJECTED' | 'CANCELLED';
 
 export interface EventRequest {
   id: string;

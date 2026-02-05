@@ -244,6 +244,9 @@ class BookingRead(BookingBase):
     registered_at: datetime
     checked_in_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
+    # User info (populated by endpoint)
+    user_name: Optional[str] = None
+    user_email: Optional[str] = None
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -363,6 +366,7 @@ class AffectedUser(BaseModel):
     user_id: UUID
     email: str
     full_name: Optional[str] = None
+    locale: Optional[str] = None
     booking_status: BookingStatus
 
 

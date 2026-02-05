@@ -16,18 +16,21 @@ export default function SessionDetailPage() {
   const sessionId = params.id as string;
   const t = useTranslations('Session');
   const locale = useLocale();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   const { showSuccess } = useToast();
 
   const [session, setSession] = useState<GameSession | null>(null);
   const [userBooking, setUserBooking] = useState<Booking | null>(null);
   const [exhibition, setExhibition] = useState<Exhibition | null>(null);
+  const [bookings, setBookings] = useState<Booking[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isBooking, setIsBooking] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [bookingError, setBookingError] = useState<string | null>(null);
   const [showCancelDialog, setShowCancelDialog] = useState(false);
   const [showBookingConfirmDialog, setShowBookingConfirmDialog] = useState(false);
+  const [showStartDialog, setShowStartDialog] = useState(false);
+  const [isStarting, setIsStarting] = useState(false);
 
   // Fetch session details and user booking in parallel
   const fetchSession = useCallback(async () => {
@@ -41,11 +44,24 @@ export default function SessionDetailPage() {
     ]);
 
     if (sessionResponse.data) {
-      setSession(sessionResponse.data);
+      const s = sessionResponse.data;
+      setSession(s);
       // Fetch exhibition for registration check (Issue #77)
-      const exhibitionResponse = await exhibitionsApi.getById(sessionResponse.data.exhibition_id);
+      const exhibitionResponse = await exhibitionsApi.getById(s.exhibition_id);
       if (exhibitionResponse.data) {
         setExhibition(exhibitionResponse.data);
+      }
+
+      // Fetch bookings if user is GM or can manage
+      const isGM = user?.id && s.created_by_user_id === user.id;
+      const isAdmin = user?.global_role === 'ADMIN' || user?.global_role === 'SUPER_ADMIN';
+      const canManage = exhibitionResponse.data?.can_manage || false;
+
+      if (isGM || isAdmin || canManage) {
+        const bookingsResponse = await sessionsApi.getBookings(sessionId);
+        if (bookingsResponse.data) {
+          setBookings(bookingsResponse.data);
+        }
       }
     } else {
       setError(sessionResponse.error?.message || 'Session not found');
@@ -56,7 +72,7 @@ export default function SessionDetailPage() {
     }
 
     setIsLoading(false);
-  }, [sessionId, isAuthenticated]);
+  }, [sessionId, isAuthenticated, user]);
 
   useEffect(() => {
     fetchSession();
@@ -108,16 +124,19 @@ export default function SessionDetailPage() {
   const handleJoinWaitlist = useCallback(async () => {
     if (!session) return;
     setIsBooking(true);
+    setBookingError(null);
 
     const response = await sessionsApi.joinWaitlist(session.id);
     if (response.data) {
       setUserBooking(response.data);
       await fetchSession();
       showSuccess(t('waitlistSuccess'));
+    } else if (response.error) {
+      setBookingError(translateBookingError(response.error.message));
     }
 
     setIsBooking(false);
-  }, [session, fetchSession, showSuccess, t]);
+  }, [session, fetchSession, translateBookingError, showSuccess, t]);
 
   // Show cancel confirmation dialog
   const handleCancelBooking = useCallback(async () => {
@@ -152,6 +171,26 @@ export default function SessionDetailPage() {
 
     setIsBooking(false);
   }, [userBooking]);
+
+  // Show start session confirmation dialog
+  const handleStartSession = useCallback(async () => {
+    setShowStartDialog(true);
+  }, []);
+
+  // Actually start the session after confirmation
+  const handleConfirmStart = useCallback(async () => {
+    if (!session) return;
+    setIsStarting(true);
+
+    const response = await sessionsApi.start(session.id);
+    if (response.data) {
+      setSession(response.data);
+      showSuccess(t('sessionStarted'));
+    }
+
+    setIsStarting(false);
+    setShowStartDialog(false);
+  }, [session, showSuccess, t]);
 
   // Loading state
   if (isLoading) {
@@ -232,8 +271,13 @@ export default function SessionDetailPage() {
         onJoinWaitlist={handleJoinWaitlist}
         onCancelBooking={handleCancelBooking}
         onCheckIn={handleCheckIn}
+        onStartSession={handleStartSession}
         isLoading={isBooking}
+        isStarting={isStarting}
         exhibition={exhibition}
+        currentUserId={user?.id}
+        currentUserRole={user?.global_role}
+        bookings={bookings}
       />
 
       {/* Cancel confirmation dialog */}
@@ -260,6 +304,19 @@ export default function SessionDetailPage() {
         cancelLabel={t('cancelBookingAction')}
         variant="default"
         isLoading={isBooking}
+      />
+
+      {/* Start session confirmation dialog */}
+      <ConfirmDialog
+        isOpen={showStartDialog}
+        onClose={() => setShowStartDialog(false)}
+        onConfirm={handleConfirmStart}
+        title={t('confirmStartTitle')}
+        message={t('confirmStartMessage')}
+        confirmLabel={t('startSession')}
+        cancelLabel={t('cancelBookingAction')}
+        variant="default"
+        isLoading={isStarting}
       />
     </div>
   );

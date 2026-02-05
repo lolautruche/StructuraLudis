@@ -56,7 +56,7 @@ export function AvailabilityBadge({
   // Full, no waitlist info
   return (
     <Badge variant="warning">
-      {t('seats', { available: 0, total: totalSeats })}
+      {t('full')}
     </Badge>
   );
 }

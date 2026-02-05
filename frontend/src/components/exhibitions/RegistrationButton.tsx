@@ -33,6 +33,11 @@ export function RegistrationButton({
     return null;
   }
 
+  // Don't show for organizers/admins - they don't need to register
+  if (exhibition.can_manage || exhibition.user_exhibition_role) {
+    return null;
+  }
+
   // Check if registration is within the window
   const now = new Date();
   const registrationOpensAt = exhibition.registration_opens_at

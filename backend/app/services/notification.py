@@ -18,6 +18,8 @@ from app.core.templates import (
     render_booking_confirmed,
     render_session_cancelled,
     render_waitlist_promoted,
+    render_waitlist_joined,
+    render_new_waitlist_player,
     render_session_reminder,
     render_new_player_registration,
     render_booking_cancelled,
@@ -448,6 +450,84 @@ class NotificationService:
 
         # Send email
         return await self._send_email(recipient, subject, html_body, notification)
+
+    async def notify_waitlist_joined(
+        self,
+        recipient: NotificationRecipient,
+        context: SessionNotificationContext,
+        waitlist_position: int,
+        action_url: Optional[str] = None,
+    ) -> bool:
+        """
+        Notify a player that they've joined the waitlist.
+
+        Channels: Email, In-App
+        """
+        subject, html_body = render_waitlist_joined(
+            locale=recipient.locale,
+            session_title=context.session_title,
+            exhibition_title=context.exhibition_title,
+            scheduled_start=context.scheduled_start,
+            waitlist_position=waitlist_position,
+            gm_name=context.gm_name,
+            action_url=action_url,
+        )
+
+        # Create in-app notification
+        notification = await self._create_notification_record(
+            user_id=recipient.user_id,
+            notification_type=NotificationType.BOOKING_CONFIRMED,
+            channel=NotificationChannel.EMAIL,
+            subject=subject,
+            body=f"You're on the waitlist for {context.session_title} (position #{waitlist_position}).",
+            context={
+                "session_id": str(context.session_id),
+                "exhibition_id": str(context.exhibition_id),
+                "waitlist_position": waitlist_position,
+            },
+        )
+
+        # Send email
+        return await self._send_email(recipient, subject, html_body, notification)
+
+    async def notify_gm_new_waitlist_player(
+        self,
+        gm_recipient: NotificationRecipient,
+        context: SessionNotificationContext,
+        waitlist_count: int,
+        action_url: Optional[str] = None,
+    ) -> bool:
+        """
+        Notify a GM that a player has joined the waitlist.
+
+        Channels: Email, In-App
+        """
+        subject, html_body = render_new_waitlist_player(
+            locale=gm_recipient.locale,
+            session_title=context.session_title,
+            exhibition_title=context.exhibition_title,
+            scheduled_start=context.scheduled_start,
+            player_name=context.player_name or "Unknown",
+            waitlist_count=waitlist_count,
+            action_url=action_url,
+        )
+
+        # Create in-app notification
+        notification = await self._create_notification_record(
+            user_id=gm_recipient.user_id,
+            notification_type=NotificationType.BOOKING_CONFIRMED,
+            channel=NotificationChannel.EMAIL,
+            subject=subject,
+            body=f"{context.player_name} has joined the waitlist for {context.session_title}.",
+            context={
+                "session_id": str(context.session_id),
+                "exhibition_id": str(context.exhibition_id),
+                "waitlist_count": waitlist_count,
+            },
+        )
+
+        # Send email
+        return await self._send_email(gm_recipient, subject, html_body, notification)
 
     async def notify_gm_player_cancelled(
         self,

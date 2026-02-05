@@ -490,6 +490,48 @@ class EventRequestService:
         return request
 
     # =========================================================================
+    # Cancel Request
+    # =========================================================================
+
+    async def cancel_request(
+        self,
+        request_id: UUID,
+        user: User,
+    ) -> EventRequest:
+        """
+        Cancel an event request.
+
+        Only allowed if status is PENDING or CHANGES_REQUESTED.
+        """
+        request = await self.get_request(request_id)
+        if not request:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Event request not found",
+            )
+
+        # Check ownership
+        if request.requester_id != user.id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Not authorized to cancel this request",
+            )
+
+        # Check status - can only cancel pending or changes_requested
+        if request.status not in [EventRequestStatus.PENDING, EventRequestStatus.CHANGES_REQUESTED]:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Can only cancel requests with status PENDING or CHANGES_REQUESTED",
+            )
+
+        request.status = EventRequestStatus.CANCELLED
+
+        await self.db.flush()
+        await self.db.refresh(request)
+
+        return request
+
+    # =========================================================================
     # Helpers
     # =========================================================================
 

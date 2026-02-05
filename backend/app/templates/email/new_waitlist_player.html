@@ -1,0 +1,24 @@
+{% extends "email/base.html" %}
+
+{% block content %}
+<h2>{{ greeting }}</h2>
+
+<p>{{ intro_text }}</p>
+
+<div class="info-box">
+    <strong>{{ session_label }}:</strong> {{ session_title }}<br>
+    <strong>{{ event_label }}:</strong> {{ exhibition_title }}<br>
+    <strong>{{ date_label }}:</strong> {{ scheduled_date }}<br>
+    <strong>{{ time_label }}:</strong> {{ scheduled_time }}<br>
+    <strong>{{ player_label }}:</strong> {{ player_name }}<br>
+    <strong>{{ waitlist_count_label }}:</strong> {{ waitlist_count }}
+</div>
+
+{% if action_url %}
+<p style="text-align: center;">
+    <a href="{{ action_url }}" class="button">{{ action_button_text }}</a>
+</p>
+{% endif %}
+
+<p>{{ closing_text }}</p>
+{% endblock %}

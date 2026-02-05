@@ -26,7 +26,7 @@ export default function ExhibitionSessionsPage() {
   const searchParams = useSearchParams();
 
   const exhibitionId = params.id as string;
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
 
   const [exhibition, setExhibition] = useState<Exhibition | null>(null);
   const [sessions, setSessions] = useState<GameSession[]>([]);
@@ -218,7 +218,7 @@ export default function ExhibitionSessionsPage() {
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {filteredSessions.map((session) => (
-            <SessionCard key={session.id} session={session} locale={locale} />
+            <SessionCard key={session.id} session={session} locale={locale} currentUserId={user?.id} />
           ))}
         </div>
       )}
