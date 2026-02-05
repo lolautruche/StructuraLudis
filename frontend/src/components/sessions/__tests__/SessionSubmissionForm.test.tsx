@@ -196,9 +196,11 @@ describe('SessionSubmissionForm', () => {
       expect(screen.getByText('X-Card')).toBeInTheDocument();
     });
 
-    // X-Card should be checked as it's required
-    const xCardCheckbox = screen.getByLabelText(/X-Card/);
-    expect(xCardCheckbox).toBeChecked();
+    // X-Card should be checked as it's required (wait for useEffect to auto-select)
+    await waitFor(() => {
+      const xCardCheckbox = screen.getByLabelText(/X-Card/);
+      expect(xCardCheckbox).toBeChecked();
+    });
   });
 
   it('renders submit and save draft buttons', async () => {
