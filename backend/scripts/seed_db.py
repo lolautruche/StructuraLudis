@@ -5,7 +5,7 @@ Creates a complete dataset for development and testing:
 - Users: super admin, organizers, partner staff, GMs, players
 - Organizations: main org + partner exhibitors
 - User groups with memberships
-- Game Categories and Games (RPGs from GROG + board games)
+- Game Categories and Games (RPGs from GROG fixtures + board games)
 - Exhibition with zones, tables, time slots
 - Game Sessions in various states with realistic player counts
 - Bookings (confirmed, waitlist, checked-in)
@@ -30,8 +30,10 @@ Test accounts (password: password123):
     Players:      player1@example.com ... player12@example.com
 """
 import asyncio
+import json
 import sys
 from datetime import date, datetime, timedelta, timezone
+from pathlib import Path
 from uuid import uuid4
 
 from sqlalchemy import select, delete
@@ -365,136 +367,69 @@ async def seed(force: bool = False):
         session.add_all([cat_rpg, cat_board, cat_card])
 
         # =====================================================================
-        # 4. GAMES (RPGs from GROG + board games)
+        # 4. GAMES (RPGs from GROG fixtures + board games)
+        # Issue #55 - Load RPGs from fixtures file
         # =====================================================================
-        games = [
-            # Classic RPGs
-            Game(
-                id=uuid4(),
-                category_id=cat_rpg.id,
-                title="L'Appel de Cthulhu",
-                external_provider_id="grog-4",
-                publisher="Chaosium / Edge",
-                description="Jeu d'horreur cosmique dans l'univers de H.P. Lovecraft",
-                complexity=GameComplexity.INTERMEDIATE,
-                min_players=2,
-                max_players=6,
-            ),
-            Game(
-                id=uuid4(),
-                category_id=cat_rpg.id,
-                title="Donjons et Dragons 5e",
-                external_provider_id="grog-5",
-                publisher="Wizards of the Coast / Gale Force 9",
-                description="Le plus célèbre des jeux de rôle heroic fantasy",
-                complexity=GameComplexity.INTERMEDIATE,
-                min_players=3,
-                max_players=7,
-            ),
-            # French classics
-            Game(
-                id=uuid4(),
-                category_id=cat_rpg.id,
-                title="Pénombre",
-                external_provider_id="grog-penombre",
-                publisher="Les Vagabonds du Rêve",
-                description="Enquêtes dans la France de l'entre-deux-guerres",
-                complexity=GameComplexity.INTERMEDIATE,
-                min_players=2,
-                max_players=5,
-            ),
-            Game(
-                id=uuid4(),
-                category_id=cat_rpg.id,
-                title="Maléfices",
-                external_provider_id="grog-malefices",
-                publisher="Arkhane Asylum Publishing",
-                description="Horreur et fantastique dans la France de la Belle Époque",
-                complexity=GameComplexity.INTERMEDIATE,
-                min_players=2,
-                max_players=6,
-            ),
-            Game(
-                id=uuid4(),
-                category_id=cat_rpg.id,
-                title="Kult: Divinité Perdue",
-                external_provider_id="grog-kult",
-                publisher="Arkhane Asylum Publishing",
-                description="Horreur gnostique contemporaine",
-                complexity=GameComplexity.EXPERT,
-                min_players=2,
-                max_players=5,
-            ),
-            # Sci-Fi / Space Opera
-            Game(
-                id=uuid4(),
-                category_id=cat_rpg.id,
-                title="Star Wars : Aux Confins de l'Empire",
-                external_provider_id="grog-sw-edge",
-                publisher="Edge / Fantasy Flight Games",
-                description="Aventures dans la galaxie Star Wars, côté contrebandiers",
-                complexity=GameComplexity.INTERMEDIATE,
-                min_players=2,
-                max_players=6,
-            ),
-            Game(
-                id=uuid4(),
-                category_id=cat_rpg.id,
-                title="Fading Suns",
-                external_provider_id="grog-fadingsuns",
-                publisher="Ulisses Spiele",
-                description="Space opera mystique et politique dans un univers en déclin",
-                complexity=GameComplexity.EXPERT,
-                min_players=2,
-                max_players=6,
-            ),
-            # 12 Singes games
-            Game(
-                id=uuid4(),
-                category_id=cat_rpg.id,
-                title="Cats ! La Mascarade",
-                external_provider_id="grog-cats",
-                publisher="Les XII Singes",
-                description="Jouez des chats dans un monde de mystères félidés",
-                complexity=GameComplexity.BEGINNER,
-                min_players=2,
-                max_players=6,
-            ),
-            Game(
-                id=uuid4(),
-                category_id=cat_rpg.id,
-                title="Wastburg",
-                external_provider_id="grog-wastburg",
-                publisher="Les XII Singes",
-                description="Intrigues et enquêtes dans une cité médiévale fantastique",
-                complexity=GameComplexity.INTERMEDIATE,
-                min_players=2,
-                max_players=5,
-            ),
-            # Other RPGs
-            Game(
-                id=uuid4(),
-                category_id=cat_rpg.id,
-                title="Alien RPG",
-                external_provider_id="grog-alien",
-                publisher="Free League",
-                description="Survival horror dans l'univers d'Alien",
-                complexity=GameComplexity.INTERMEDIATE,
-                min_players=3,
-                max_players=5,
-            ),
-            Game(
-                id=uuid4(),
-                category_id=cat_rpg.id,
-                title="Chroniques Oubliées Fantasy",
-                external_provider_id="grog-cof",
-                publisher="Black Book Editions",
-                description="JdR med-fan français accessible",
-                complexity=GameComplexity.BEGINNER,
-                min_players=2,
-                max_players=6,
-            ),
-            # Board Games
+        fixtures_path = Path(__file__).parent.parent / "fixtures" / "grog_top_100.json"
+        rpg_games = []
+
+        if fixtures_path.exists():
+            with open(fixtures_path, encoding="utf-8") as f:
+                grog_data = json.load(f)
+
+            # Create RPG games from fixtures (first 20 for seeding)
+            for game_data in grog_data[:20]:
+                rpg_games.append(Game(
+                    id=uuid4(),
+                    category_id=cat_rpg.id,
+                    title=game_data["title"],
+                    external_provider="grog",
+                    external_provider_id=game_data["slug"],
+                    external_url=game_data.get("url"),
+                    publisher=game_data.get("publisher"),
+                    description=game_data.get("description"),
+                    cover_image_url=game_data.get("cover_image_url"),
+                    themes=game_data.get("themes"),
+                    complexity=GameComplexity.INTERMEDIATE,
+                    min_players=2,
+                    max_players=6,
+                    last_synced_at=datetime.now(timezone.utc),
+                ))
+            print(f"  Loaded {len(rpg_games)} RPGs from GROG fixtures")
+        else:
+            print("  Warning: GROG fixtures not found, using minimal game set")
+            # Fallback minimal games if fixtures don't exist
+            rpg_games = [
+                Game(
+                    id=uuid4(),
+                    category_id=cat_rpg.id,
+                    title="L'Appel de Cthulhu",
+                    external_provider="grog",
+                    external_provider_id="appel-de-cthulhu",
+                    external_url="https://www.legrog.org/jeux/appel-de-cthulhu",
+                    publisher="Chaosium / Edge",
+                    description="Jeu d'horreur cosmique dans l'univers de H.P. Lovecraft",
+                    complexity=GameComplexity.INTERMEDIATE,
+                    min_players=2,
+                    max_players=6,
+                ),
+                Game(
+                    id=uuid4(),
+                    category_id=cat_rpg.id,
+                    title="Donjons et Dragons",
+                    external_provider="grog",
+                    external_provider_id="donjons-et-dragons",
+                    external_url="https://www.legrog.org/jeux/donjons-et-dragons",
+                    publisher="Wizards of the Coast",
+                    description="Le plus célèbre des jeux de rôle heroic fantasy",
+                    complexity=GameComplexity.INTERMEDIATE,
+                    min_players=3,
+                    max_players=7,
+                ),
+            ]
+
+        # Board Games (not from GROG)
+        board_games = [
             Game(
                 id=uuid4(),
                 category_id=cat_board.id,
@@ -516,9 +451,29 @@ async def seed(force: bool = False):
                 max_players=4,
             ),
         ]
+
+        games = rpg_games + board_games
         session.add_all(games)
-        (cthulhu, dnd, penombre, malefices, kult, starwars, fadingsuns,
-         cats, wastburg, alien, cof, wingspan, catan) = games
+
+        # Map games by slug/title for session creation
+        # Using a dict for easy lookup
+        games_by_slug = {g.external_provider_id: g for g in rpg_games if g.external_provider_id}
+        games_by_title = {g.title: g for g in games}
+
+        # Get specific games for sessions (using slug from fixtures)
+        cthulhu = games_by_slug.get("appel-de-cthulhu", rpg_games[0] if rpg_games else None)
+        dnd = games_by_slug.get("donjons-et-dragons", rpg_games[1] if len(rpg_games) > 1 else cthulhu)
+        penombre = games_by_slug.get("penombre", games_by_title.get("Pénombre", cthulhu))
+        malefices = games_by_slug.get("maléfices", games_by_title.get("Maléfices", cthulhu))
+        kult = games_by_slug.get("kult", games_by_title.get("Kult", cthulhu))
+        starwars = games_by_slug.get("star-wars", games_by_title.get("Star Wars : Le Jeu de Rôle", cthulhu))
+        fadingsuns = games_by_slug.get("fading-suns", games_by_title.get("Fading Suns", cthulhu))
+        cats = games_by_slug.get("cats-la-mascarade", games_by_title.get("Cats ! La Mascarade", cthulhu))
+        wastburg = games_by_slug.get("wastburg", games_by_title.get("Wastburg", cthulhu))
+        alien = games_by_slug.get("alien-rpg", games_by_title.get("Alien, le Jeu de Rôle", cthulhu))
+        cof = games_by_slug.get("chroniques-oubliees", games_by_title.get("Chroniques Oubliées", cthulhu))
+        wingspan = games_by_title.get("Wingspan", board_games[0])
+        catan = games_by_title.get("Catan", board_games[1])
 
         # =====================================================================
         # 5. EXHIBITION - OctoGônes 16

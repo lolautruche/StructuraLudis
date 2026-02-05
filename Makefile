@@ -32,6 +32,12 @@ help:
 	@echo "    make db-reset        - Reset database (WARNING: deletes all data)"
 	@echo "    make db-shell        - Open psql shell"
 	@echo ""
+	@echo "  GROG Import (#55):"
+	@echo "    make import-grog     - Import all games from GROG"
+	@echo "    make import-grog-force - Re-import and update existing games"
+	@echo "    make import-grog-dry - Dry run (show what would be imported)"
+	@echo "    make generate-grog-fixtures - Generate top 100 fixtures"
+	@echo ""
 	@echo "  Tests:"
 	@echo "    make test            - Run all tests"
 	@echo "    make test-backend    - Run backend tests"
@@ -144,6 +150,22 @@ db-reset:
 
 db-shell:
 	docker compose exec sl-db psql -U sl_admin -d structura_ludis
+
+# =============================================================================
+# GROG Import commands (#55)
+# =============================================================================
+
+import-grog:
+	docker compose exec sl-api python -m app.cli.import_grog
+
+import-grog-force:
+	docker compose exec sl-api python -m app.cli.import_grog --force
+
+import-grog-dry:
+	docker compose exec sl-api python -m app.cli.import_grog --dry-run
+
+generate-grog-fixtures:
+	docker compose exec sl-api python scripts/generate_grog_fixtures.py
 
 # =============================================================================
 # Test commands

@@ -1,0 +1,902 @@
+[
+  {
+    "slug": "appel-de-cthulhu",
+    "title": "L'Appel de Cthulhu",
+    "url": "https://www.legrog.org/jeux/appel-de-cthulhu",
+    "publisher": "Chaosium / Edge",
+    "description": "Jeu d'horreur cosmique dans l'univers de H.P. Lovecraft. Les investigateurs font face à des horreurs indicibles et des cultes secrets.",
+    "cover_image_url": "https://www.legrog.org/visuels/gammes/286.jpg",
+    "themes": ["Horreur", "Lovecraft", "Années 1920"],
+    "reviews_count": 245
+  },
+  {
+    "slug": "donjons-et-dragons",
+    "title": "Donjons et Dragons",
+    "url": "https://www.legrog.org/jeux/donjons-et-dragons",
+    "publisher": "Wizards of the Coast",
+    "description": "Le plus célèbre des jeux de rôle. Explorez des donjons, combattez des dragons et vivez des aventures épiques en heroic fantasy.",
+    "cover_image_url": "https://www.legrog.org/visuels/gammes/182.jpg",
+    "themes": ["Heroic Fantasy", "Médiéval Fantastique"],
+    "reviews_count": 198
+  },
+  {
+    "slug": "vampire-la-mascarade",
+    "title": "Vampire : La Mascarade",
+    "url": "https://www.legrog.org/jeux/vampire-la-mascarade",
+    "publisher": "White Wolf / Arkhane Asylum",
+    "description": "Incarnez un vampire dans un monde de ténèbres contemporain. Intrigues, politique et survie nocturne.",
+    "cover_image_url": "https://www.legrog.org/visuels/gammes/51.jpg",
+    "themes": ["Horreur", "Vampires", "Contemporain Fantastique"],
+    "reviews_count": 167
+  },
+  {
+    "slug": "star-wars",
+    "title": "Star Wars : Le Jeu de Rôle",
+    "url": "https://www.legrog.org/jeux/star-wars",
+    "publisher": "West End Games / Fantasy Flight Games",
+    "description": "Aventures dans la galaxie lointaine de Star Wars. Jedis, contrebandiers et rebelles.",
+    "cover_image_url": "https://www.legrog.org/visuels/gammes/65.jpg",
+    "themes": ["Science-Fiction", "Space Opera"],
+    "reviews_count": 156
+  },
+  {
+    "slug": "warhammer",
+    "title": "Warhammer, le Jeu de Rôle",
+    "url": "https://www.legrog.org/jeux/warhammer",
+    "publisher": "Games Workshop / Khaos Project",
+    "description": "Dark fantasy dans le Vieux Monde. Un univers sombre où le Chaos menace l'humanité.",
+    "cover_image_url": "https://www.legrog.org/visuels/gammes/4.jpg",
+    "themes": ["Dark Fantasy", "Médiéval Fantastique"],
+    "reviews_count": 145
+  },
+  {
+    "slug": "shadowrun",
+    "title": "Shadowrun",
+    "url": "https://www.legrog.org/jeux/shadowrun",
+    "publisher": "FASA / Black Book Editions",
+    "description": "Cyberpunk et magie dans un futur dystopique. Hackers, mages et samouraïs des rues.",
+    "cover_image_url": "https://www.legrog.org/visuels/gammes/29.jpg",
+    "themes": ["Cyberpunk", "Science-Fiction", "Fantasy Urbaine"],
+    "reviews_count": 134
+  },
+  {
+    "slug": "runequest",
+    "title": "RuneQuest",
+    "url": "https://www.legrog.org/jeux/runequest",
+    "publisher": "Chaosium / Studio Deadcrows",
+    "description": "Aventures dans le monde de Glorantha. Un système de jeu mythique et légendaire.",
+    "cover_image_url": "https://www.legrog.org/visuels/gammes/40.jpg",
+    "themes": ["Heroic Fantasy", "Mythologie"],
+    "reviews_count": 128
+  },
+  {
+    "slug": "pathfinder",
+    "title": "Pathfinder",
+    "url": "https://www.legrog.org/jeux/pathfinder",
+    "publisher": "Paizo / Black Book Editions",
+    "description": "Héritier spirituel de D&D 3.5. Aventures épiques dans le monde de Golarion.",
+    "cover_image_url": "https://www.legrog.org/visuels/gammes/1234.jpg",
+    "themes": ["Heroic Fantasy", "Médiéval Fantastique"],
+    "reviews_count": 121
+  },
+  {
+    "slug": "pendragon",
+    "title": "Pendragon",
+    "url": "https://www.legrog.org/jeux/pendragon",
+    "publisher": "Chaosium",
+    "description": "Chevaliers de la Table Ronde. Légendes arthuriennes et quête du Graal.",
+    "cover_image_url": "https://www.legrog.org/visuels/gammes/46.jpg",
+    "themes": ["Médiéval", "Légendes Arthuriennes"],
+    "reviews_count": 115
+  },
+  {
+    "slug": "monde-des-tenebres",
+    "title": "Le Monde des Ténèbres",
+    "url": "https://www.legrog.org/jeux/monde-des-tenebres",
+    "publisher": "White Wolf",
+    "description": "Système générique pour les jeux du Monde des Ténèbres. Vampires, loups-garous et mages.",
+    "cover_image_url": "https://www.legrog.org/visuels/gammes/52.jpg",
+    "themes": ["Horreur", "Contemporain Fantastique"],
+    "reviews_count": 112
+  },
+  {
+    "slug": "ars-magica",
+    "title": "Ars Magica",
+    "url": "https://www.legrog.org/jeux/ars-magica",
+    "publisher": "Atlas Games",
+    "description": "L'Europe médiévale mythique. Mages de l'Ordre d'Hermès et leurs alliés.",
+    "cover_image_url": "https://www.legrog.org/visuels/gammes/78.jpg",
+    "themes": ["Médiéval Fantastique", "Magie"],
+    "reviews_count": 108
+  },
+  {
+    "slug": "ins-mv",
+    "title": "INS/MV - In Nomine Satanis / Magna Veritas",
+    "url": "https://www.legrog.org/jeux/ins-mv",
+    "publisher": "Croc / Asmodée",
+    "description": "Anges et démons dans la guerre secrète. Humour noir et théologie décalée.",
+    "cover_image_url": "https://www.legrog.org/visuels/gammes/36.jpg",
+    "themes": ["Contemporain Fantastique", "Humour", "Religion"],
+    "reviews_count": 105
+  },
+  {
+    "slug": "paranoia",
+    "title": "Paranoïa",
+    "url": "https://www.legrog.org/jeux/paranoia",
+    "publisher": "West End Games / Mongoose Publishing",
+    "description": "Dystopie humoristique dans le Complexe Alpha. L'Ordinateur est votre ami.",
+    "cover_image_url": "https://www.legrog.org/visuels/gammes/38.jpg",
+    "themes": ["Science-Fiction", "Humour", "Dystopie"],
+    "reviews_count": 98
+  },
+  {
+    "slug": "stormbringer",
+    "title": "Stormbringer",
+    "url": "https://www.legrog.org/jeux/stormbringer",
+    "publisher": "Chaosium",
+    "description": "Aventures dans les Jeunes Royaumes de Michael Moorcock. Elric et Stormbringer.",
+    "cover_image_url": "https://www.legrog.org/visuels/gammes/45.jpg",
+    "themes": ["Dark Fantasy", "Épée et Sorcellerie"],
+    "reviews_count": 95
+  },
+  {
+    "slug": "cyberpunk",
+    "title": "Cyberpunk",
+    "url": "https://www.legrog.org/jeux/cyberpunk",
+    "publisher": "R. Talsorian Games",
+    "description": "L'avenir sombre de Night City. Cyberware, megacorporations et netrunners.",
+    "cover_image_url": "https://www.legrog.org/visuels/gammes/27.jpg",
+    "themes": ["Cyberpunk", "Science-Fiction"],
+    "reviews_count": 92
+  },
+  {
+    "slug": "rolemaster",
+    "title": "Rolemaster",
+    "url": "https://www.legrog.org/jeux/rolemaster",
+    "publisher": "Iron Crown Enterprises",
+    "description": "Système détaillé et réaliste. Tables de critiques légendaires.",
+    "cover_image_url": "https://www.legrog.org/visuels/gammes/39.jpg",
+    "themes": ["Heroic Fantasy", "Médiéval Fantastique"],
+    "reviews_count": 89
+  },
+  {
+    "slug": "cthulhu-live",
+    "title": "Cthulhu Live",
+    "url": "https://www.legrog.org/jeux/cthulhu-live",
+    "publisher": "Chaosium",
+    "description": "Version grandeur nature de L'Appel de Cthulhu.",
+    "cover_image_url": null,
+    "themes": ["Horreur", "GN", "Lovecraft"],
+    "reviews_count": 87
+  },
+  {
+    "slug": "gurps",
+    "title": "GURPS",
+    "url": "https://www.legrog.org/jeux/gurps",
+    "publisher": "Steve Jackson Games",
+    "description": "Système générique universel. Adaptable à tous les univers.",
+    "cover_image_url": "https://www.legrog.org/visuels/gammes/33.jpg",
+    "themes": ["Générique"],
+    "reviews_count": 85
+  },
+  {
+    "slug": "chroniques-oubliees",
+    "title": "Chroniques Oubliées",
+    "url": "https://www.legrog.org/jeux/chroniques-oubliees",
+    "publisher": "Black Book Editions",
+    "description": "JdR med-fan français accessible et moderne. Idéal pour débuter.",
+    "cover_image_url": "https://www.legrog.org/visuels/gammes/2345.jpg",
+    "themes": ["Heroic Fantasy", "Médiéval Fantastique"],
+    "reviews_count": 82
+  },
+  {
+    "slug": "l5r",
+    "title": "La Légende des Cinq Anneaux",
+    "url": "https://www.legrog.org/jeux/l5r",
+    "publisher": "AEG / Fantasy Flight Games",
+    "description": "Aventures au Rokugan, empire inspiré du Japon féodal. Samouraïs et honneur.",
+    "cover_image_url": "https://www.legrog.org/visuels/gammes/567.jpg",
+    "themes": ["Asie Fantastique", "Samouraï"],
+    "reviews_count": 79
+  },
+  {
+    "slug": "nephilim",
+    "title": "Nephilim",
+    "url": "https://www.legrog.org/jeux/nephilim",
+    "publisher": "Multisim / Mnémos",
+    "description": "Esprits élémentaires incarnés dans des humains. Occultisme et Histoire secrète.",
+    "cover_image_url": "https://www.legrog.org/visuels/gammes/37.jpg",
+    "themes": ["Contemporain Fantastique", "Occultisme"],
+    "reviews_count": 76
+  },
+  {
+    "slug": "maléfices",
+    "title": "Maléfices",
+    "url": "https://www.legrog.org/jeux/malefices",
+    "publisher": "Arkhane Asylum Publishing",
+    "description": "Horreur et fantastique dans la France de la Belle Époque.",
+    "cover_image_url": "https://www.legrog.org/visuels/gammes/678.jpg",
+    "themes": ["Horreur", "Belle Époque", "France"],
+    "reviews_count": 74
+  },
+  {
+    "slug": "traveller",
+    "title": "Traveller",
+    "url": "https://www.legrog.org/jeux/traveller",
+    "publisher": "Game Designers' Workshop / Mongoose Publishing",
+    "description": "Science-fiction classique. Exploration spatiale et commerce interstellaire.",
+    "cover_image_url": "https://www.legrog.org/visuels/gammes/67.jpg",
+    "themes": ["Science-Fiction", "Space Opera"],
+    "reviews_count": 72
+  },
+  {
+    "slug": "loup-garou-apocalypse",
+    "title": "Loup-Garou : L'Apocalypse",
+    "url": "https://www.legrog.org/jeux/loup-garou-apocalypse",
+    "publisher": "White Wolf",
+    "description": "Garous contre le Ver corrupteur. Combat écologique et spirituel.",
+    "cover_image_url": "https://www.legrog.org/visuels/gammes/53.jpg",
+    "themes": ["Horreur", "Loups-Garous", "Contemporain Fantastique"],
+    "reviews_count": 70
+  },
+  {
+    "slug": "deadlands",
+    "title": "Deadlands",
+    "url": "https://www.legrog.org/jeux/deadlands",
+    "publisher": "Pinnacle Entertainment",
+    "description": "Western surnaturel. Cowboys, indiens et horreurs du Far West.",
+    "cover_image_url": "https://www.legrog.org/visuels/gammes/789.jpg",
+    "themes": ["Western", "Horreur"],
+    "reviews_count": 68
+  },
+  {
+    "slug": "mage-ascension",
+    "title": "Mage : L'Ascension",
+    "url": "https://www.legrog.org/jeux/mage-ascension",
+    "publisher": "White Wolf",
+    "description": "La réalité est consensuelle. Mages et traditions mystiques.",
+    "cover_image_url": "https://www.legrog.org/visuels/gammes/54.jpg",
+    "themes": ["Contemporain Fantastique", "Magie"],
+    "reviews_count": 66
+  },
+  {
+    "slug": "empire-galactique",
+    "title": "Empire Galactique",
+    "url": "https://www.legrog.org/jeux/empire-galactique",
+    "publisher": "Robert Laffont / Descartes",
+    "description": "Space opera français culte. Aventures dans la galaxie de l'Empire.",
+    "cover_image_url": "https://www.legrog.org/visuels/gammes/890.jpg",
+    "themes": ["Science-Fiction", "Space Opera"],
+    "reviews_count": 64
+  },
+  {
+    "slug": "kult",
+    "title": "Kult",
+    "url": "https://www.legrog.org/jeux/kult",
+    "publisher": "Target Games / Arkhane Asylum",
+    "description": "Horreur gnostique contemporaine. La réalité n'est qu'une illusion.",
+    "cover_image_url": "https://www.legrog.org/visuels/gammes/901.jpg",
+    "themes": ["Horreur", "Contemporain Fantastique", "Gnosticisme"],
+    "reviews_count": 62
+  },
+  {
+    "slug": "te-deum",
+    "title": "Te Deum pour un Massacre",
+    "url": "https://www.legrog.org/jeux/te-deum",
+    "publisher": "Les XII Singes",
+    "description": "Guerres de Religion en France. Intrigues et combats au XVIe siècle.",
+    "cover_image_url": "https://www.legrog.org/visuels/gammes/1012.jpg",
+    "themes": ["Historique", "France", "XVIe siècle"],
+    "reviews_count": 60
+  },
+  {
+    "slug": "pavillon-noir",
+    "title": "Pavillon Noir",
+    "url": "https://www.legrog.org/jeux/pavillon-noir",
+    "publisher": "Black Book Editions",
+    "description": "Pirates et flibustiers des Caraïbes. L'âge d'or de la piraterie.",
+    "cover_image_url": "https://www.legrog.org/visuels/gammes/1023.jpg",
+    "themes": ["Pirates", "Historique", "Aventure"],
+    "reviews_count": 58
+  },
+  {
+    "slug": "reve-de-dragon",
+    "title": "Rêve de Dragon",
+    "url": "https://www.legrog.org/jeux/reve-de-dragon",
+    "publisher": "Multisim",
+    "description": "Voyageurs du rêve. Un univers onirique et poétique unique.",
+    "cover_image_url": "https://www.legrog.org/visuels/gammes/41.jpg",
+    "themes": ["Fantasy", "Onirique"],
+    "reviews_count": 56
+  },
+  {
+    "slug": "hurlements",
+    "title": "Hurlements",
+    "url": "https://www.legrog.org/jeux/hurlements",
+    "publisher": "Les XII Singes",
+    "description": "Loups-garous dans les contes de fées. Dark fantasy horrifique.",
+    "cover_image_url": "https://www.legrog.org/visuels/gammes/1034.jpg",
+    "themes": ["Dark Fantasy", "Loups-Garous", "Contes"],
+    "reviews_count": 54
+  },
+  {
+    "slug": "agone",
+    "title": "Agone",
+    "url": "https://www.legrog.org/jeux/agone",
+    "publisher": "Multisim",
+    "description": "Fantasy crépusculaire. Inspirants et Flammes dans l'Harmonde.",
+    "cover_image_url": "https://www.legrog.org/visuels/gammes/1045.jpg",
+    "themes": ["Fantasy", "Crépusculaire"],
+    "reviews_count": 52
+  },
+  {
+    "slug": "polaris",
+    "title": "Polaris",
+    "url": "https://www.legrog.org/jeux/polaris",
+    "publisher": "Black Book Editions",
+    "description": "Science-fiction sous-marine. L'humanité survit dans les profondeurs.",
+    "cover_image_url": "https://www.legrog.org/visuels/gammes/1056.jpg",
+    "themes": ["Science-Fiction", "Post-Apocalyptique", "Sous-Marin"],
+    "reviews_count": 50
+  },
+  {
+    "slug": "cats-la-mascarade",
+    "title": "Cats ! La Mascarade",
+    "url": "https://www.legrog.org/jeux/cats-la-mascarade",
+    "publisher": "Les XII Singes",
+    "description": "Jouez des chats dans un monde de mystères félidés.",
+    "cover_image_url": "https://www.legrog.org/visuels/gammes/1067.jpg",
+    "themes": ["Contemporain Fantastique", "Animaux", "Humour"],
+    "reviews_count": 48
+  },
+  {
+    "slug": "savage-worlds",
+    "title": "Savage Worlds",
+    "url": "https://www.legrog.org/jeux/savage-worlds",
+    "publisher": "Pinnacle Entertainment / Black Book Editions",
+    "description": "Système générique rapide et fun. Fast! Furious! Fun!",
+    "cover_image_url": "https://www.legrog.org/visuels/gammes/1078.jpg",
+    "themes": ["Générique"],
+    "reviews_count": 46
+  },
+  {
+    "slug": "changeling",
+    "title": "Changeling : Le Songe",
+    "url": "https://www.legrog.org/jeux/changeling",
+    "publisher": "White Wolf",
+    "description": "Fées dans le monde moderne. Glamour contre Banalité.",
+    "cover_image_url": "https://www.legrog.org/visuels/gammes/55.jpg",
+    "themes": ["Contemporain Fantastique", "Féerie"],
+    "reviews_count": 45
+  },
+  {
+    "slug": "heros-dragons",
+    "title": "Héros & Dragons",
+    "url": "https://www.legrog.org/jeux/heros-dragons",
+    "publisher": "Casus Belli",
+    "description": "Version française de D&D 5 compatible SRD.",
+    "cover_image_url": "https://www.legrog.org/visuels/gammes/1089.jpg",
+    "themes": ["Heroic Fantasy", "Médiéval Fantastique"],
+    "reviews_count": 44
+  },
+  {
+    "slug": "alien-rpg",
+    "title": "Alien, le Jeu de Rôle",
+    "url": "https://www.legrog.org/jeux/alien-rpg",
+    "publisher": "Free League / Arkhane Asylum",
+    "description": "Survival horror dans l'univers d'Alien. Dans l'espace, personne ne vous entend crier.",
+    "cover_image_url": "https://www.legrog.org/visuels/gammes/1100.jpg",
+    "themes": ["Science-Fiction", "Horreur"],
+    "reviews_count": 43
+  },
+  {
+    "slug": "wastburg",
+    "title": "Wastburg",
+    "url": "https://www.legrog.org/jeux/wastburg",
+    "publisher": "Les XII Singes",
+    "description": "Intrigues et enquêtes dans une cité médiévale fantastique.",
+    "cover_image_url": "https://www.legrog.org/visuels/gammes/1111.jpg",
+    "themes": ["Dark Fantasy", "Médiéval Fantastique", "Enquête"],
+    "reviews_count": 42
+  },
+  {
+    "slug": "penombre",
+    "title": "Pénombre",
+    "url": "https://www.legrog.org/jeux/penombre",
+    "publisher": "Les Vagabonds du Rêve",
+    "description": "Enquêtes dans la France de l'entre-deux-guerres.",
+    "cover_image_url": "https://www.legrog.org/visuels/gammes/1122.jpg",
+    "themes": ["Enquête", "France", "Entre-Deux-Guerres"],
+    "reviews_count": 41
+  },
+  {
+    "slug": "fading-suns",
+    "title": "Fading Suns",
+    "url": "https://www.legrog.org/jeux/fading-suns",
+    "publisher": "Holistic Design / Ulisses Spiele",
+    "description": "Space opera mystique et politique dans un univers en déclin.",
+    "cover_image_url": "https://www.legrog.org/visuels/gammes/1133.jpg",
+    "themes": ["Science-Fiction", "Space Opera", "Médiéval Futuriste"],
+    "reviews_count": 40
+  },
+  {
+    "slug": "terres-de-legende",
+    "title": "Terres de Légende",
+    "url": "https://www.legrog.org/jeux/terres-de-legende",
+    "publisher": "Descartes / Games Workshop",
+    "description": "Fantasy britannique classique. Dragon Warriors en VF.",
+    "cover_image_url": "https://www.legrog.org/visuels/gammes/1144.jpg",
+    "themes": ["Fantasy", "Médiéval Fantastique"],
+    "reviews_count": 39
+  },
+  {
+    "slug": "mousquetaires-du-roi",
+    "title": "Les Mousquetaires du Roi",
+    "url": "https://www.legrog.org/jeux/mousquetaires-du-roi",
+    "publisher": "Oriflam",
+    "description": "Aventures de cape et d'épée sous Louis XIII.",
+    "cover_image_url": "https://www.legrog.org/visuels/gammes/1155.jpg",
+    "themes": ["Historique", "Cape et Épée", "France"],
+    "reviews_count": 38
+  },
+  {
+    "slug": "midnight",
+    "title": "Midnight",
+    "url": "https://www.legrog.org/jeux/midnight",
+    "publisher": "Fantasy Flight Games",
+    "description": "Fantasy dark où le mal a gagné. Résistance contre l'Ombre.",
+    "cover_image_url": "https://www.legrog.org/visuels/gammes/1166.jpg",
+    "themes": ["Dark Fantasy", "Résistance"],
+    "reviews_count": 37
+  },
+  {
+    "slug": "chill",
+    "title": "Chill",
+    "url": "https://www.legrog.org/jeux/chill",
+    "publisher": "Pacesetter / Mayfair Games",
+    "description": "Chasseurs de monstres. Horreur gothique et investigation.",
+    "cover_image_url": "https://www.legrog.org/visuels/gammes/1177.jpg",
+    "themes": ["Horreur", "Investigation"],
+    "reviews_count": 36
+  },
+  {
+    "slug": "conspirations",
+    "title": "Conspirations",
+    "url": "https://www.legrog.org/jeux/conspirations",
+    "publisher": "Oriflam",
+    "description": "Thriller conspirationniste contemporain.",
+    "cover_image_url": "https://www.legrog.org/visuels/gammes/1188.jpg",
+    "themes": ["Contemporain", "Conspiration", "Thriller"],
+    "reviews_count": 35
+  },
+  {
+    "slug": "ecryme",
+    "title": "Écryme",
+    "url": "https://www.legrog.org/jeux/ecryme",
+    "publisher": "Les XII Singes",
+    "description": "Univers steampunk et onirique sur des cités flottantes.",
+    "cover_image_url": "https://www.legrog.org/visuels/gammes/1199.jpg",
+    "themes": ["Steampunk", "Fantasy"],
+    "reviews_count": 34
+  },
+  {
+    "slug": "blades-in-dark",
+    "title": "Lames dans la Nuit",
+    "url": "https://www.legrog.org/jeux/blades-in-dark",
+    "publisher": "Evil Hat Productions / 500NG",
+    "description": "Voleurs et scélérats dans une cité victorienne hantée.",
+    "cover_image_url": "https://www.legrog.org/visuels/gammes/1210.jpg",
+    "themes": ["Dark Fantasy", "Criminel", "Victorien"],
+    "reviews_count": 33
+  },
+  {
+    "slug": "orkworld",
+    "title": "Orkworld",
+    "url": "https://www.legrog.org/jeux/orkworld",
+    "publisher": "Wicked Press",
+    "description": "Jouez des orcs. Survival tribal et honneur ork.",
+    "cover_image_url": null,
+    "themes": ["Fantasy", "Tribal"],
+    "reviews_count": 32
+  },
+  {
+    "slug": "dungeon-world",
+    "title": "Dungeon World",
+    "url": "https://www.legrog.org/jeux/dungeon-world",
+    "publisher": "Sage Kobold Productions / 500NG",
+    "description": "OSR narratif. Powered by the Apocalypse en donjon.",
+    "cover_image_url": "https://www.legrog.org/visuels/gammes/1221.jpg",
+    "themes": ["Heroic Fantasy", "Narratif"],
+    "reviews_count": 31
+  },
+  {
+    "slug": "delta-green",
+    "title": "Delta Green",
+    "url": "https://www.legrog.org/jeux/delta-green",
+    "publisher": "Pagan Publishing / Arc Dream",
+    "description": "Horreur lovecraftienne et conspirations gouvernementales.",
+    "cover_image_url": "https://www.legrog.org/visuels/gammes/1232.jpg",
+    "themes": ["Horreur", "Lovecraft", "Conspiration"],
+    "reviews_count": 30
+  },
+  {
+    "slug": "burning-wheel",
+    "title": "Burning Wheel",
+    "url": "https://www.legrog.org/jeux/burning-wheel",
+    "publisher": "BWHQ",
+    "description": "Fantasy dramatique centrée sur les croyances des personnages.",
+    "cover_image_url": null,
+    "themes": ["Fantasy", "Narratif"],
+    "reviews_count": 29
+  },
+  {
+    "slug": "symbaroum",
+    "title": "Symbaroum",
+    "url": "https://www.legrog.org/jeux/symbaroum",
+    "publisher": "Järnringen / Arkhane Asylum",
+    "description": "Dark fantasy nordique. La forêt de Davokar et ses secrets.",
+    "cover_image_url": "https://www.legrog.org/visuels/gammes/1243.jpg",
+    "themes": ["Dark Fantasy", "Nordique"],
+    "reviews_count": 28
+  },
+  {
+    "slug": "fate",
+    "title": "FATE",
+    "url": "https://www.legrog.org/jeux/fate",
+    "publisher": "Evil Hat Productions / 500NG",
+    "description": "Système narratif générique. Aspects et points de destin.",
+    "cover_image_url": "https://www.legrog.org/visuels/gammes/1254.jpg",
+    "themes": ["Générique", "Narratif"],
+    "reviews_count": 27
+  },
+  {
+    "slug": "numenera",
+    "title": "Numenera",
+    "url": "https://www.legrog.org/jeux/numenera",
+    "publisher": "Monte Cook Games / Black Book Editions",
+    "description": "Science-fantasy un milliard d'années dans le futur.",
+    "cover_image_url": "https://www.legrog.org/visuels/gammes/1265.jpg",
+    "themes": ["Science-Fantasy", "Post-Apocalyptique"],
+    "reviews_count": 26
+  },
+  {
+    "slug": "mutant-year-zero",
+    "title": "Mutant : Année Zéro",
+    "url": "https://www.legrog.org/jeux/mutant-year-zero",
+    "publisher": "Free League / Arkhane Asylum",
+    "description": "Post-apocalyptique avec mutants. Survie et exploration.",
+    "cover_image_url": "https://www.legrog.org/visuels/gammes/1276.jpg",
+    "themes": ["Post-Apocalyptique", "Mutants"],
+    "reviews_count": 25
+  },
+  {
+    "slug": "vampire-age-des-tenebres",
+    "title": "Vampire : L'Âge des Ténèbres",
+    "url": "https://www.legrog.org/jeux/vampire-age-des-tenebres",
+    "publisher": "White Wolf",
+    "description": "Vampire médiéval. Les origines des clans vampiriques.",
+    "cover_image_url": "https://www.legrog.org/visuels/gammes/1287.jpg",
+    "themes": ["Horreur", "Médiéval", "Vampires"],
+    "reviews_count": 24
+  },
+  {
+    "slug": "fallout-rpg",
+    "title": "Fallout : Le Jeu de Rôle",
+    "url": "https://www.legrog.org/jeux/fallout-rpg",
+    "publisher": "Modiphius / Arkhane Asylum",
+    "description": "Exploration des Terres Désolées post-nucléaires.",
+    "cover_image_url": "https://www.legrog.org/visuels/gammes/1298.jpg",
+    "themes": ["Post-Apocalyptique", "Rétro-Futurisme"],
+    "reviews_count": 23
+  },
+  {
+    "slug": "oeil-noir",
+    "title": "L'Œil Noir",
+    "url": "https://www.legrog.org/jeux/oeil-noir",
+    "publisher": "Schmidt Spiele / Ulisses Spiele",
+    "description": "Fantasy allemande culte. Aventurie et ses mystères.",
+    "cover_image_url": "https://www.legrog.org/visuels/gammes/1309.jpg",
+    "themes": ["Heroic Fantasy", "Médiéval Fantastique"],
+    "reviews_count": 22
+  },
+  {
+    "slug": "torg",
+    "title": "TORG",
+    "url": "https://www.legrog.org/jeux/torg",
+    "publisher": "West End Games / Ulisses Spiele",
+    "description": "Guerre des Réalités. Multi-genre épique.",
+    "cover_image_url": "https://www.legrog.org/visuels/gammes/1320.jpg",
+    "themes": ["Multi-Genre", "Action"],
+    "reviews_count": 21
+  },
+  {
+    "slug": "tales-from-loop",
+    "title": "Tales from the Loop",
+    "url": "https://www.legrog.org/jeux/tales-from-loop",
+    "publisher": "Free League / Arkhane Asylum",
+    "description": "Années 80 avec une touche de science-fiction. Enfants et mystères.",
+    "cover_image_url": "https://www.legrog.org/visuels/gammes/1331.jpg",
+    "themes": ["Science-Fiction", "Années 80", "Enfance"],
+    "reviews_count": 20
+  },
+  {
+    "slug": "nightprowler",
+    "title": "Nightprowler",
+    "url": "https://www.legrog.org/jeux/nightprowler",
+    "publisher": "Asmodée",
+    "description": "Voleurs et assassins dans les rues sombres.",
+    "cover_image_url": "https://www.legrog.org/visuels/gammes/1342.jpg",
+    "themes": ["Dark Fantasy", "Criminel"],
+    "reviews_count": 19
+  },
+  {
+    "slug": "coriolis",
+    "title": "Coriolis",
+    "url": "https://www.legrog.org/jeux/coriolis",
+    "publisher": "Free League / Arkhane Asylum",
+    "description": "Space opera arabisant. Le Troisième Horizon.",
+    "cover_image_url": "https://www.legrog.org/visuels/gammes/1353.jpg",
+    "themes": ["Science-Fiction", "Space Opera"],
+    "reviews_count": 18
+  },
+  {
+    "slug": "vaesen",
+    "title": "Vaesen",
+    "url": "https://www.legrog.org/jeux/vaesen",
+    "publisher": "Free League / Arkhane Asylum",
+    "description": "Folklore nordique au XIXe siècle. Chasseurs de créatures.",
+    "cover_image_url": "https://www.legrog.org/visuels/gammes/1364.jpg",
+    "themes": ["Horreur", "Folklore", "XIXe siècle"],
+    "reviews_count": 17
+  },
+  {
+    "slug": "warhammer-40k",
+    "title": "Warhammer 40,000 Roleplay",
+    "url": "https://www.legrog.org/jeux/warhammer-40k",
+    "publisher": "Fantasy Flight Games / Cubicle 7",
+    "description": "Dans le sombre futur du 41e millénaire...",
+    "cover_image_url": "https://www.legrog.org/visuels/gammes/1375.jpg",
+    "themes": ["Science-Fiction", "Dark Fantasy", "Guerre"],
+    "reviews_count": 16
+  },
+  {
+    "slug": "sombre",
+    "title": "Sombre",
+    "url": "https://www.legrog.org/jeux/sombre",
+    "publisher": "Terres Étranges",
+    "description": "Survival horror minimaliste. Films d'horreur en jeu de rôle.",
+    "cover_image_url": "https://www.legrog.org/visuels/gammes/1386.jpg",
+    "themes": ["Horreur", "Survival"],
+    "reviews_count": 15
+  },
+  {
+    "slug": "les-ombres-desteren",
+    "title": "Les Ombres d'Esteren",
+    "url": "https://www.legrog.org/jeux/les-ombres-desteren",
+    "publisher": "Agate Éditions",
+    "description": "Dark fantasy celtique. Tri-Kazel et ses mystères.",
+    "cover_image_url": "https://www.legrog.org/visuels/gammes/1397.jpg",
+    "themes": ["Dark Fantasy", "Celtique"],
+    "reviews_count": 14
+  },
+  {
+    "slug": "witcher-rpg",
+    "title": "The Witcher : Le Jeu de Rôle",
+    "url": "https://www.legrog.org/jeux/witcher-rpg",
+    "publisher": "R. Talsorian Games / Arkhane Asylum",
+    "description": "Sorceleurs et monstres dans le Continent.",
+    "cover_image_url": "https://www.legrog.org/visuels/gammes/1408.jpg",
+    "themes": ["Dark Fantasy", "Médiéval Fantastique"],
+    "reviews_count": 13
+  },
+  {
+    "slug": "earthdawn",
+    "title": "Earthdawn",
+    "url": "https://www.legrog.org/jeux/earthdawn",
+    "publisher": "FASA / FASA Games",
+    "description": "Fantasy post-apocalyptique. Après le Fléau.",
+    "cover_image_url": "https://www.legrog.org/visuels/gammes/1419.jpg",
+    "themes": ["Heroic Fantasy", "Post-Apocalyptique"],
+    "reviews_count": 12
+  },
+  {
+    "slug": "tiny-dungeon",
+    "title": "Tiny Dungeon",
+    "url": "https://www.legrog.org/jeux/tiny-dungeon",
+    "publisher": "Gallant Knight Games",
+    "description": "OSR minimaliste. Règles légères pour donjons.",
+    "cover_image_url": null,
+    "themes": ["Heroic Fantasy", "Minimaliste"],
+    "reviews_count": 11
+  },
+  {
+    "slug": "la-brigade-chimerique",
+    "title": "La Brigade Chimérique",
+    "url": "https://www.legrog.org/jeux/la-brigade-chimerique",
+    "publisher": "Sans-Détour",
+    "description": "Super-héros dans l'Europe de l'entre-deux-guerres.",
+    "cover_image_url": "https://www.legrog.org/visuels/gammes/1430.jpg",
+    "themes": ["Super-Héros", "Entre-Deux-Guerres"],
+    "reviews_count": 10
+  },
+  {
+    "slug": "monster-of-the-week",
+    "title": "Monster of the Week",
+    "url": "https://www.legrog.org/jeux/monster-of-the-week",
+    "publisher": "Evil Hat Productions / 500NG",
+    "description": "Chasseurs de monstres façon série TV.",
+    "cover_image_url": "https://www.legrog.org/visuels/gammes/1441.jpg",
+    "themes": ["Horreur", "Contemporain", "Narratif"],
+    "reviews_count": 9
+  },
+  {
+    "slug": "kids-on-bikes",
+    "title": "Kids on Bikes",
+    "url": "https://www.legrog.org/jeux/kids-on-bikes",
+    "publisher": "Renegade Game Studios",
+    "description": "Enfants et mystères dans une petite ville.",
+    "cover_image_url": "https://www.legrog.org/visuels/gammes/1452.jpg",
+    "themes": ["Contemporain Fantastique", "Enfance"],
+    "reviews_count": 8
+  },
+  {
+    "slug": "imperium-5",
+    "title": "Imperium 5",
+    "url": "https://www.legrog.org/jeux/imperium-5",
+    "publisher": "Les XII Singes",
+    "description": "Space opera français. Reconquête galactique.",
+    "cover_image_url": "https://www.legrog.org/visuels/gammes/1463.jpg",
+    "themes": ["Science-Fiction", "Space Opera"],
+    "reviews_count": 7
+  },
+  {
+    "slug": "starfinder",
+    "title": "Starfinder",
+    "url": "https://www.legrog.org/jeux/starfinder",
+    "publisher": "Paizo / Black Book Editions",
+    "description": "Space fantasy. L'univers de Pathfinder dans l'espace.",
+    "cover_image_url": "https://www.legrog.org/visuels/gammes/1474.jpg",
+    "themes": ["Science-Fantasy", "Space Opera"],
+    "reviews_count": 6
+  },
+  {
+    "slug": "dune-rpg",
+    "title": "Dune : Aventures dans l'Imperium",
+    "url": "https://www.legrog.org/jeux/dune-rpg",
+    "publisher": "Modiphius / Arkhane Asylum",
+    "description": "Intrigues des Grandes Maisons sur Arrakis.",
+    "cover_image_url": "https://www.legrog.org/visuels/gammes/1485.jpg",
+    "themes": ["Science-Fiction", "Politique"],
+    "reviews_count": 5
+  },
+  {
+    "slug": "capharnaum",
+    "title": "Capharnaüm",
+    "url": "https://www.legrog.org/jeux/capharnaum",
+    "publisher": "Deadcrows Studio",
+    "description": "Orient médiéval fantastique. Les Mille et Une Nuits.",
+    "cover_image_url": "https://www.legrog.org/visuels/gammes/1496.jpg",
+    "themes": ["Orient", "Fantasy"],
+    "reviews_count": 4
+  },
+  {
+    "slug": "electric-bastionland",
+    "title": "Electric Bastionland",
+    "url": "https://www.legrog.org/jeux/electric-bastionland",
+    "publisher": "Bastionland Press",
+    "description": "OSR surréaliste. Dettes et aventures urbaines.",
+    "cover_image_url": null,
+    "themes": ["Surréaliste", "Urbain"],
+    "reviews_count": 3
+  },
+  {
+    "slug": "mothership",
+    "title": "Mothership",
+    "url": "https://www.legrog.org/jeux/mothership",
+    "publisher": "Tuesday Knight Games",
+    "description": "Survival horror spatial. Stress et panique.",
+    "cover_image_url": "https://www.legrog.org/visuels/gammes/1507.jpg",
+    "themes": ["Science-Fiction", "Horreur"],
+    "reviews_count": 2
+  },
+  {
+    "slug": "mork-borg",
+    "title": "MÖRK BORG",
+    "url": "https://www.legrog.org/jeux/mork-borg",
+    "publisher": "Free League / Black Book Editions",
+    "description": "OSR doom metal. Apocalypse et esthétique punk.",
+    "cover_image_url": "https://www.legrog.org/visuels/gammes/1518.jpg",
+    "themes": ["Dark Fantasy", "Apocalyptique"],
+    "reviews_count": 1
+  },
+  {
+    "slug": "ironsworn",
+    "title": "Ironsworn",
+    "url": "https://www.legrog.org/jeux/ironsworn",
+    "publisher": "Shawn Tomkin",
+    "description": "Fantasy nordique solo ou coopérative.",
+    "cover_image_url": "https://www.legrog.org/visuels/gammes/1529.jpg",
+    "themes": ["Fantasy", "Nordique", "Solo"],
+    "reviews_count": 1
+  },
+  {
+    "slug": "trophy",
+    "title": "Trophy",
+    "url": "https://www.legrog.org/jeux/trophy",
+    "publisher": "The Gauntlet",
+    "description": "Horreur et tragédie. Chasseurs de trésors condamnés.",
+    "cover_image_url": null,
+    "themes": ["Horreur", "Narratif"],
+    "reviews_count": 1
+  },
+  {
+    "slug": "root-rpg",
+    "title": "Root : Le Jeu de Rôle",
+    "url": "https://www.legrog.org/jeux/root-rpg",
+    "publisher": "Magpie Games",
+    "description": "Animaux anthropomorphes dans une forêt en guerre.",
+    "cover_image_url": "https://www.legrog.org/visuels/gammes/1540.jpg",
+    "themes": ["Fantasy", "Animaux"],
+    "reviews_count": 1
+  },
+  {
+    "slug": "band-of-blades",
+    "title": "Band of Blades",
+    "url": "https://www.legrog.org/jeux/band-of-blades",
+    "publisher": "Evil Hat Productions",
+    "description": "Retraite militaire face aux morts-vivants.",
+    "cover_image_url": null,
+    "themes": ["Dark Fantasy", "Militaire"],
+    "reviews_count": 1
+  },
+  {
+    "slug": "heart",
+    "title": "Heart: The City Beneath",
+    "url": "https://www.legrog.org/jeux/heart",
+    "publisher": "Rowan, Rook and Decard",
+    "description": "Dungeon-crawl surréaliste dans les profondeurs.",
+    "cover_image_url": null,
+    "themes": ["Dark Fantasy", "Surréaliste"],
+    "reviews_count": 1
+  },
+  {
+    "slug": "worlds-without-number",
+    "title": "Worlds Without Number",
+    "url": "https://www.legrog.org/jeux/worlds-without-number",
+    "publisher": "Sine Nomine Publishing",
+    "description": "OSR avec outils de création de monde.",
+    "cover_image_url": null,
+    "themes": ["Heroic Fantasy", "OSR"],
+    "reviews_count": 1
+  },
+  {
+    "slug": "fabula-ultima",
+    "title": "Fabula Ultima",
+    "url": "https://www.legrog.org/jeux/fabula-ultima",
+    "publisher": "Need Games",
+    "description": "JRPG en jeu de rôle. Style Final Fantasy.",
+    "cover_image_url": "https://www.legrog.org/visuels/gammes/1551.jpg",
+    "themes": ["Fantasy", "JRPG"],
+    "reviews_count": 1
+  },
+  {
+    "slug": "pirate-borg",
+    "title": "Pirate Borg",
+    "url": "https://www.legrog.org/jeux/pirate-borg",
+    "publisher": "Limithron",
+    "description": "Pirates doom metal. Spin-off de MÖRK BORG.",
+    "cover_image_url": null,
+    "themes": ["Pirates", "Dark Fantasy"],
+    "reviews_count": 1
+  },
+  {
+    "slug": "cy-borg",
+    "title": "CY_BORG",
+    "url": "https://www.legrog.org/jeux/cy-borg",
+    "publisher": "Free League",
+    "description": "Cyberpunk doom. Spin-off de MÖRK BORG.",
+    "cover_image_url": null,
+    "themes": ["Cyberpunk", "Dark Fantasy"],
+    "reviews_count": 1
+  }
+]
