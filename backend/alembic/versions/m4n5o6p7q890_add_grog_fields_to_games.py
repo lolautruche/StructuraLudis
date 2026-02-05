@@ -30,7 +30,7 @@ def upgrade() -> None:
 
     # Create composite index for external provider lookups
     op.create_index(
-        'ix_games_external_provider_id',
+        'ix_games_external_provider_composite',
         'games',
         ['external_provider', 'external_provider_id'],
         unique=False
@@ -39,7 +39,7 @@ def upgrade() -> None:
 
 def downgrade() -> None:
     """Remove GROG fields from games table."""
-    op.drop_index('ix_games_external_provider_id', table_name='games')
+    op.drop_index('ix_games_external_provider_composite', table_name='games')
     op.drop_column('games', 'last_synced_at')
     op.drop_column('games', 'themes')
     op.drop_column('games', 'cover_image_url')
