@@ -8,7 +8,7 @@ from typing import List, Optional, TYPE_CHECKING
 import uuid
 
 from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, func
-from sqlalchemy.dialects.postgresql import JSONB, UUID
+from sqlalchemy.dialects.postgresql import ARRAY, JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.domain.shared.entity import (
@@ -48,6 +48,7 @@ class Game(Base, TimestampMixin):
     A game that can be played at sessions.
 
     The external_provider_id allows syncing with external catalogs like GROG.
+    external_provider indicates the source (grog, bgg, manual).
     """
     __tablename__ = "games"
 
@@ -61,6 +62,17 @@ class Game(Base, TimestampMixin):
     external_provider_id: Mapped[Optional[str]] = mapped_column(
         String(100), nullable=True, index=True
     )
+    # GROG fields (#55)
+    external_provider: Mapped[Optional[str]] = mapped_column(
+        String(50), nullable=True
+    )  # "grog", "bgg", "manual"
+    external_url: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
+    cover_image_url: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
+    themes: Mapped[Optional[List[str]]] = mapped_column(ARRAY(String), nullable=True)
+    last_synced_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+
     publisher: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     description: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     complexity: Mapped[GameComplexity] = mapped_column(String(20))

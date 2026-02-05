@@ -32,6 +32,17 @@ help:
 	@echo "    make db-reset        - Reset database (WARNING: deletes all data)"
 	@echo "    make db-shell        - Open psql shell"
 	@echo ""
+	@echo "  GROG Import (#55):"
+	@echo "    make import-grog            - Import games from fixtures to DB"
+	@echo "    make import-grog-force      - Re-import and update existing games"
+	@echo "    make import-grog-dry        - Dry run (show what would be imported)"
+	@echo "    make import-grog-live       - Import live from GROG (~2 min)"
+	@echo "    make import-grog-live-force - Live import + update existing"
+	@echo "    make import-grog-full       - Import ALL games from GROG (~15-20 min)"
+	@echo "    make grog-list              - List curated game slugs"
+	@echo "    make grog-add SLUG=x        - Add a game and regenerate fixtures"
+	@echo "    make generate-grog-fixtures - Regenerate fixtures from GROG"
+	@echo ""
 	@echo "  Tests:"
 	@echo "    make test            - Run all tests"
 	@echo "    make test-backend    - Run backend tests"
@@ -144,6 +155,54 @@ db-reset:
 
 db-shell:
 	docker compose exec sl-db psql -U sl_admin -d structura_ludis
+
+# =============================================================================
+# GROG Import commands (#55)
+# =============================================================================
+
+# Import games from fixtures to database (fast, uses pre-generated JSON)
+import-grog:
+	docker compose exec sl-api python -m app.cli.import_grog --from-fixtures
+
+import-grog-force:
+	docker compose exec sl-api python -m app.cli.import_grog --from-fixtures --force
+
+import-grog-dry:
+	docker compose exec sl-api python -m app.cli.import_grog --from-fixtures --dry-run
+
+# Import games live from GROG website
+# Usage:
+#   make import-grog-live                    # From curated list (~2 min)
+#   make import-grog-live OPTS="--full"      # All games (~15-20 min)
+#   make import-grog-live OPTS="--full --letter=a"  # Only letter A
+#   make import-grog-live OPTS="--full --limit=50"  # First 50 games
+import-grog-live:
+	docker compose exec sl-api python -m app.cli.import_grog --from-curated $(OPTS)
+
+import-grog-live-force:
+	docker compose exec sl-api python -m app.cli.import_grog --from-curated --force $(OPTS)
+
+import-grog-live-dry:
+	docker compose exec sl-api python -m app.cli.import_grog --from-curated --dry-run $(OPTS)
+
+# Import ALL games from GROG (full scan, ~15-20 min)
+import-grog-full:
+	docker compose exec sl-api python -m app.cli.import_grog --full $(OPTS)
+
+import-grog-full-dry:
+	docker compose exec sl-api python -m app.cli.import_grog --full --dry-run $(OPTS)
+
+# Fixtures generation (runs locally, fetches from GROG website)
+grog-list:
+	cd backend && PYTHONPATH=. poetry run python scripts/generate_grog_fixtures.py --list
+
+grog-add:
+	@test -n "$(SLUG)" || (echo "Usage: make grog-add SLUG=game-slug" && exit 1)
+	cd backend && PYTHONPATH=. poetry run python scripts/generate_grog_fixtures.py --add $(SLUG)
+
+generate-grog-fixtures:
+	@echo "Fetching game details from GROG (takes ~2 minutes for 100 games)..."
+	cd backend && PYTHONPATH=. poetry run python scripts/generate_grog_fixtures.py
 
 # =============================================================================
 # Test commands

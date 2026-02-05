@@ -173,7 +173,12 @@ erDiagram
         uuid id PK
         uuid category_id FK
         string title
-        string external_provider_id "GROG sync"
+        string external_provider_id "GROG sync - slug"
+        string external_provider "Issue 55 - grog|bgg|manual"
+        string external_url "Issue 55 - Full URL to game page"
+        string cover_image_url "Issue 55 - Cover image URL"
+        array themes "Issue 55 - Theme tags"
+        datetime last_synced_at "Issue 55 - Last sync timestamp"
         string publisher
         text description
         enum complexity "BEGINNER|INTERMEDIATE|EXPERT"

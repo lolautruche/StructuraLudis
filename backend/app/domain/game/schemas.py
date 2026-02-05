@@ -93,6 +93,13 @@ class GameRead(GameBase):
     id: UUID
     category_id: UUID
     external_provider_id: Optional[str] = None
+    # GROG fields (#55)
+    external_provider: Optional[str] = None
+    external_url: Optional[str] = None
+    cover_image_url: Optional[str] = None
+    themes: Optional[List[str]] = None
+    last_synced_at: Optional[datetime] = None
+
     created_at: datetime
     updated_at: Optional[datetime] = None
 

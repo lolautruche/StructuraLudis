@@ -1,0 +1,131 @@
+# GROG Curated Game Slugs
+# One slug per line. Lines starting with # are comments.
+# To add a game: find its GROG slug (from URL) and add it here.
+#
+# Example: https://www.legrog.org/jeux/appel-de-cthulhu -> appel-de-cthulhu
+#
+# Then run: make generate-grog-fixtures
+
+# === Top Classics ===
+appel-de-cthulhu
+donjons-et-dragons
+vampire-la-mascarade
+star-wars-aux-confins-de-l-empire
+star-wars-l-ere-de-la-rebellion
+star-wars-force-et-destinee
+warhammer
+shadowrun
+runequest
+pathfinder
+pendragon
+
+# === World of Darkness ===
+monde-des-tenebres-2004
+loup-garou-l-apocalypse
+mage-l-ascension
+vampire-l-age-des-tenebres
+
+# === French Classics ===
+ars-magica
+in-nomine-satanis-magna-veritas
+paranoia
+stormbringer
+cyberpunk
+rolemaster
+gurps
+chroniques-oubliees
+legende-des-cinq-anneaux
+nephilim
+malefices
+traveller
+te-deum-pour-un-massacre
+pavillon-noir
+hurlements
+agone
+polaris
+wastburg
+ecryme
+oeil-noir
+capharnaum
+mousquetaires-de-l-ombre
+brigade-chimerique
+
+# === Horror ===
+kult
+delta-green
+chill
+sombre
+vaesen
+penombre
+ombre-du-seigneur-demon
+
+# === Sci-Fi ===
+empire-galactique
+fading-suns
+coriolis
+starfinder
+alien
+dune
+tales-from-the-loop
+
+# === Modern / Indie ===
+deadlands
+savage-worlds
+fate
+burning-wheel
+blades-in-the-dark
+dungeon-world
+numenera
+mutant-year-zero
+symbaroum
+ironsworn
+monster-of-the-week
+kids-on-bikes
+fabula-ultima
+cats
+
+# === Fantasy ===
+terres-de-legende
+midnight
+earthdawn
+tiny-dungeon
+mork-borg
+nightprowler
+5e-heros-dragons
+
+# === Licensed ===
+fallout
+witcher
+
+# === More French ===
+cops
+bloodlust
+crimes
+shaan
+mega
+scales
+berlin-xviii
+bitume
+yggdrasill
+oltree
+metal-adventures
+
+# === More International ===
+hawkmoon
+conan
+unknown-armies
+feng-shui
+ambre
+dark-heresy
+rogue-trader
+lamentations-of-the-flame-princess
+barbarians-of-lemuria
+eclipse-phase
+nobilis
+anima
+scion
+
+# === Others ===
+torg
+conspirations
+orkworld
