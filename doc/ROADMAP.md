@@ -1,19 +1,13 @@
 # Roadmap & Priorities
 
 This document tracks prioritization decisions and project progress.
-**Last updated**: 2026-02-04
+**Last updated**: 2026-02-05
 
 ---
 
 ## Current Priorities
 
 ### MVP
-
-#### Core Features
-
-| Issue | Title | Job Stories | Notes |
-|-------|-------|-------------|-------|
-| [#92](https://github.com/lolautruche/StructuraLudis/issues/92) | Self-service event creation | JS.06, JS.07 | User submits event, admin validates |
 
 #### Game Database
 
@@ -70,6 +64,7 @@ This document tracks prioritization decisions and project progress.
 
 | Issue | Title | Job Stories | Date |
 |-------|-------|-------------|------|
+| [#92](https://github.com/lolautruche/StructuraLudis/issues/92) | Self-service event creation | JS.06, JS.07 | 2026-02-05 |
 | [#93](https://github.com/lolautruche/StructuraLudis/issues/93) | Zone-level table prefix | JS.A0 | 2026-02-04 |
 | [#95](https://github.com/lolautruche/StructuraLudis/issues/95) | Event list filters | JS.C10 | 2026-02-04 |
 | [#94](https://github.com/lolautruche/StructuraLudis/issues/94) | Event region field | JS.A10 | 2026-02-04 |
