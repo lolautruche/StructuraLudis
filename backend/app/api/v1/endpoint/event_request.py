@@ -173,6 +173,24 @@ async def resubmit_event_request(
     return service.to_read_schema(request)
 
 
+@router.post("/{request_id}/cancel", response_model=EventRequestRead)
+async def cancel_event_request(
+    request_id: UUID,
+    current_user: User = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Cancel an event request.
+
+    Only the request owner can cancel, and only if status is PENDING or CHANGES_REQUESTED.
+    Sets status to CANCELLED.
+    """
+    service = EventRequestService(db)
+    request = await service.cancel_request(request_id, current_user)
+    await db.commit()
+    return service.to_read_schema(request)
+
+
 # =============================================================================
 # Admin Endpoints
 # =============================================================================
