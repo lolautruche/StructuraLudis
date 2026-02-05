@@ -758,7 +758,7 @@ class NotificationService:
             action_url = f"{settings.FRONTEND_URL}/{locale}/exhibitions/{exhibition_slug}"
 
         subject, html_body = render_event_request_approved(
-            locale=recipient.locale,
+            locale=locale,
             event_title=event_title,
             action_url=action_url,
         )
@@ -791,8 +791,9 @@ class NotificationService:
 
         Channels: Email, In-App
         """
+        locale = recipient.locale or "en"
         subject, html_body = render_event_request_rejected(
-            locale=recipient.locale,
+            locale=locale,
             event_title=event_title,
             admin_comment=admin_comment,
             action_url=action_url,
@@ -831,7 +832,7 @@ class NotificationService:
             action_url = f"{settings.FRONTEND_URL}/{locale}/my/event-requests"
 
         subject, html_body = render_event_request_changes(
-            locale=recipient.locale,
+            locale=locale,
             event_title=event_title,
             admin_comment=admin_comment,
             action_url=action_url,

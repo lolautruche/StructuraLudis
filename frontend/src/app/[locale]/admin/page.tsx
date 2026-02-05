@@ -44,7 +44,7 @@ function StatCard({ label, value, href }: StatCardProps) {
   return content;
 }
 
-function RequestStatusBadge({ status }: { status: EventRequestStatus }) {
+function RequestStatusBadge({ status, t }: { status: EventRequestStatus; t: (key: string) => string }) {
   const variants: Record<EventRequestStatus, 'warning' | 'success' | 'danger' | 'default'> = {
     PENDING: 'warning',
     CHANGES_REQUESTED: 'warning',
@@ -52,10 +52,17 @@ function RequestStatusBadge({ status }: { status: EventRequestStatus }) {
     REJECTED: 'danger',
   };
 
+  const labels: Record<EventRequestStatus, string> = {
+    PENDING: t('pending'),
+    CHANGES_REQUESTED: t('changesRequested'),
+    APPROVED: t('approved'),
+    REJECTED: t('rejected'),
+  };
+
   return (
     <Badge variant={variants[status]}>
       {status === 'CHANGES_REQUESTED' && '⚠️ '}
-      {status}
+      {labels[status]}
     </Badge>
   );
 }
@@ -63,6 +70,7 @@ function RequestStatusBadge({ status }: { status: EventRequestStatus }) {
 export default function AdminDashboardPage() {
   const t = useTranslations('SuperAdmin');
   const tAdmin = useTranslations('Admin');
+  const tEventRequest = useTranslations('EventRequest');
 
   const [stats, setStats] = useState<PlatformStats | null>(null);
   const [recentExhibitions, setRecentExhibitions] = useState<Exhibition[]>([]);
@@ -257,7 +265,7 @@ export default function AdminDashboardPage() {
                     </p>
                   </div>
                   <div className="flex items-center gap-3 ml-4">
-                    <RequestStatusBadge status={request.status as EventRequestStatus} />
+                    <RequestStatusBadge status={request.status as EventRequestStatus} t={tEventRequest} />
                     <Link href={`/admin/event-requests/${request.id}`}>
                       <Button variant="secondary" size="sm">
                         {tAdmin('view')}
@@ -323,7 +331,7 @@ export default function AdminDashboardPage() {
                             : 'bg-slate-100 text-slate-800 dark:bg-slate-700 dark:text-slate-300'
                       }`}
                     >
-                      {exhibition.status}
+                      {tAdmin(`exhibitionStatuses.${exhibition.status}`)}
                     </span>
                     <Link href={`/exhibitions/${exhibition.id}/manage`}>
                       <Button variant="secondary" size="sm">

@@ -258,11 +258,13 @@ async def review_event_request(
     )
 
     # Send notification to requester
+    # Ensure locale is never None - use requester's locale, fallback to "en"
+    requester_locale = (request.requester.locale if request.requester and request.requester.locale else "en")
     recipient = NotificationRecipient(
         user_id=request.requester_id,
         email=request.requester.email if request.requester else "",
         full_name=request.requester.full_name if request.requester else None,
-        locale=request.requester.locale if request.requester else "en",
+        locale=requester_locale,
     )
 
     if review.action == "approve":
