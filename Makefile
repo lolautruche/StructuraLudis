@@ -38,6 +38,7 @@ help:
 	@echo "    make import-grog-dry        - Dry run (show what would be imported)"
 	@echo "    make import-grog-live       - Import live from GROG (~2 min)"
 	@echo "    make import-grog-live-force - Live import + update existing"
+	@echo "    make import-grog-full       - Import ALL games from GROG (~15-20 min)"
 	@echo "    make grog-list              - List curated game slugs"
 	@echo "    make grog-add SLUG=x        - Add a game and regenerate fixtures"
 	@echo "    make generate-grog-fixtures - Regenerate fixtures from GROG"
@@ -169,15 +170,27 @@ import-grog-force:
 import-grog-dry:
 	docker compose exec sl-api python -m app.cli.import_grog --from-fixtures --dry-run
 
-# Import games live from GROG website (slow, ~2 minutes for 100 games)
+# Import games live from GROG website
+# Usage:
+#   make import-grog-live                    # From curated list (~2 min)
+#   make import-grog-live OPTS="--full"      # All games (~15-20 min)
+#   make import-grog-live OPTS="--full --letter=a"  # Only letter A
+#   make import-grog-live OPTS="--full --limit=50"  # First 50 games
 import-grog-live:
-	docker compose exec sl-api python -m app.cli.import_grog --from-curated
+	docker compose exec sl-api python -m app.cli.import_grog --from-curated $(OPTS)
 
 import-grog-live-force:
-	docker compose exec sl-api python -m app.cli.import_grog --from-curated --force
+	docker compose exec sl-api python -m app.cli.import_grog --from-curated --force $(OPTS)
 
 import-grog-live-dry:
-	docker compose exec sl-api python -m app.cli.import_grog --from-curated --dry-run
+	docker compose exec sl-api python -m app.cli.import_grog --from-curated --dry-run $(OPTS)
+
+# Import ALL games from GROG (full scan, ~15-20 min)
+import-grog-full:
+	docker compose exec sl-api python -m app.cli.import_grog --full $(OPTS)
+
+import-grog-full-dry:
+	docker compose exec sl-api python -m app.cli.import_grog --full --dry-run $(OPTS)
 
 # Fixtures generation (runs locally, fetches from GROG website)
 grog-list:

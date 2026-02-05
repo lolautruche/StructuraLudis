@@ -6,22 +6,30 @@ Issue #55 - External Game Database Sync.
 Import RPG games from Le GROG (Guide du Rôliste Galactique) into the database.
 
 Usage:
-    python -m app.cli.import_grog [--force] [--from-fixtures] [--from-curated] [--slugs=x,y,z] [--dry-run]
+    python -m app.cli.import_grog [--force] [--from-fixtures] [--from-curated] [--full] [--slugs=x,y,z] [--dry-run]
 
 Options:
     --force          Re-import all games (update existing)
     --from-fixtures  Import games from fixtures/grog_top_100.json (default)
     --from-curated   Import games live from GROG using curated slugs list
+    --full           Import ALL games from GROG (uses browser, ~15-20 min)
     --slugs=x,y,z    Import specific games by GROG slug (comma-separated)
     --dry-run        Show what would be imported without saving
     --limit=N        Limit import to N games (for testing)
+    --letter=X       Only scan games starting with letter X (for --full mode)
 
 Examples:
     # Import games from fixtures file (default, recommended for seeding)
     python -m app.cli.import_grog --from-fixtures
 
-    # Import games live from GROG using curated slugs list
+    # Import games live from GROG using curated slugs list (~2 min)
     python -m app.cli.import_grog --from-curated
+
+    # Import ALL games from GROG website (~15-20 min, requires browser)
+    python -m app.cli.import_grog --full
+
+    # Import only games starting with 'a' (for testing --full mode)
+    python -m app.cli.import_grog --full --letter=a
 
     # Import specific games by slug (fetches live from GROG)
     python -m app.cli.import_grog --slugs=appel-de-cthulhu,vampire-la-mascarade
@@ -31,9 +39,6 @@ Examples:
 
     # Force update existing games from live GROG data
     python -m app.cli.import_grog --from-curated --force
-
-Note: Full site scraping is not supported as GROG uses JavaScript filtering.
-      Use --from-fixtures for bulk import or --from-curated for live updates.
 """
 import argparse
 import asyncio
@@ -50,6 +55,7 @@ from app.core.database import AsyncSessionLocal
 from app.domain.game.entity import Game, GameCategory
 from app.domain.shared.entity import GameComplexity
 from app.services.grog_client import GrogClient, GrogGame
+from app.services.grog_browser_client import GrogBrowserClient
 
 logging.basicConfig(
     level=logging.INFO,
@@ -359,6 +365,84 @@ async def import_from_slugs(
     return stats
 
 
+async def import_full(
+    force: bool = False,
+    dry_run: bool = False,
+    limit: int | None = None,
+    letter: str | None = None,
+) -> dict:
+    """
+    Import ALL games from GROG using browser client.
+
+    Args:
+        force: Update existing games
+        dry_run: Don't save to database
+        limit: Limit number of games to import
+        letter: Only scan games starting with this letter
+
+    Returns:
+        Dict with import statistics
+    """
+    stats = {
+        "total_fetched": 0,
+        "created": 0,
+        "updated": 0,
+        "skipped": 0,
+        "failed": 0,
+    }
+
+    # Determine which letters to scan
+    if letter:
+        letters = [letter.lower()]
+    else:
+        letters = list("abcdefghijklmnopqrstuvwxyz0")
+
+    print(f"\nStep 1: Scanning GROG for game slugs (letters: {', '.join(letters)})...")
+    print("This requires a headless browser and may take several minutes.\n")
+
+    slugs = []
+
+    def progress_callback(msg: str, current: int, total: int):
+        print(f"  [{current}/{total}] {msg}")
+
+    try:
+        async with GrogBrowserClient(headless=True) as browser:
+            slugs = await browser.list_all_game_slugs(
+                callback=progress_callback,
+                letters=letters,
+            )
+    except Exception as e:
+        print(f"\nERROR: Browser client failed: {e}")
+        print("Make sure Playwright browsers are installed: playwright install chromium")
+        return stats
+
+    print(f"\nFound {len(slugs)} unique game slugs")
+
+    if limit:
+        slugs = slugs[:limit]
+        print(f"Limited to {len(slugs)} games")
+
+    if dry_run:
+        print("\n--- DRY RUN MODE ---")
+        print(f"Would import {len(slugs)} games:")
+        for slug in slugs[:30]:
+            print(f"  - {slug}")
+        if len(slugs) > 30:
+            print(f"  ... and {len(slugs) - 30} more")
+        stats["total_fetched"] = len(slugs)
+        return stats
+
+    print(f"\nStep 2: Fetching game details from GROG...")
+    print(f"This will take approximately {len(slugs)} seconds ({len(slugs) // 60}min {len(slugs) % 60}s)\n")
+
+    # Now import using the slugs
+    return await import_from_slugs(
+        slugs=slugs,
+        force=force,
+        dry_run=False,  # Already handled above
+    )
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="Import RPG games from GROG database"
@@ -379,6 +463,11 @@ def main():
         help="Import live from GROG using curated slugs list (fixtures/grog_curated_slugs.txt)"
     )
     parser.add_argument(
+        "--full",
+        action="store_true",
+        help="Import ALL games from GROG (uses browser, ~15-20 min)"
+    )
+    parser.add_argument(
         "--slugs",
         type=str,
         help="Comma-separated list of GROG slugs to import (fetches live)"
@@ -391,12 +480,18 @@ def main():
     parser.add_argument(
         "--limit",
         type=int,
-        help="Limit import to N games (for --from-fixtures only)"
+        help="Limit import to N games"
+    )
+    parser.add_argument(
+        "--letter",
+        type=str,
+        help="Only scan games starting with this letter (for --full mode)"
     )
 
     args = parser.parse_args()
 
     # Determine mode
+    slugs = []
     if args.slugs:
         mode = "slugs"
         slugs = [s.strip() for s in args.slugs.split(",")]
@@ -406,6 +501,9 @@ def main():
         if not slugs:
             print("ERROR: No curated slugs found!")
             sys.exit(1)
+    elif args.full:
+        mode = "full"
+        # Slugs will be fetched via browser
     else:
         mode = "fixtures"
 
@@ -415,12 +513,16 @@ def main():
     print(f"Mode: {mode}")
     print(f"Force update: {args.force}")
     print(f"Dry run: {args.dry_run}")
-    if args.limit and mode == "fixtures":
+    if args.limit:
         print(f"Limit: {args.limit}")
+    if args.letter and mode == "full":
+        print(f"Letter filter: {args.letter}")
     if mode == "slugs":
         print(f"Slugs: {slugs}")
     if mode == "curated":
         print(f"Curated slugs: {len(slugs)} games")
+    if mode == "full":
+        print("Will scan GROG website for all games (requires browser)")
     print("=" * 60)
 
     if mode == "slugs":
@@ -430,10 +532,19 @@ def main():
             dry_run=args.dry_run,
         ))
     elif mode == "curated":
+        if args.limit:
+            slugs = slugs[:args.limit]
         stats = asyncio.run(import_from_slugs(
             slugs=slugs,
             force=args.force,
             dry_run=args.dry_run,
+        ))
+    elif mode == "full":
+        stats = asyncio.run(import_full(
+            force=args.force,
+            dry_run=args.dry_run,
+            limit=args.limit,
+            letter=args.letter,
         ))
     else:
         stats = asyncio.run(import_from_fixtures(
