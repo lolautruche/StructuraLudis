@@ -49,10 +49,11 @@ export default function VerifyEmailChangePage() {
           doRefreshUser();
         } else {
           setState('error');
+          // Always use translated messages (backend returns English)
           if (response.error?.detail?.includes('expired')) {
             setErrorMessage(t('emailChangeExpired'));
           } else {
-            setErrorMessage(response.error?.detail || t('emailChangeFailedMessage'));
+            setErrorMessage(t('emailChangeFailedMessage'));
           }
         }
       } catch {
