@@ -11,12 +11,16 @@ Rate limiting: 1 request/second to respect the server.
 import asyncio
 import logging
 import re
+import warnings
 from dataclasses import dataclass, field
 from typing import Callable, Optional
 from urllib.parse import urljoin
 
 import httpx
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup, XMLParsedAsHTMLWarning
+
+# Suppress BeautifulSoup warning about XML/HTML parsing
+warnings.filterwarnings("ignore", category=XMLParsedAsHTMLWarning)
 
 logger = logging.getLogger(__name__)
 
@@ -149,10 +153,18 @@ class GrogClient:
             return None
 
         soup = BeautifulSoup(html, "lxml")
+        page_text = str(soup)
 
-        # Extract title (h1 tag)
-        title_tag = soup.select_one("h1.page-title, h1")
-        title = title_tag.get_text(strip=True) if title_tag else slug.replace("-", " ").title()
+        # Extract title from <title> tag (GROG pattern: "Game Name / English Name")
+        title_tag = soup.select_one("title")
+        if title_tag:
+            title_text = title_tag.get_text(strip=True)
+            # Take the first part before " / " or " - " separator
+            title = re.split(r"\s*/\s*|\s*-\s*Le GROG", title_text)[0].strip()
+            # Remove " (L')" suffix common in French titles
+            title = re.sub(r"\s*\([LlDd]'\)$", "", title)
+        else:
+            title = slug.replace("-", " ").title()
 
         game = GrogGame(
             slug=slug,
@@ -160,85 +172,67 @@ class GrogClient:
             url=url,
         )
 
-        # Extract publisher - usually in a specific section
-        # Looking for patterns like "Editeur(s) : Publisher Name"
-        publisher_patterns = [
-            r"Editeur(?:s)?\s*:\s*(.+?)(?:<|$)",
-            r"Éditeur(?:s)?\s*:\s*(.+?)(?:<|$)",
-        ]
-        page_text = str(soup)
-        for pattern in publisher_patterns:
-            match = re.search(pattern, page_text, re.IGNORECASE)
-            if match:
-                # Clean up publisher name
-                publisher = BeautifulSoup(match.group(1), "lxml").get_text(strip=True)
-                if publisher:
-                    game.publisher = publisher
-                    break
+        # Extract publisher from first edition in table or text
+        # Look for links to /editeurs/
+        publisher_links = soup.select("a[href*='/editeurs/']")
+        if publisher_links:
+            # Get unique publishers
+            publishers = []
+            for link in publisher_links[:3]:  # First 3 publishers max
+                pub = link.get_text(strip=True)
+                if pub and pub not in publishers:
+                    publishers.append(pub)
+            if publishers:
+                game.publisher = " / ".join(publishers)
 
-        # Alternative: look for publisher in structured data
-        publisher_el = soup.select_one(".game-publisher, .editeur, [itemprop='publisher']")
-        if publisher_el and not game.publisher:
-            game.publisher = publisher_el.get_text(strip=True)
+        # Extract description - look for description section or first substantial text
+        # GROG often has description after "Description" heading
+        desc_heading = soup.find(string=re.compile(r"Description", re.IGNORECASE))
+        if desc_heading:
+            parent = desc_heading.find_parent()
+            if parent:
+                # Get next sibling paragraphs
+                next_p = parent.find_next("p")
+                if next_p:
+                    game.description = next_p.get_text(strip=True)[:2000]
 
-        # Extract description - typically in game description section
-        desc_el = soup.select_one(".game-description, .description, .resume, [itemprop='description']")
-        if desc_el:
-            game.description = desc_el.get_text(strip=True)[:2000]  # Limit length
-
-        # If no specific description element, try to find first paragraph
+        # Fallback: find any substantial paragraph
         if not game.description:
-            first_p = soup.select_one("article p, .content p")
-            if first_p:
-                game.description = first_p.get_text(strip=True)[:2000]
-
-        # Extract cover image
-        # GROG pattern: /visuels/gammes/{id}.jpg or similar
-        cover_patterns = [
-            soup.select_one("img.game-cover, img.cover, .visuel img"),
-            soup.select_one("img[src*='visuels']"),
-            soup.select_one("[itemprop='image']"),
-        ]
-        for img in cover_patterns:
-            if img:
-                src = img.get("src", "")
-                if src:
-                    game.cover_image_url = urljoin(self.BASE_URL, src)
+            for p in soup.find_all("p"):
+                text = p.get_text(strip=True)
+                if len(text) > 100:  # Substantial paragraph
+                    game.description = text[:2000]
                     break
 
-        # Extract themes/genres
-        theme_elements = soup.select(".themes a, .genre a, .tags a, .theme-tag")
+        # Extract cover image - GROG pattern: /visuels/gammes/{id}.jpg
+        img_match = re.search(r'src=["\']?(/visuels/gammes/[^"\'>\s]+)', page_text)
+        if img_match:
+            game.cover_image_url = urljoin(self.BASE_URL, img_match.group(1))
+        else:
+            # Try finding any image with visuels in src
+            img = soup.select_one("img[src*='visuels']")
+            if img:
+                game.cover_image_url = urljoin(self.BASE_URL, img.get("src", ""))
+
+        # Extract themes - GROG pattern: "Thème(s) :" followed by links to /themes/
         themes = []
-        for el in theme_elements:
-            theme = el.get_text(strip=True)
-            if theme and theme not in themes:
+        # Skip navigation/index links
+        skip_themes = {"Index thématique", "Index", "Thèmes"}
+        theme_links = soup.select("a[href*='/themes/']")
+        for link in theme_links:
+            theme = link.get_text(strip=True)
+            if theme and theme not in themes and theme not in skip_themes and len(theme) < 50:
                 themes.append(theme)
-        game.themes = themes
+        game.themes = themes[:10]  # Limit to 10 themes
 
-        # Alternative: look for theme list
-        if not game.themes:
-            theme_section = soup.find(string=re.compile(r"Th[èe]mes?\s*:", re.IGNORECASE))
-            if theme_section:
-                parent = theme_section.parent
-                if parent:
-                    theme_links = parent.find_all_next("a", limit=10)
-                    for link in theme_links:
-                        theme = link.get_text(strip=True)
-                        if theme and len(theme) < 50:  # Reasonable theme length
-                            themes.append(theme)
-                    game.themes = themes[:10]  # Limit to 10 themes
-
-        # Extract reviews count for popularity sorting
-        reviews_el = soup.select_one(".reviews-count, .critiques-count")
-        if reviews_el:
-            text = reviews_el.get_text()
-            match = re.search(r"(\d+)", text)
-            if match:
-                game.reviews_count = int(match.group(1))
-
-        # Alternative: look for critique count in text
-        critique_match = re.search(r"(\d+)\s*critique", str(soup), re.IGNORECASE)
-        if critique_match and not game.reviews_count:
+        # Extract reviews count - GROG pattern: "Nombre de critiques :&nbsp;</strong>725"
+        # Note: there may be HTML tags and &nbsp; between the colon and the number
+        critique_match = re.search(
+            r"Nombre de critiques[^<]*(?:<[^>]*>)*[^\d]*(\d+)",
+            page_text,
+            re.IGNORECASE
+        )
+        if critique_match:
             game.reviews_count = int(critique_match.group(1))
 
         return game

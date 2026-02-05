@@ -70,12 +70,16 @@ class TestGrogClient:
 
     @pytest.fixture
     def mock_html_game_page(self):
-        """Sample HTML for a game detail page."""
+        """Sample HTML for a game detail page (matches real GROG structure)."""
         return """
         <html>
+        <head>
+            <title>L'Appel de Cthulhu - Le GROG</title>
+        </head>
         <body>
             <h1 class="page-title">L'Appel de Cthulhu</h1>
-            <div class="game-publisher">Chaosium / Edge</div>
+            <a href="/editeurs/chaosium">Chaosium</a>
+            <a href="/editeurs/edge">Edge</a>
             <div class="game-description">
                 Jeu d'horreur cosmique dans l'univers de H.P. Lovecraft.
             </div>
@@ -84,7 +88,7 @@ class TestGrogClient:
                 <a href="/themes/horreur">Horreur</a>
                 <a href="/themes/lovecraft">Lovecraft</a>
             </div>
-            <div class="reviews-count">245 critiques</div>
+            <strong>Nombre de critiques :</strong>245
         </body>
         </html>
         """
@@ -160,11 +164,11 @@ class TestGrogClient:
 
     @pytest.mark.asyncio
     async def test_get_game_details_minimal_html(self, client):
-        """Test fetching game with minimal HTML structure."""
+        """Test fetching game with minimal HTML structure (fallback to slug-based title)."""
         html = """
         <html>
         <body>
-            <h1>Simple Game Title</h1>
+            <h1>Some Content</h1>
         </body>
         </html>
         """
@@ -175,7 +179,8 @@ class TestGrogClient:
 
             assert game is not None
             assert game.slug == "simple-game"
-            assert game.title == "Simple Game Title"
+            # Without <title> tag, falls back to slug-based title
+            assert game.title == "Simple Game"
             assert game.publisher is None
             assert game.themes == []
 
