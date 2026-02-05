@@ -133,7 +133,8 @@
     "errorSessionFull": "This session is full.",
     "errorAlreadyBooked": "You have already booked this session.",
     "errorBookingFailed": "Booking failed. Please try again.",
-    "cancelSuccess": "Booking cancelled"
+    "cancelSuccess": "Booking cancelled",
+    "youAreGM": "You are the Game Master"
   },
   "GameTable": {
     "complexity": "Complexity",

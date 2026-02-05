@@ -19,6 +19,8 @@ interface BookingButtonProps {
   isLoading?: boolean;
   /** Exhibition data for registration check (Issue #77) */
   exhibition?: Exhibition | null;
+  /** Current user's ID to check if they are the GM */
+  currentUserId?: string | null;
 }
 
 export function BookingButton({
@@ -31,6 +33,7 @@ export function BookingButton({
   onCheckIn,
   isLoading = false,
   exhibition,
+  currentUserId,
 }: BookingButtonProps) {
   const t = useTranslations('Session');
   const tExhibition = useTranslations('Exhibition');
@@ -43,6 +46,9 @@ export function BookingButton({
   const isFull = availableSeats <= 0;
   const canBook = session.status === 'VALIDATED' && session.has_available_seats;
   const canJoinWaitlist = session.status === 'VALIDATED' && isFull;
+
+  // Check if current user is the GM of this session
+  const isGM = currentUserId && session.created_by_user_id === currentUserId;
 
   // Check if registration is required but user is not registered (Issue #77)
   const requiresRegistration = exhibition?.requires_registration ?? false;
@@ -65,6 +71,16 @@ export function BookingButton({
         {session.status === 'CANCELLED' && t('cancelled')}
         {!['IN_PROGRESS', 'FINISHED', 'CANCELLED'].includes(session.status) && t('cancelled')}
       </Button>
+    );
+  }
+
+  // Current user is the GM - don't show booking buttons
+  if (isGM) {
+    return (
+      <div className="flex items-center gap-2 text-ludis-primary font-medium">
+        <span>🎲</span>
+        <span>{t('youAreGM')}</span>
+      </div>
     );
   }
 

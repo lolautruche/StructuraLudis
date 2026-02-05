@@ -133,7 +133,8 @@
     "errorSessionFull": "Cette session est complète.",
     "errorAlreadyBooked": "Vous avez déjà réservé cette session.",
     "errorBookingFailed": "La réservation a échoué. Veuillez réessayer.",
-    "cancelSuccess": "Réservation annulée"
+    "cancelSuccess": "Réservation annulée",
+    "youAreGM": "Vous êtes le MJ de cette session"
   },
   "GameTable": {
     "complexity": "Complexité",
