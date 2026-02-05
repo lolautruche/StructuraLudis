@@ -951,6 +951,11 @@
     "newRequest": "Nouvelle demande",
     "invalidStartDate": "La date de début est invalide",
     "invalidEndDate": "La date de fin est invalide",
-    "endDateMustBeAfterStart": "La date de fin doit être après la date de début"
+    "endDateMustBeAfterStart": "La date de fin doit être après la date de début",
+    "cancelled": "Annulée",
+    "cancelRequest": "Annuler",
+    "cancelling": "Annulation...",
+    "confirmCancel": "Êtes-vous sûr de vouloir annuler cette demande ?",
+    "showArchived": "Afficher les demandes archivées ({count})"
   }
 }

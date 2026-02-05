@@ -16,6 +16,7 @@ function StatusBadge({ status }: { status: EventRequestStatus }) {
     CHANGES_REQUESTED: 'warning',
     APPROVED: 'success',
     REJECTED: 'danger',
+    CANCELLED: 'default',
   };
 
   const labels: Record<EventRequestStatus, string> = {
@@ -23,6 +24,7 @@ function StatusBadge({ status }: { status: EventRequestStatus }) {
     CHANGES_REQUESTED: t('changesRequested'),
     APPROVED: t('approved'),
     REJECTED: t('rejected'),
+    CANCELLED: t('cancelled'),
   };
 
   return (
@@ -48,6 +50,8 @@ export default function MyEventRequestsPage() {
 
   const [requests, setRequests] = useState<EventRequest[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [showArchived, setShowArchived] = useState(false);
+  const [cancellingId, setCancellingId] = useState<string | null>(null);
 
   // Redirect if not authenticated
   useEffect(() => {
@@ -72,6 +76,25 @@ export default function MyEventRequestsPage() {
     }
   }, [isAuthenticated]);
 
+  // Handle cancel request
+  const handleCancel = async (id: string) => {
+    if (!confirm(t('confirmCancel'))) return;
+
+    setCancellingId(id);
+    const response = await eventRequestsApi.cancel(id);
+    if (response.data) {
+      setRequests(requests.map(r => r.id === id ? response.data! : r));
+    }
+    setCancellingId(null);
+  };
+
+  // Filter requests based on showArchived toggle
+  const filteredRequests = showArchived
+    ? requests
+    : requests.filter(r => !['CANCELLED', 'REJECTED'].includes(r.status));
+
+  const archivedCount = requests.filter(r => ['CANCELLED', 'REJECTED'].includes(r.status)).length;
+
   if (authLoading || !isAuthenticated) {
     return null;
   }
@@ -93,6 +116,23 @@ export default function MyEventRequestsPage() {
         </Link>
       </div>
 
+      {/* Filter toggle */}
+      {archivedCount > 0 && (
+        <div className="flex items-center gap-2">
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={showArchived}
+              onChange={(e) => setShowArchived(e.target.checked)}
+              className="rounded border-gray-300 text-ludis-primary focus:ring-ludis-primary"
+            />
+            <span style={{ color: 'var(--color-text-secondary)' }}>
+              {t('showArchived', { count: archivedCount })}
+            </span>
+          </label>
+        </div>
+      )}
+
       {/* Loading state */}
       {isLoading ? (
         <div className="space-y-4">
@@ -105,7 +145,7 @@ export default function MyEventRequestsPage() {
             </Card>
           ))}
         </div>
-      ) : requests.length === 0 ? (
+      ) : filteredRequests.length === 0 ? (
         /* Empty state */
         <Card>
           <Card.Content className="text-center py-12">
@@ -124,7 +164,7 @@ export default function MyEventRequestsPage() {
       ) : (
         /* Requests list */
         <div className="space-y-4">
-          {requests.map((request) => (
+          {filteredRequests.map((request) => (
             <Card key={request.id}>
               <Card.Content>
                 <div className="flex items-start justify-between gap-4">
@@ -174,12 +214,22 @@ export default function MyEventRequestsPage() {
                         </Button>
                       </Link>
                     )}
-                    {request.status !== 'APPROVED' && (
+                    {!['APPROVED', 'CANCELLED'].includes(request.status) && (
                       <Link href={`/my/event-requests/${request.id}/edit`}>
                         <Button variant="secondary" size="sm">
                           {t('viewDetails')}
                         </Button>
                       </Link>
+                    )}
+                    {['PENDING', 'CHANGES_REQUESTED'].includes(request.status) && (
+                      <Button
+                        variant="danger"
+                        size="sm"
+                        onClick={() => handleCancel(request.id)}
+                        disabled={cancellingId === request.id}
+                      >
+                        {cancellingId === request.id ? t('cancelling') : t('cancelRequest')}
+                      </Button>
                     )}
                   </div>
                 </div>

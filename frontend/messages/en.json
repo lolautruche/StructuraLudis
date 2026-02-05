@@ -951,6 +951,11 @@
     "newRequest": "New request",
     "invalidStartDate": "Invalid start date",
     "invalidEndDate": "Invalid end date",
-    "endDateMustBeAfterStart": "End date must be after start date"
+    "endDateMustBeAfterStart": "End date must be after start date",
+    "cancelled": "Cancelled",
+    "cancelRequest": "Cancel",
+    "cancelling": "Cancelling...",
+    "confirmCancel": "Are you sure you want to cancel this request?",
+    "showArchived": "Show archived requests ({count})"
   }
 }
