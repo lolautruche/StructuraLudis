@@ -203,6 +203,8 @@
   "MyEvents": {
     "title": "My Events",
     "subtitle": "Events you organize and participate in",
+    "proposeEvent": "Propose an event",
+    "requestsSection": "My event requests",
     "organizedSection": "Events I organize",
     "registeredSection": "Events I participate in",
     "noEvents": "No events",
@@ -641,13 +643,17 @@
     "dashboard": "Dashboard",
     "users": "Users",
     "exhibitions": "Exhibitions",
+    "eventRequests": "Event Requests",
     "stats": {
       "totalUsers": "Total Users",
       "admins": "Administrators",
       "draftExhibitions": "Draft",
       "publishedExhibitions": "Published",
-      "archivedExhibitions": "Archived"
+      "archivedExhibitions": "Archived",
+      "pendingRequests": "Pending Requests"
     },
+    "pendingEventRequests": "Pending Event Requests",
+    "noPendingRequests": "No pending event requests",
     "recentExhibitions": "Recent Exhibitions",
     "viewAll": "View all",
     "noExhibitions": "No exhibitions yet",

@@ -57,8 +57,17 @@ async def create_event_request(
     Auto-generates slugs from event_title and organization_name.
     """
     service = EventRequestService(db)
+    notification_service = NotificationService(db)
+
     request = await service.create_request(data, current_user)
     await db.commit()
+
+    # Send confirmation email to requester
+    await notification_service.notify_event_request_confirmation(request)
+
+    # Notify admins about new submission
+    await notification_service.notify_event_request_submitted(request)
+
     return service.to_read_schema(request)
 
 

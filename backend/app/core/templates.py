@@ -199,6 +199,13 @@ EMAIL_STRINGS = {
         "requester_label": "Requester",
         "event_title_label": "Event",
         "organization_label": "Organization",
+
+        # Event request confirmation (to requester)
+        "event_request_confirmation_subject": "Your event request has been submitted: {event_title}",
+        "event_request_confirmation_greeting": "Request Submitted",
+        "event_request_confirmation_intro": "Thank you for submitting your event request. Our team will review it and get back to you.",
+        "event_request_confirmation_action": "View My Requests",
+        "event_request_confirmation_closing": "You will receive an email once your request has been reviewed.",
     },
     "fr": {
         # Common
@@ -375,6 +382,13 @@ EMAIL_STRINGS = {
         "requester_label": "Demandeur",
         "event_title_label": "Événement",
         "organization_label": "Organisation",
+
+        # Event request confirmation (to requester)
+        "event_request_confirmation_subject": "Votre demande d'événement a été soumise : {event_title}",
+        "event_request_confirmation_greeting": "Demande soumise",
+        "event_request_confirmation_intro": "Merci d'avoir soumis votre demande d'événement. Notre équipe va l'examiner et vous recontactera.",
+        "event_request_confirmation_action": "Voir mes demandes",
+        "event_request_confirmation_closing": "Vous recevrez un email une fois votre demande examinée.",
     },
 }
 
@@ -1006,6 +1020,29 @@ def render_event_request_submitted(
         action_button_text=get_string("event_request_submitted_action", locale),
         closing_text=get_string("event_request_submitted_closing", locale),
         requester_label=get_string("requester_label", locale),
+        event_title_label=get_string("event_title_label", locale),
+        organization_label=get_string("organization_label", locale),
+    )
+
+
+def render_event_request_confirmation(
+    locale: str,
+    event_title: str,
+    organization_name: str,
+    action_url: Optional[str] = None,
+) -> tuple[str, str]:
+    """Render event request confirmation email (for requester)."""
+    return render_email_template(
+        "event_request_notification",
+        locale=locale,
+        subject=get_string("event_request_confirmation_subject", locale, event_title=event_title),
+        event_title=event_title,
+        organization_name=organization_name,
+        action_url=action_url,
+        greeting=get_string("event_request_confirmation_greeting", locale),
+        intro_text=get_string("event_request_confirmation_intro", locale),
+        action_button_text=get_string("event_request_confirmation_action", locale),
+        closing_text=get_string("event_request_confirmation_closing", locale),
         event_title_label=get_string("event_title_label", locale),
         organization_label=get_string("organization_label", locale),
     )

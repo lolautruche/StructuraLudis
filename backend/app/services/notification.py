@@ -901,3 +901,41 @@ class NotificationService:
                 sent_count += 1
 
         return sent_count
+
+    async def notify_event_request_confirmation(
+        self,
+        request,  # EventRequest - avoid circular import
+        action_url: Optional[str] = None,
+    ) -> bool:
+        """
+        Send confirmation email to the requester that their request was submitted.
+
+        Channels: Email
+
+        Returns:
+            True if email was sent successfully
+        """
+        from app.core.templates import render_event_request_confirmation
+
+        if not action_url:
+            action_url = f"{settings.FRONTEND_URL}/my/event-requests"
+
+        requester = request.requester
+        if not requester:
+            return False
+
+        subject, html_body = render_event_request_confirmation(
+            locale=requester.locale or "en",
+            event_title=request.event_title,
+            organization_name=request.organization_name,
+            action_url=action_url,
+        )
+
+        recipient = NotificationRecipient(
+            user_id=requester.id,
+            email=requester.email,
+            full_name=requester.full_name,
+            locale=requester.locale,
+        )
+
+        return await self._send_email(recipient, subject, html_body)

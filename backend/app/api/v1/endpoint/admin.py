@@ -1,7 +1,10 @@
 """
 Admin API endpoints.
 
-Super Admin operations for user and platform management.
+Admin operations for user and platform management.
+ADMIN and SUPER_ADMIN have the same access, except:
+- ADMIN cannot modify ADMIN or SUPER_ADMIN users (role, status)
+- Only SUPER_ADMIN can promote users to ADMIN or SUPER_ADMIN
 """
 from typing import List, Optional
 from uuid import UUID
@@ -20,13 +23,16 @@ from app.api.deps import get_current_active_user
 
 router = APIRouter()
 
+# Privileged roles that only SUPER_ADMIN can manage
+PRIVILEGED_ROLES = [GlobalRole.ADMIN, GlobalRole.SUPER_ADMIN]
 
-def require_super_admin(current_user: User = Depends(get_current_active_user)) -> User:
-    """Dependency that requires SUPER_ADMIN role."""
-    if current_user.global_role != GlobalRole.SUPER_ADMIN:
+
+def require_admin(current_user: User = Depends(get_current_active_user)) -> User:
+    """Dependency that requires ADMIN or SUPER_ADMIN role."""
+    if current_user.global_role not in PRIVILEGED_ROLES:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Super Admin access required",
+            detail="Admin access required",
         )
     return current_user
 
@@ -41,17 +47,17 @@ async def list_users(
     is_active: Optional[bool] = None,
     skip: int = 0,
     limit: int = 100,
-    current_user: User = Depends(require_super_admin),
+    current_user: User = Depends(require_admin),
     db: AsyncSession = Depends(get_db),
 ):
     """
     List all users with optional filters.
 
     Filters:
-    - role: filter by global role (SUPER_ADMIN, ORGANIZER, PARTNER, USER)
+    - role: filter by global role (SUPER_ADMIN, ADMIN, USER)
     - is_active: filter by active status
 
-    Requires: SUPER_ADMIN
+    Requires: ADMIN or SUPER_ADMIN
     """
     query = select(User)
 
@@ -68,13 +74,13 @@ async def list_users(
 @router.get("/users/{user_id}", response_model=UserRead)
 async def get_user(
     user_id: UUID,
-    current_user: User = Depends(require_super_admin),
+    current_user: User = Depends(require_admin),
     db: AsyncSession = Depends(get_db),
 ):
     """
     Get a user by ID.
 
-    Requires: SUPER_ADMIN
+    Requires: ADMIN or SUPER_ADMIN
     """
     result = await db.execute(select(User).where(User.id == user_id))
     user = result.scalar_one_or_none()
@@ -92,16 +98,18 @@ async def get_user(
 async def update_user_role(
     user_id: UUID,
     role_update: UserRoleUpdate,
-    current_user: User = Depends(require_super_admin),
+    current_user: User = Depends(require_admin),
     db: AsyncSession = Depends(get_db),
 ):
     """
     Update a user's global role.
 
-    Use this to promote a user to ORGANIZER or PARTNER,
+    Use this to promote a user to ADMIN (SUPER_ADMIN only),
     or to demote them back to USER.
 
-    Requires: SUPER_ADMIN
+    Requires: ADMIN or SUPER_ADMIN
+    - ADMIN cannot modify ADMIN or SUPER_ADMIN users
+    - Only SUPER_ADMIN can promote to ADMIN or SUPER_ADMIN
     """
     result = await db.execute(select(User).where(User.id == user_id))
     user = result.scalar_one_or_none()
@@ -112,11 +120,27 @@ async def update_user_role(
             detail="User not found",
         )
 
+    is_super_admin = current_user.global_role == GlobalRole.SUPER_ADMIN
+
     # Prevent self-demotion
-    if user.id == current_user.id and role_update.global_role != GlobalRole.SUPER_ADMIN:
+    if user.id == current_user.id and role_update.global_role not in PRIVILEGED_ROLES:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Cannot demote yourself",
+        )
+
+    # ADMIN cannot modify privileged users (ADMIN, SUPER_ADMIN)
+    if not is_super_admin and user.global_role in PRIVILEGED_ROLES:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only SUPER_ADMIN can modify ADMIN or SUPER_ADMIN users",
+        )
+
+    # Only SUPER_ADMIN can promote to privileged roles
+    if not is_super_admin and role_update.global_role in PRIVILEGED_ROLES:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only SUPER_ADMIN can promote users to ADMIN or SUPER_ADMIN",
         )
 
     user.global_role = role_update.global_role
@@ -130,7 +154,7 @@ async def update_user_role(
 async def update_user_status(
     user_id: UUID,
     status_update: UserStatusUpdate,
-    current_user: User = Depends(require_super_admin),
+    current_user: User = Depends(require_admin),
     db: AsyncSession = Depends(get_db),
 ):
     """
@@ -138,7 +162,8 @@ async def update_user_status(
 
     Deactivated users cannot log in or perform any actions.
 
-    Requires: SUPER_ADMIN
+    Requires: ADMIN or SUPER_ADMIN
+    - ADMIN cannot deactivate ADMIN or SUPER_ADMIN users
     """
     result = await db.execute(select(User).where(User.id == user_id))
     user = result.scalar_one_or_none()
@@ -149,11 +174,20 @@ async def update_user_status(
             detail="User not found",
         )
 
+    is_super_admin = current_user.global_role == GlobalRole.SUPER_ADMIN
+
     # Prevent self-deactivation
     if user.id == current_user.id and not status_update.is_active:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Cannot deactivate yourself",
+        )
+
+    # ADMIN cannot modify privileged users (ADMIN, SUPER_ADMIN)
+    if not is_super_admin and user.global_role in PRIVILEGED_ROLES:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only SUPER_ADMIN can modify ADMIN or SUPER_ADMIN users",
         )
 
     user.is_active = status_update.is_active
@@ -172,13 +206,13 @@ async def list_all_exhibitions(
     status: Optional[str] = None,
     skip: int = 0,
     limit: int = 100,
-    current_user: User = Depends(require_super_admin),
+    current_user: User = Depends(require_admin),
     db: AsyncSession = Depends(get_db),
 ):
     """
     List all exhibitions across all organizations.
 
-    Requires: SUPER_ADMIN
+    Requires: ADMIN or SUPER_ADMIN
     """
     query = select(Exhibition)
 
@@ -192,13 +226,13 @@ async def list_all_exhibitions(
 
 @router.get("/stats")
 async def get_platform_stats(
-    current_user: User = Depends(require_super_admin),
+    current_user: User = Depends(require_admin),
     db: AsyncSession = Depends(get_db),
 ):
     """
     Get platform-wide statistics.
 
-    Requires: SUPER_ADMIN
+    Requires: ADMIN or SUPER_ADMIN
     """
     # Count users by role
     users_by_role = await db.execute(

@@ -203,6 +203,8 @@
   "MyEvents": {
     "title": "Mes événements",
     "subtitle": "Événements que vous organisez et auxquels vous participez",
+    "proposeEvent": "Proposer un événement",
+    "requestsSection": "Mes demandes d'événements",
     "organizedSection": "Événements que j'organise",
     "registeredSection": "Événements auxquels je participe",
     "noEvents": "Aucun événement",
@@ -641,13 +643,17 @@
     "dashboard": "Tableau de bord",
     "users": "Utilisateurs",
     "exhibitions": "Événements",
+    "eventRequests": "Demandes d'événements",
     "stats": {
       "totalUsers": "Total utilisateurs",
       "admins": "Administrateurs",
       "draftExhibitions": "Brouillon",
       "publishedExhibitions": "Publiés",
-      "archivedExhibitions": "Archivés"
+      "archivedExhibitions": "Archivés",
+      "pendingRequests": "Demandes en attente"
     },
+    "pendingEventRequests": "Demandes d'événements en attente",
+    "noPendingRequests": "Aucune demande d'événement en attente",
     "recentExhibitions": "Événements récents",
     "viewAll": "Voir tout",
     "noExhibitions": "Aucun événement",
