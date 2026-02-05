@@ -753,8 +753,9 @@ class NotificationService:
 
         Channels: Email, In-App
         """
+        locale = recipient.locale or "en"
         if not action_url:
-            action_url = f"{settings.FRONTEND_URL}/exhibitions/{exhibition_slug}"
+            action_url = f"{settings.FRONTEND_URL}/{locale}/exhibitions/{exhibition_slug}"
 
         subject, html_body = render_event_request_approved(
             locale=recipient.locale,
@@ -825,8 +826,9 @@ class NotificationService:
 
         Channels: Email, In-App
         """
+        locale = recipient.locale or "en"
         if not action_url:
-            action_url = f"{settings.FRONTEND_URL}/my/event-requests"
+            action_url = f"{settings.FRONTEND_URL}/{locale}/my/event-requests"
 
         subject, html_body = render_event_request_changes(
             locale=recipient.locale,
@@ -854,21 +856,22 @@ class NotificationService:
     async def notify_event_request_submitted(
         self,
         request,  # EventRequest - avoid circular import
-        action_url: Optional[str] = None,
+        is_resubmission: bool = False,
     ) -> int:
         """
         Notify admins that a new event request has been submitted.
 
         Channels: Email
 
+        Args:
+            request: The event request
+            is_resubmission: If True, this is a resubmission after changes were requested
+
         Returns:
             Number of notifications sent
         """
         from app.domain.user.entity import User
         from app.domain.shared.entity import GlobalRole
-
-        if not action_url:
-            action_url = f"{settings.FRONTEND_URL}/admin/event-requests/{request.id}"
 
         # Get all admins
         result = await self.db.execute(
@@ -881,13 +884,17 @@ class NotificationService:
 
         sent_count = 0
         for admin in admins:
+            admin_locale = admin.locale or "en"
+            action_url = f"{settings.FRONTEND_URL}/{admin_locale}/admin/event-requests/{request.id}"
+
             subject, html_body = render_event_request_submitted(
-                locale=admin.locale,
+                locale=admin_locale,
                 event_title=request.event_title,
                 organization_name=request.organization_name,
                 requester_name=request.requester.full_name if request.requester else "Unknown",
                 requester_email=request.requester.email if request.requester else "unknown@example.com",
                 action_url=action_url,
+                is_resubmission=is_resubmission,
             )
 
             recipient = NotificationRecipient(
@@ -917,15 +924,16 @@ class NotificationService:
         """
         from app.core.templates import render_event_request_confirmation
 
-        if not action_url:
-            action_url = f"{settings.FRONTEND_URL}/my/event-requests"
-
         requester = request.requester
         if not requester:
             return False
 
+        locale = requester.locale or "en"
+        if not action_url:
+            action_url = f"{settings.FRONTEND_URL}/{locale}/my/event-requests"
+
         subject, html_body = render_event_request_confirmation(
-            locale=requester.locale or "en",
+            locale=locale,
             event_title=request.event_title,
             organization_name=request.organization_name,
             action_url=action_url,
@@ -935,7 +943,7 @@ class NotificationService:
             user_id=requester.id,
             email=requester.email,
             full_name=requester.full_name,
-            locale=requester.locale,
+            locale=locale,
         )
 
         return await self._send_email(recipient, subject, html_body)

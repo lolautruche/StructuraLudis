@@ -196,6 +196,9 @@ EMAIL_STRINGS = {
         "event_request_submitted_intro": "A new event request has been submitted and is awaiting review.",
         "event_request_submitted_action": "Review Request",
         "event_request_submitted_closing": "Please review the request and take appropriate action.",
+        "event_request_resubmitted_subject": "Event request resubmitted after changes",
+        "event_request_resubmitted_greeting": "Event Request Updated",
+        "event_request_resubmitted_intro": "An event request has been resubmitted after making requested changes.",
         "requester_label": "Requester",
         "event_title_label": "Event",
         "organization_label": "Organization",
@@ -379,6 +382,9 @@ EMAIL_STRINGS = {
         "event_request_submitted_intro": "Une nouvelle demande d'événement a été soumise et attend examen.",
         "event_request_submitted_action": "Examiner la demande",
         "event_request_submitted_closing": "Veuillez examiner la demande et prendre les mesures appropriées.",
+        "event_request_resubmitted_subject": "Demande d'événement resoumise après modifications",
+        "event_request_resubmitted_greeting": "Demande d'événement mise à jour",
+        "event_request_resubmitted_intro": "Une demande d'événement a été resoumise après les modifications demandées.",
         "requester_label": "Demandeur",
         "event_title_label": "Événement",
         "organization_label": "Organisation",
@@ -1004,19 +1010,23 @@ def render_event_request_submitted(
     requester_name: str,
     requester_email: str,
     action_url: Optional[str] = None,
+    is_resubmission: bool = False,
 ) -> tuple[str, str]:
     """Render event request submitted notification email (for admins)."""
+    # Use different strings for resubmission vs new submission
+    prefix = "event_request_resubmitted" if is_resubmission else "event_request_submitted"
+
     return render_email_template(
         "event_request_submitted",
         locale=locale,
-        subject=get_string("event_request_submitted_subject", locale),
+        subject=get_string(f"{prefix}_subject", locale),
         event_title=event_title,
         organization_name=organization_name,
         requester_name=requester_name,
         requester_email=requester_email,
         action_url=action_url,
-        greeting=get_string("event_request_submitted_greeting", locale),
-        intro_text=get_string("event_request_submitted_intro", locale),
+        greeting=get_string(f"{prefix}_greeting", locale),
+        intro_text=get_string(f"{prefix}_intro", locale),
         action_button_text=get_string("event_request_submitted_action", locale),
         closing_text=get_string("event_request_submitted_closing", locale),
         requester_label=get_string("requester_label", locale),

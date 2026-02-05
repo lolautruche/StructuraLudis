@@ -156,8 +156,8 @@ async def resubmit_event_request(
 
     request = await service.resubmit_request(request_id, current_user)
 
-    # Notify admins about resubmission
-    await notification_service.notify_event_request_submitted(request)
+    # Notify admins about resubmission (with different message)
+    await notification_service.notify_event_request_submitted(request, is_resubmission=True)
 
     await db.commit()
     return service.to_read_schema(request)
