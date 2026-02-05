@@ -10,7 +10,9 @@
 appel-de-cthulhu
 donjons-et-dragons
 vampire-la-mascarade
-star-wars
+star-wars-aux-confins-de-l-empire
+star-wars-l-ere-de-la-rebellion
+star-wars-force-et-destinee
 warhammer
 shadowrun
 runequest

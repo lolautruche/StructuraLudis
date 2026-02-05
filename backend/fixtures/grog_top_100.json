@@ -417,11 +417,35 @@
     "reviews_count": 70
   },
   {
-    "slug": "star-wars",
-    "title": "Star Wars (Genesys)",
+    "slug": "star-wars-aux-confins-de-l-empire",
+    "title": "Star Wars : Aux Confins de l'Empire",
     "url": "https://www.legrog.org/jeux/star-wars",
-    "publisher": "West End Games / Descartes / Wizards of the Coast",
-    "description": "Après unpremier jeuchezWest End Games(traduit parDescartes) qui lançait lesystème D6, et undeuxièmechezWizards of the Coastmotorisé auD20, laGuerre des Etoilesrefait son apparition sur la scène ludique sous l'égide deFantasy Flight Games. Cette version est prévue pour se diviser en trois gammes distinctes permettant chacune d'explorer une facette de l'univers de George Lucas. Cette licence est désormais détenue parEdge Studio.",
+    "publisher": "Fantasy Flight Games / Edge Studio",
+    "description": "Aux Confins de l'Empire est le premier des trois jeux de rôle Star Wars de Fantasy Flight Games utilisant le système Genesys. Les joueurs incarnent des contrebandiers, chasseurs de primes, mercenaires et autres marginaux qui vivent en marge de la société galactique, loin de la guerre entre l'Empire et la Rébellion.",
+    "cover_image_url": "https://www.legrog.org/visuels/gammes/2888.jpg",
+    "themes": [
+      "Space Opera"
+    ],
+    "reviews_count": 70
+  },
+  {
+    "slug": "star-wars-l-ere-de-la-rebellion",
+    "title": "Star Wars : L'Ère de la Rébellion",
+    "url": "https://www.legrog.org/jeux/star-wars",
+    "publisher": "Fantasy Flight Games / Edge Studio",
+    "description": "L'Ère de la Rébellion est le deuxième jeu de rôle Star Wars de Fantasy Flight Games. Les joueurs incarnent des membres de l'Alliance Rebelle luttant contre l'Empire Galactique : soldats, espions, pilotes, diplomates et commandos engagés dans la guerre civile galactique.",
+    "cover_image_url": "https://www.legrog.org/visuels/gammes/2888.jpg",
+    "themes": [
+      "Space Opera"
+    ],
+    "reviews_count": 70
+  },
+  {
+    "slug": "star-wars-force-et-destinee",
+    "title": "Star Wars : Force et Destinée",
+    "url": "https://www.legrog.org/jeux/star-wars",
+    "publisher": "Fantasy Flight Games / Edge Studio",
+    "description": "Force et Destinée est le troisième jeu de rôle Star Wars de Fantasy Flight Games. Les joueurs incarnent des êtres sensibles à la Force qui cherchent à comprendre et maîtriser leurs pouvoirs dans une galaxie où les Jedi ont été exterminés et où l'Empire traque impitoyablement tout utilisateur de la Force.",
     "cover_image_url": "https://www.legrog.org/visuels/gammes/2888.jpg",
     "themes": [
       "Space Opera"
