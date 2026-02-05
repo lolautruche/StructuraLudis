@@ -170,15 +170,17 @@ export default function MyEventRequestsPage() {
                     {request.status === 'APPROVED' && request.created_exhibition_id && (
                       <Link href={`/exhibitions/${request.created_exhibition_id}/manage`}>
                         <Button variant="primary" size="sm">
-                          {t('viewExhibition')}
+                          {t('manageExhibition')}
                         </Button>
                       </Link>
                     )}
-                    <Link href={`/my/event-requests/${request.id}/edit`}>
-                      <Button variant="secondary" size="sm">
-                        {t('viewDetails')}
-                      </Button>
-                    </Link>
+                    {request.status !== 'APPROVED' && (
+                      <Link href={`/my/event-requests/${request.id}/edit`}>
+                        <Button variant="secondary" size="sm">
+                          {t('viewDetails')}
+                        </Button>
+                      </Link>
+                    )}
                   </div>
                 </div>
               </Card.Content>
