@@ -357,16 +357,20 @@ class GameSessionService:
                 detail="You cannot edit this session",
             )
 
-        # Only draft sessions can be fully edited
+        # Only draft sessions can be fully edited (including schedule changes)
         if session.status not in [SessionStatus.DRAFT, SessionStatus.REJECTED]:
-            # Limited fields for non-draft sessions
-            allowed_fields = {"description", "physical_table_id"}
+            # For validated/pending sessions, allow most fields but not schedule changes
+            allowed_fields = {
+                "title", "description", "language", "min_age",
+                "max_players_count", "safety_tools", "is_accessible_disability",
+                "physical_table_id",
+            }
             update_data = data.model_dump(exclude_unset=True)
             for field in update_data:
                 if field not in allowed_fields:
                     raise HTTPException(
                         status_code=status.HTTP_400_BAD_REQUEST,
-                        detail=f"Cannot modify '{field}' on a {session.status.value} session",
+                        detail=f"Cannot modify schedule on an active session",
                     )
 
         update_data = data.model_dump(exclude_unset=True)
