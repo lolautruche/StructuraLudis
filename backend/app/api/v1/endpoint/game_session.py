@@ -426,6 +426,7 @@ async def cancel_session(
                 user_id=user.user_id,
                 email=user.email,
                 full_name=user.full_name,
+                locale=user.locale or "en",
             )
             for user in affected_users
         ]

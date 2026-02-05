@@ -718,6 +718,7 @@ class GameSessionService:
                 user_id=user.id,
                 email=user.email,
                 full_name=user.full_name,
+                locale=user.locale,
                 booking_status=booking.status,
             ))
             # Cancel the booking

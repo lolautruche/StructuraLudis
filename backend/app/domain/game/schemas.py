@@ -366,6 +366,7 @@ class AffectedUser(BaseModel):
     user_id: UUID
     email: str
     full_name: Optional[str] = None
+    locale: Optional[str] = None
     booking_status: BookingStatus
 
 
