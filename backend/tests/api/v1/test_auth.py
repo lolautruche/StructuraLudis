@@ -495,6 +495,93 @@ class TestEmailVerification:
         assert "access_token" in response.json()
 
 
+class TestLocale:
+    """Tests for user locale handling."""
+
+    async def test_register_with_french_accept_language_saves_locale(
+        self, client: AsyncClient, db_session: AsyncSession
+    ):
+        """Register with Accept-Language: fr saves locale='fr' to user profile."""
+        payload = {
+            "email": "french@example.com",
+            "password": "securepassword123",
+            "full_name": "French User",
+            "accept_privacy_policy": True,
+        }
+
+        response = await client.post(
+            "/api/v1/auth/register",
+            json=payload,
+            headers={"Accept-Language": "fr-FR,fr;q=0.9,en;q=0.8"},
+        )
+
+        assert response.status_code == 201
+        data = response.json()
+        assert data["locale"] == "fr"
+
+    async def test_register_with_english_accept_language_saves_locale(
+        self, client: AsyncClient, db_session: AsyncSession
+    ):
+        """Register with Accept-Language: en saves locale='en' to user profile."""
+        payload = {
+            "email": "english@example.com",
+            "password": "securepassword123",
+            "full_name": "English User",
+            "accept_privacy_policy": True,
+        }
+
+        response = await client.post(
+            "/api/v1/auth/register",
+            json=payload,
+            headers={"Accept-Language": "en-US,en;q=0.9"},
+        )
+
+        assert response.status_code == 201
+        data = response.json()
+        assert data["locale"] == "en"
+
+    async def test_register_without_accept_language_defaults_to_english(
+        self, client: AsyncClient, db_session: AsyncSession
+    ):
+        """Register without Accept-Language header defaults to locale='en'."""
+        payload = {
+            "email": "noheader@example.com",
+            "password": "securepassword123",
+            "full_name": "No Header User",
+            "accept_privacy_policy": True,
+        }
+
+        response = await client.post(
+            "/api/v1/auth/register",
+            json=payload,
+        )
+
+        assert response.status_code == 201
+        data = response.json()
+        assert data["locale"] == "en"
+
+    async def test_register_with_unsupported_locale_defaults_to_english(
+        self, client: AsyncClient, db_session: AsyncSession
+    ):
+        """Register with unsupported locale in Accept-Language defaults to 'en'."""
+        payload = {
+            "email": "german@example.com",
+            "password": "securepassword123",
+            "full_name": "German User",
+            "accept_privacy_policy": True,
+        }
+
+        response = await client.post(
+            "/api/v1/auth/register",
+            json=payload,
+            headers={"Accept-Language": "de-DE,de;q=0.9"},
+        )
+
+        assert response.status_code == 201
+        data = response.json()
+        assert data["locale"] == "en"  # Unsupported locales default to English
+
+
 class TestRememberMe:
     """Tests for remember_me functionality."""
 
