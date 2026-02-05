@@ -6,7 +6,7 @@ Self-service event creation workflow.
 from typing import List, Optional
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, Header, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
@@ -46,6 +46,7 @@ async def create_event_request(
     data: EventRequestCreate,
     current_user: User = Depends(get_current_verified_user),
     db: AsyncSession = Depends(get_db),
+    accept_language: Optional[str] = Header(None, alias="Accept-Language"),
 ):
     """
     Submit a new event request.
@@ -55,6 +56,7 @@ async def create_event_request(
     - No pending request from this user
 
     Auto-generates slugs from event_title and organization_name.
+    Uses Accept-Language header for confirmation email locale.
     """
     service = EventRequestService(db)
     notification_service = NotificationService(db)
@@ -62,8 +64,16 @@ async def create_event_request(
     request = await service.create_request(data, current_user)
     await db.commit()
 
-    # Send confirmation email to requester
-    await notification_service.notify_event_request_confirmation(request)
+    # Determine locale from Accept-Language header (e.g., "fr-FR,fr;q=0.9,en;q=0.8")
+    locale = "en"
+    if accept_language:
+        # Parse the first preferred language
+        first_lang = accept_language.split(",")[0].split(";")[0].strip()
+        if first_lang.startswith("fr"):
+            locale = "fr"
+
+    # Send confirmation email to requester using request locale
+    await notification_service.notify_event_request_confirmation(request, locale=locale)
 
     # Notify admins about new submission
     await notification_service.notify_event_request_submitted(request)

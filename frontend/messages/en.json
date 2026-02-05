@@ -945,6 +945,9 @@
     "emailVerificationRequired": "Email verification required",
     "emailVerificationDescription": "Please verify your email address before submitting an event request.",
     "goToSettings": "Go to settings",
-    "newRequest": "New request"
+    "newRequest": "New request",
+    "invalidStartDate": "Invalid start date",
+    "invalidEndDate": "Invalid end date",
+    "endDateMustBeAfterStart": "End date must be after start date"
   }
 }

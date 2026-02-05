@@ -47,16 +47,44 @@ const TIMEZONE_OPTIONS = [
   { value: 'UTC', label: 'UTC' },
 ];
 
+// Helper to format date for datetime-local input
+function formatDateForInput(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  const hours = String(date.getHours()).padStart(2, '0');
+  const minutes = String(date.getMinutes()).padStart(2, '0');
+  return `${year}-${month}-${day}T${hours}:${minutes}`;
+}
+
+// Get default start/end dates (start: tomorrow at 10:00, end: tomorrow at 18:00)
+function getDefaultDates() {
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  tomorrow.setHours(10, 0, 0, 0);
+
+  const endDate = new Date(tomorrow);
+  endDate.setHours(18, 0, 0, 0);
+
+  return {
+    start: formatDateForInput(tomorrow),
+    end: formatDateForInput(endDate),
+  };
+}
+
 export default function EventRequestPage() {
   const t = useTranslations('EventRequest');
   const router = useRouter();
   const { isAuthenticated, isLoading: authLoading, user } = useAuth();
 
+  // Get default dates for initial values
+  const defaultDates = getDefaultDates();
+
   const [formData, setFormData] = useState<EventRequestCreate>({
     event_title: '',
     event_description: '',
-    event_start_date: '',
-    event_end_date: '',
+    event_start_date: defaultDates.start,
+    event_end_date: defaultDates.end,
     event_location_name: '',
     event_city: '',
     event_country_code: 'FR',
@@ -81,13 +109,31 @@ export default function EventRequestPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+
+    // Validate dates before submission
+    const startDate = new Date(formData.event_start_date);
+    const endDate = new Date(formData.event_end_date);
+
+    if (isNaN(startDate.getTime())) {
+      setError(t('invalidStartDate'));
+      return;
+    }
+    if (isNaN(endDate.getTime())) {
+      setError(t('invalidEndDate'));
+      return;
+    }
+    if (startDate >= endDate) {
+      setError(t('endDateMustBeAfterStart'));
+      return;
+    }
+
     setIsSubmitting(true);
 
     // Convert dates to ISO format
     const submitData = {
       ...formData,
-      event_start_date: new Date(formData.event_start_date).toISOString(),
-      event_end_date: new Date(formData.event_end_date).toISOString(),
+      event_start_date: startDate.toISOString(),
+      event_end_date: endDate.toISOString(),
     };
 
     const response = await eventRequestsApi.create(submitData);

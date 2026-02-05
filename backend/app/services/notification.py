@@ -913,11 +913,17 @@ class NotificationService:
         self,
         request,  # EventRequest - avoid circular import
         action_url: Optional[str] = None,
+        locale: Optional[str] = None,
     ) -> bool:
         """
         Send confirmation email to the requester that their request was submitted.
 
         Channels: Email
+
+        Args:
+            request: The event request
+            action_url: Optional URL to include in the email
+            locale: Optional locale override (uses requester.locale if not provided)
 
         Returns:
             True if email was sent successfully
@@ -928,7 +934,8 @@ class NotificationService:
         if not requester:
             return False
 
-        locale = requester.locale or "en"
+        # Use provided locale, fall back to requester's locale, then default to "en"
+        locale = locale or requester.locale or "en"
         if not action_url:
             action_url = f"{settings.FRONTEND_URL}/{locale}/my/event-requests"
 
