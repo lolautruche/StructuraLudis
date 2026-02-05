@@ -66,6 +66,14 @@ export const eventRequestsApi = {
     return api.post<EventRequest>(`/api/v1/event-requests/${id}/resubmit`);
   },
 
+  /**
+   * Cancel an event request.
+   * Only owner can cancel, and only if status is PENDING or CHANGES_REQUESTED.
+   */
+  cancel: async (id: string): Promise<ApiResponse<EventRequest>> => {
+    return api.post<EventRequest>(`/api/v1/event-requests/${id}/cancel`);
+  },
+
   // =========================================================================
   // Admin endpoints
   // =========================================================================
