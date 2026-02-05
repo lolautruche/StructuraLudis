@@ -49,6 +49,8 @@ export function ExhibitionCard({ exhibition, locale = 'fr' }: ExhibitionCardProp
             <Badge variant="info" size="sm">{t('registered')}</Badge>
           ) : isPast ? (
             <Badge variant="default" size="sm">{t('past')}</Badge>
+          ) : !exhibition.requires_registration ? (
+            <Badge variant="success" size="sm">{t('freeAccess')}</Badge>
           ) : isOpen ? (
             <Badge variant="success" size="sm">{t('registrationOpen')}</Badge>
           ) : (
