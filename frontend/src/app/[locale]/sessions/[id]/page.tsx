@@ -16,7 +16,7 @@ export default function SessionDetailPage() {
   const sessionId = params.id as string;
   const t = useTranslations('Session');
   const locale = useLocale();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   const { showSuccess } = useToast();
 
   const [session, setSession] = useState<GameSession | null>(null);
@@ -108,16 +108,19 @@ export default function SessionDetailPage() {
   const handleJoinWaitlist = useCallback(async () => {
     if (!session) return;
     setIsBooking(true);
+    setBookingError(null);
 
     const response = await sessionsApi.joinWaitlist(session.id);
     if (response.data) {
       setUserBooking(response.data);
       await fetchSession();
       showSuccess(t('waitlistSuccess'));
+    } else if (response.error) {
+      setBookingError(translateBookingError(response.error.message));
     }
 
     setIsBooking(false);
-  }, [session, fetchSession, showSuccess, t]);
+  }, [session, fetchSession, translateBookingError, showSuccess, t]);
 
   // Show cancel confirmation dialog
   const handleCancelBooking = useCallback(async () => {
@@ -234,6 +237,8 @@ export default function SessionDetailPage() {
         onCheckIn={handleCheckIn}
         isLoading={isBooking}
         exhibition={exhibition}
+        currentUserId={user?.id}
+        currentUserRole={user?.global_role}
       />
 
       {/* Cancel confirmation dialog */}
