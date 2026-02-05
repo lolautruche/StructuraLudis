@@ -13,6 +13,7 @@ const STATUS_TRANSLATION_KEYS: Record<EventRequestStatus, string> = {
   CHANGES_REQUESTED: 'changesRequested',
   APPROVED: 'approved',
   REJECTED: 'rejected',
+  CANCELLED: 'cancelled',
 };
 
 type SortField = 'created_at' | 'event_title' | 'organization_name';
@@ -24,6 +25,7 @@ function StatusBadge({ status, t }: { status: EventRequestStatus; t: (key: strin
     CHANGES_REQUESTED: 'warning',
     APPROVED: 'success',
     REJECTED: 'danger',
+    CANCELLED: 'default',
   };
 
   return (
