@@ -5,7 +5,7 @@ import { useTranslations } from 'next-intl';
 import { Link } from '@/i18n/routing';
 import { adminApi, eventRequestsApi, PlatformStats, Exhibition } from '@/lib/api';
 import { Card, Button, Badge } from '@/components/ui';
-import type { EventRequest, EventRequestStatus, EventRequestListResponse } from '@/lib/api/types';
+import type { EventRequestStatus, EventRequestListResponse } from '@/lib/api/types';
 
 interface StatCardProps {
   label: string;
