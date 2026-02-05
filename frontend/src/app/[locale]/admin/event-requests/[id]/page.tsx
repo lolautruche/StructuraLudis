@@ -8,7 +8,14 @@ import { eventRequestsApi } from '@/lib/api';
 import { Button, Card, Badge, ModerationDialog } from '@/components/ui';
 import type { EventRequest, EventRequestStatus } from '@/lib/api/types';
 
-function StatusBadge({ status }: { status: EventRequestStatus }) {
+const STATUS_TRANSLATION_KEYS: Record<EventRequestStatus, string> = {
+  PENDING: 'pending',
+  CHANGES_REQUESTED: 'changesRequested',
+  APPROVED: 'approved',
+  REJECTED: 'rejected',
+};
+
+function StatusBadge({ status, t }: { status: EventRequestStatus; t: (key: string) => string }) {
   const variants: Record<EventRequestStatus, 'warning' | 'success' | 'danger' | 'default'> = {
     PENDING: 'warning',
     CHANGES_REQUESTED: 'warning',
@@ -19,7 +26,7 @@ function StatusBadge({ status }: { status: EventRequestStatus }) {
   return (
     <Badge variant={variants[status]}>
       {status === 'CHANGES_REQUESTED' && '⚠️ '}
-      {status}
+      {t(STATUS_TRANSLATION_KEYS[status])}
     </Badge>
   );
 }
@@ -135,7 +142,7 @@ export default function AdminEventRequestDetailPage() {
             <h1 className="text-2xl font-bold" style={{ color: 'var(--color-text-primary)' }}>
               {request.event_title}
             </h1>
-            <StatusBadge status={request.status as EventRequestStatus} />
+            <StatusBadge status={request.status as EventRequestStatus} t={tRequest} />
           </div>
           <p style={{ color: 'var(--color-text-secondary)' }}>
             {t('submittedBy')} {request.requester_name || request.requester_email} {t('on')}{' '}
@@ -161,7 +168,7 @@ export default function AdminEventRequestDetailPage() {
             <Card.Title>{t('requesterMessage')}</Card.Title>
           </Card.Header>
           <Card.Content>
-            <p style={{ color: 'var(--color-text-secondary)' }}>{request.requester_message}</p>
+            <p className="whitespace-pre-wrap" style={{ color: 'var(--color-text-secondary)' }}>{request.requester_message}</p>
           </Card.Content>
         </Card>
       )}
@@ -192,7 +199,7 @@ export default function AdminEventRequestDetailPage() {
                 <p className="text-sm font-medium" style={{ color: 'var(--color-text-muted)' }}>
                   {t('description')}
                 </p>
-                <p style={{ color: 'var(--color-text-secondary)' }}>{request.event_description}</p>
+                <p className="whitespace-pre-wrap" style={{ color: 'var(--color-text-secondary)' }}>{request.event_description}</p>
               </div>
             )}
 
@@ -286,7 +293,7 @@ export default function AdminEventRequestDetailPage() {
                 <p className="font-medium mb-1" style={{ color: 'var(--color-text-primary)' }}>
                   {t('adminComment')}
                 </p>
-                <p style={{ color: 'var(--color-text-secondary)' }}>{request.admin_comment}</p>
+                <p className="whitespace-pre-wrap" style={{ color: 'var(--color-text-secondary)' }}>{request.admin_comment}</p>
               </div>
             )}
           </Card.Content>

@@ -229,7 +229,10 @@ export default function EditEventRequestPage() {
                     : 'warning'
               }
             >
-              {t(request.status.toLowerCase())}
+              {request.status === 'PENDING' && t('pending')}
+              {request.status === 'CHANGES_REQUESTED' && t('changesRequested')}
+              {request.status === 'APPROVED' && t('approved')}
+              {request.status === 'REJECTED' && t('rejected')}
             </Badge>
           </div>
         </div>
@@ -248,7 +251,7 @@ export default function EditEventRequestPage() {
                 <p className="font-medium mb-1" style={{ color: 'var(--color-text-primary)' }}>
                   {t('adminComment')}
                 </p>
-                <p style={{ color: 'var(--color-text-secondary)' }}>{request.admin_comment}</p>
+                <p className="whitespace-pre-wrap" style={{ color: 'var(--color-text-secondary)' }}>{request.admin_comment}</p>
               </div>
             </div>
           </Card.Content>
