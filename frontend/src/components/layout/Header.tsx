@@ -9,7 +9,6 @@ import { ThemeToggle } from './ThemeToggle';
 
 export function Header() {
   const t = useTranslations('Common');
-  const tEventRequest = useTranslations('EventRequest');
   const { user, isAuthenticated, logout } = useAuth();
 
   return (
@@ -55,16 +54,6 @@ export function Header() {
                 style={{ color: 'var(--color-text-secondary)' }}
               >
                 {t('myEvents')}
-              </Link>
-            )}
-            {/* Propose an event: visible to authenticated users with verified email */}
-            {isAuthenticated && user?.email_verified && (
-              <Link
-                href="/events/request"
-                className="transition-colors"
-                style={{ color: 'var(--color-text-secondary)' }}
-              >
-                {tEventRequest('title')}
               </Link>
             )}
             {/* Admin portal: only for SUPER_ADMIN and ADMIN */}
