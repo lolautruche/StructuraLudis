@@ -178,8 +178,10 @@ class EventRequestStatus(str, Enum):
     - CHANGES_REQUESTED: Admin requested modifications
     - APPROVED: Approved, exhibition and organization created
     - REJECTED: Rejected by admin
+    - CANCELLED: Cancelled by the requester
     """
     PENDING = "PENDING"
     CHANGES_REQUESTED = "CHANGES_REQUESTED"
     APPROVED = "APPROVED"
     REJECTED = "REJECTED"
+    CANCELLED = "CANCELLED"
