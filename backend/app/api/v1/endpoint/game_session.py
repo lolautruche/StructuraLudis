@@ -603,9 +603,9 @@ async def create_booking(
     service = GameSessionService(db)
     booking = await service.create_booking(booking_data, current_user)
 
-    # Send notifications if booking is confirmed (not waitlisted)
+    # Send notifications for both confirmed and waitlisted bookings
     # Notifications are non-blocking - if they fail, the booking still succeeds
-    if booking.status == BookingStatus.CONFIRMED:
+    if booking.status in (BookingStatus.CONFIRMED, BookingStatus.WAITING_LIST):
         try:
             # Get session and exhibition info
             session_result = await db.execute(
@@ -624,18 +624,9 @@ async def create_booking(
             )
             gm = gm_result.scalar_one()
 
-            # Count current confirmed bookings
-            confirmed_result = await db.execute(
-                select(func.count(Booking.id)).where(
-                    Booking.game_session_id == session_id,
-                    Booking.status.in_([BookingStatus.CONFIRMED, BookingStatus.CHECKED_IN]),
-                )
-            )
-            confirmed_count = confirmed_result.scalar() or 0
-
             notification_service = NotificationService(db)
 
-            # Build context
+            # Build base context
             context = SessionNotificationContext(
                 session_id=session.id,
                 session_title=session.title,
@@ -645,27 +636,68 @@ async def create_booking(
                 scheduled_end=session.scheduled_end,
                 gm_name=gm.full_name,
                 player_name=current_user.full_name or current_user.email,
-                players_registered=confirmed_count,
-                max_players=session.max_players_count,
             )
 
-            # Notify player
+            # Set up recipients
             player_recipient = NotificationRecipient(
                 user_id=current_user.id,
                 email=current_user.email,
                 full_name=current_user.full_name,
                 locale=current_user.locale or "en",
             )
-            await notification_service.notify_booking_confirmed(player_recipient, context)
-
-            # Notify GM
             gm_recipient = NotificationRecipient(
                 user_id=gm.id,
                 email=gm.email,
                 full_name=gm.full_name,
                 locale=gm.locale or "en",
             )
-            await notification_service.notify_gm_new_player(gm_recipient, context)
+
+            if booking.status == BookingStatus.CONFIRMED:
+                # Count current confirmed bookings
+                confirmed_result = await db.execute(
+                    select(func.count(Booking.id)).where(
+                        Booking.game_session_id == session_id,
+                        Booking.status.in_([BookingStatus.CONFIRMED, BookingStatus.CHECKED_IN]),
+                    )
+                )
+                confirmed_count = confirmed_result.scalar() or 0
+                context.players_registered = confirmed_count
+                context.max_players = session.max_players_count
+
+                # Notify player of confirmed booking
+                await notification_service.notify_booking_confirmed(player_recipient, context)
+                # Notify GM of new confirmed player
+                await notification_service.notify_gm_new_player(gm_recipient, context)
+
+            else:  # WAITING_LIST
+                # Count waitlist position
+                waitlist_result = await db.execute(
+                    select(func.count(Booking.id)).where(
+                        Booking.game_session_id == session_id,
+                        Booking.status == BookingStatus.WAITING_LIST,
+                        Booking.registered_at <= booking.registered_at,
+                    )
+                )
+                waitlist_position = waitlist_result.scalar() or 1
+
+                # Count total waitlist
+                total_waitlist_result = await db.execute(
+                    select(func.count(Booking.id)).where(
+                        Booking.game_session_id == session_id,
+                        Booking.status == BookingStatus.WAITING_LIST,
+                    )
+                )
+                total_waitlist = total_waitlist_result.scalar() or 1
+
+                # Notify player they joined waitlist
+                await notification_service.notify_waitlist_joined(
+                    player_recipient, context, waitlist_position
+                )
+                # Notify GM of new waitlist player
+                await notification_service.notify_gm_new_waitlist_player(
+                    gm_recipient, context, total_waitlist
+                )
+
         except Exception as e:
             # Log error but don't fail the booking
             import logging

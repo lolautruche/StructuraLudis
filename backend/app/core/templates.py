@@ -111,6 +111,23 @@ EMAIL_STRINGS = {
         "waitlist_cancelled_action": "Find Other Sessions",
         "waitlist_cancelled_closing": "We hope to see you at another session!",
 
+        # Waitlist joined (player notification)
+        "waitlist_joined_subject": "You're on the waitlist: {session_title}",
+        "waitlist_joined_greeting": "You're on the Waitlist!",
+        "waitlist_joined_intro": "This session is currently full, but you've been added to the waitlist.",
+        "waitlist_joined_position": "Your position",
+        "waitlist_joined_info": "We'll notify you immediately if a spot opens up. Keep an eye on your inbox!",
+        "waitlist_joined_action": "View My Bookings",
+        "waitlist_joined_closing": "Fingers crossed!",
+
+        # New waitlist player (GM notification)
+        "new_waitlist_player_subject": "New player on waitlist: {session_title}",
+        "new_waitlist_player_greeting": "New Waitlist Entry",
+        "new_waitlist_player_intro": "A player has joined the waitlist for your session.",
+        "new_waitlist_player_action": "View Session",
+        "new_waitlist_player_closing": "Your session is popular!",
+        "waitlist_count_label": "Waitlist count",
+
         # Email change verification
         "email_change_subject": "Confirm your new email address",
         "email_change_greeting": "Email Change Request",
@@ -296,6 +313,23 @@ EMAIL_STRINGS = {
         "waitlist_cancelled_intro": "Vous avez été retiré(e) de la liste d'attente pour la session suivante.",
         "waitlist_cancelled_action": "Trouver d'autres sessions",
         "waitlist_cancelled_closing": "Nous espérons vous revoir à une autre session !",
+
+        # Waitlist joined (player notification)
+        "waitlist_joined_subject": "Vous êtes sur liste d'attente : {session_title}",
+        "waitlist_joined_greeting": "Vous êtes sur la liste d'attente !",
+        "waitlist_joined_intro": "Cette session est actuellement complète, mais vous avez été ajouté(e) à la liste d'attente.",
+        "waitlist_joined_position": "Votre position",
+        "waitlist_joined_info": "Nous vous notifierons immédiatement si une place se libère. Gardez un œil sur votre boîte mail !",
+        "waitlist_joined_action": "Voir mes réservations",
+        "waitlist_joined_closing": "Croisons les doigts !",
+
+        # New waitlist player (GM notification)
+        "new_waitlist_player_subject": "Nouveau joueur en liste d'attente : {session_title}",
+        "new_waitlist_player_greeting": "Nouvelle inscription en liste d'attente",
+        "new_waitlist_player_intro": "Un joueur a rejoint la liste d'attente de votre session.",
+        "new_waitlist_player_action": "Voir la session",
+        "new_waitlist_player_closing": "Votre session est populaire !",
+        "waitlist_count_label": "Nombre en liste d'attente",
 
         # Email change verification
         "email_change_subject": "Confirmez votre nouvelle adresse email",
@@ -741,6 +775,68 @@ def render_waitlist_cancelled(
         intro_text=get_string("waitlist_cancelled_intro", locale),
         action_button_text=get_string("waitlist_cancelled_action", locale),
         closing_text=get_string("waitlist_cancelled_closing", locale),
+    )
+
+
+def render_waitlist_joined(
+    locale: str,
+    session_title: str,
+    exhibition_title: str,
+    scheduled_start: datetime,
+    waitlist_position: int,
+    gm_name: Optional[str] = None,
+    action_url: Optional[str] = None,
+) -> tuple[str, str]:
+    """Render waitlist joined confirmation email for player."""
+    date_str, time_str = format_datetime(scheduled_start, locale)
+
+    return render_email_template(
+        "waitlist_joined",
+        locale=locale,
+        session_title=session_title,
+        exhibition_title=exhibition_title,
+        scheduled_date=date_str,
+        scheduled_time=time_str,
+        waitlist_position=waitlist_position,
+        gm_name=gm_name,
+        action_url=action_url,
+        greeting=get_string("waitlist_joined_greeting", locale),
+        intro_text=get_string("waitlist_joined_intro", locale),
+        position_label=get_string("waitlist_joined_position", locale),
+        info_text=get_string("waitlist_joined_info", locale),
+        action_button_text=get_string("waitlist_joined_action", locale),
+        closing_text=get_string("waitlist_joined_closing", locale),
+    )
+
+
+def render_new_waitlist_player(
+    locale: str,
+    session_title: str,
+    exhibition_title: str,
+    scheduled_start: datetime,
+    player_name: str,
+    waitlist_count: int,
+    action_url: Optional[str] = None,
+) -> tuple[str, str]:
+    """Render new waitlist player notification email for GM."""
+    date_str, time_str = format_datetime(scheduled_start, locale)
+
+    return render_email_template(
+        "new_waitlist_player",
+        locale=locale,
+        session_title=session_title,
+        exhibition_title=exhibition_title,
+        scheduled_date=date_str,
+        scheduled_time=time_str,
+        player_name=player_name,
+        waitlist_count=waitlist_count,
+        action_url=action_url,
+        greeting=get_string("new_waitlist_player_greeting", locale),
+        intro_text=get_string("new_waitlist_player_intro", locale),
+        action_button_text=get_string("new_waitlist_player_action", locale),
+        closing_text=get_string("new_waitlist_player_closing", locale),
+        player_label=get_string("player_label", locale),
+        waitlist_count_label=get_string("waitlist_count_label", locale),
     )
 
 
