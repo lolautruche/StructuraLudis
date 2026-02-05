@@ -105,7 +105,7 @@ describe('ConfirmDialog', () => {
     render(<ConfirmDialog {...defaultProps} message={messageWithLineBreaks} />);
 
     const messageElement = screen.getByText((content, element) => {
-      return element?.tagName === 'P' && content.includes('Line 1');
+      return element?.tagName === 'DIV' && content.includes('Line 1');
     });
     expect(messageElement).toHaveClass('whitespace-pre-line');
   });

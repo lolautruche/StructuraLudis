@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useCallback } from 'react';
+import { useEffect, useCallback, ReactNode } from 'react';
 import { Button } from './Button';
 
 interface ConfirmDialogProps {
@@ -8,11 +8,12 @@ interface ConfirmDialogProps {
   onClose: () => void;
   onConfirm: () => void;
   title: string;
-  message: string;
+  message: ReactNode;
   confirmLabel?: string;
   cancelLabel?: string;
   variant?: 'danger' | 'warning' | 'default';
   isLoading?: boolean;
+  confirmDisabled?: boolean;
 }
 
 export function ConfirmDialog({
@@ -25,6 +26,7 @@ export function ConfirmDialog({
   cancelLabel = 'Cancel',
   variant = 'default',
   isLoading = false,
+  confirmDisabled = false,
 }: ConfirmDialogProps) {
   // Handle escape key
   const handleEscape = useCallback(
@@ -79,7 +81,7 @@ export function ConfirmDialog({
         >
           {title}
         </h2>
-        <p className="text-slate-600 dark:text-slate-400 mb-6 whitespace-pre-line">{message}</p>
+        <div className="text-slate-600 dark:text-slate-400 mb-6 whitespace-pre-line">{message}</div>
         <div className="flex justify-end gap-3">
           <Button variant="ghost" onClick={onClose} disabled={isLoading}>
             {cancelLabel}
@@ -88,6 +90,7 @@ export function ConfirmDialog({
             variant={buttonVariant}
             onClick={onConfirm}
             isLoading={isLoading}
+            disabled={confirmDisabled}
           >
             {confirmLabel}
           </Button>
