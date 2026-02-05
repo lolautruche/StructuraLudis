@@ -27,6 +27,10 @@ from app.core.templates import (
     render_session_rejected,
     render_changes_requested,
     render_exhibition_unregistered,
+    render_event_request_approved,
+    render_event_request_rejected,
+    render_event_request_changes,
+    render_event_request_submitted,
 )
 from app.domain.notification.entity import Notification
 from app.domain.notification.schemas import NotificationType, NotificationChannel
@@ -732,3 +736,168 @@ class NotificationService:
 
         result = await self.db.execute(stmt)
         return result.rowcount
+
+    # =========================================================================
+    # Event Request Notifications (Issue #92)
+    # =========================================================================
+
+    async def notify_event_request_approved(
+        self,
+        recipient: NotificationRecipient,
+        event_title: str,
+        exhibition_slug: str,
+        action_url: Optional[str] = None,
+    ) -> bool:
+        """
+        Notify a user that their event request has been approved.
+
+        Channels: Email, In-App
+        """
+        if not action_url:
+            action_url = f"{settings.FRONTEND_URL}/exhibitions/{exhibition_slug}"
+
+        subject, html_body = render_event_request_approved(
+            locale=recipient.locale,
+            event_title=event_title,
+            action_url=action_url,
+        )
+
+        # Create in-app notification
+        notification = await self._create_notification_record(
+            user_id=recipient.user_id,
+            notification_type=NotificationType.SESSION_APPROVED,  # Reuse type
+            channel=NotificationChannel.EMAIL,
+            subject=subject,
+            body=f"Your event request '{event_title}' has been approved!",
+            context={
+                "event_title": event_title,
+                "exhibition_slug": exhibition_slug,
+            },
+        )
+
+        # Send email
+        return await self._send_email(recipient, subject, html_body, notification)
+
+    async def notify_event_request_rejected(
+        self,
+        recipient: NotificationRecipient,
+        event_title: str,
+        admin_comment: str,
+        action_url: Optional[str] = None,
+    ) -> bool:
+        """
+        Notify a user that their event request has been rejected.
+
+        Channels: Email, In-App
+        """
+        subject, html_body = render_event_request_rejected(
+            locale=recipient.locale,
+            event_title=event_title,
+            admin_comment=admin_comment,
+            action_url=action_url,
+        )
+
+        # Create in-app notification
+        notification = await self._create_notification_record(
+            user_id=recipient.user_id,
+            notification_type=NotificationType.SESSION_REJECTED,  # Reuse type
+            channel=NotificationChannel.EMAIL,
+            subject=subject,
+            body=f"Your event request '{event_title}' was not approved.",
+            context={
+                "event_title": event_title,
+                "reason": admin_comment,
+            },
+        )
+
+        # Send email
+        return await self._send_email(recipient, subject, html_body, notification)
+
+    async def notify_event_request_changes(
+        self,
+        recipient: NotificationRecipient,
+        event_title: str,
+        admin_comment: str,
+        action_url: Optional[str] = None,
+    ) -> bool:
+        """
+        Notify a user that changes have been requested for their event request.
+
+        Channels: Email, In-App
+        """
+        if not action_url:
+            action_url = f"{settings.FRONTEND_URL}/my/event-requests"
+
+        subject, html_body = render_event_request_changes(
+            locale=recipient.locale,
+            event_title=event_title,
+            admin_comment=admin_comment,
+            action_url=action_url,
+        )
+
+        # Create in-app notification
+        notification = await self._create_notification_record(
+            user_id=recipient.user_id,
+            notification_type=NotificationType.CHANGES_REQUESTED,
+            channel=NotificationChannel.EMAIL,
+            subject=subject,
+            body=f"Changes have been requested for your event '{event_title}'.",
+            context={
+                "event_title": event_title,
+                "comment": admin_comment,
+            },
+        )
+
+        # Send email
+        return await self._send_email(recipient, subject, html_body, notification)
+
+    async def notify_event_request_submitted(
+        self,
+        request,  # EventRequest - avoid circular import
+        action_url: Optional[str] = None,
+    ) -> int:
+        """
+        Notify admins that a new event request has been submitted.
+
+        Channels: Email
+
+        Returns:
+            Number of notifications sent
+        """
+        from app.domain.user.entity import User
+        from app.domain.shared.entity import GlobalRole
+
+        if not action_url:
+            action_url = f"{settings.FRONTEND_URL}/admin/event-requests/{request.id}"
+
+        # Get all admins
+        result = await self.db.execute(
+            select(User).where(
+                User.global_role.in_([GlobalRole.ADMIN, GlobalRole.SUPER_ADMIN]),
+                User.is_active == True,
+            )
+        )
+        admins = result.scalars().all()
+
+        sent_count = 0
+        for admin in admins:
+            subject, html_body = render_event_request_submitted(
+                locale=admin.locale,
+                event_title=request.event_title,
+                organization_name=request.organization_name,
+                requester_name=request.requester.full_name if request.requester else "Unknown",
+                requester_email=request.requester.email if request.requester else "unknown@example.com",
+                action_url=action_url,
+            )
+
+            recipient = NotificationRecipient(
+                user_id=admin.id,
+                email=admin.email,
+                full_name=admin.full_name,
+                locale=admin.locale,
+            )
+
+            if await self._send_email(recipient, subject, html_body):
+                sent_count += 1
+
+        return sent_count

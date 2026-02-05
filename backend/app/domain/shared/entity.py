@@ -166,3 +166,20 @@ class BookingStatus(str, Enum):
     ATTENDED = "ATTENDED"
     NO_SHOW = "NO_SHOW"
     CANCELLED = "CANCELLED"
+
+
+# --- Event Requests (Issue #92) ---
+
+class EventRequestStatus(str, Enum):
+    """
+    Status of an event creation request (Issue #92).
+
+    - PENDING: Submitted and awaiting admin review
+    - CHANGES_REQUESTED: Admin requested modifications
+    - APPROVED: Approved, exhibition and organization created
+    - REJECTED: Rejected by admin
+    """
+    PENDING = "PENDING"
+    CHANGES_REQUESTED = "CHANGES_REQUESTED"
+    APPROVED = "APPROVED"
+    REJECTED = "REJECTED"

@@ -16,8 +16,8 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   const pathname = usePathname();
   const { user, isLoading: authLoading, isAuthenticated } = useAuth();
 
-  // Only SUPER_ADMIN can access admin portal
-  const isSuperAdmin = user?.global_role === 'SUPER_ADMIN';
+  // SUPER_ADMIN and ADMIN can access admin portal
+  const isAdmin = user?.global_role === 'SUPER_ADMIN' || user?.global_role === 'ADMIN';
 
   // Redirect if not authenticated
   useEffect(() => {
@@ -26,15 +26,15 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     }
   }, [authLoading, isAuthenticated, router]);
 
-  // Redirect if not SUPER_ADMIN
+  // Redirect if not SUPER_ADMIN or ADMIN
   useEffect(() => {
-    if (!authLoading && isAuthenticated && !isSuperAdmin) {
+    if (!authLoading && isAuthenticated && !isAdmin) {
       router.push('/');
     }
-  }, [authLoading, isAuthenticated, isSuperAdmin, router]);
+  }, [authLoading, isAuthenticated, isAdmin, router]);
 
   // Loading state
-  if (authLoading || !isAuthenticated || !isSuperAdmin) {
+  if (authLoading || !isAuthenticated || !isAdmin) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="animate-pulse">
@@ -48,6 +48,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     { href: '/admin', label: t('dashboard'), exact: true },
     { href: '/admin/users', label: t('users') },
     { href: '/admin/exhibitions', label: t('exhibitions') },
+    { href: '/admin/event-requests', label: t('eventRequests') },
   ];
 
   const isActive = (href: string, exact?: boolean) => {

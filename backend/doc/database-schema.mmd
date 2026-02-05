@@ -253,6 +253,35 @@ erDiagram
         datetime created_at
     }
 
+    %% ===== EVENT REQUEST DOMAIN (Issue 92) =====
+    EventRequest {
+        uuid id PK
+        uuid requester_id FK
+        enum status "PENDING|CHANGES_REQUESTED|APPROVED|REJECTED"
+        string event_title
+        string event_slug
+        text event_description
+        datetime event_start_date
+        datetime event_end_date
+        string event_location_name
+        string event_city
+        string event_country_code
+        string event_region
+        string event_timezone
+        string organization_name
+        string organization_slug
+        string organization_contact_email
+        string organization_legal_number
+        string requester_message "max 2000 chars"
+        uuid reviewed_by_id FK "nullable"
+        datetime reviewed_at
+        string admin_comment "max 2000 chars"
+        uuid created_exhibition_id FK "nullable - set on approval"
+        uuid created_organization_id FK "nullable - set on approval"
+        datetime created_at
+        datetime updated_at
+    }
+
     %% ===== NOTIFICATION DOMAIN =====
     Notification {
         uuid id PK
@@ -307,3 +336,8 @@ erDiagram
 
     GameSession ||--o{ Booking : "has"
     GameSession ||--o{ ModerationComment : "has"
+
+    User ||--o{ EventRequest : "submits (Issue 92)"
+    User ||--o{ EventRequest : "reviews (Issue 92)"
+    EventRequest ||--o| Exhibition : "creates (Issue 92)"
+    EventRequest ||--o| Organization : "creates (Issue 92)"
