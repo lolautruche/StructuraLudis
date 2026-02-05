@@ -6,18 +6,22 @@ Issue #55 - External Game Database Sync.
 Import RPG games from Le GROG (Guide du Rôliste Galactique) into the database.
 
 Usage:
-    python -m app.cli.import_grog [--force] [--from-fixtures] [--slugs=x,y,z] [--dry-run]
+    python -m app.cli.import_grog [--force] [--from-fixtures] [--from-curated] [--slugs=x,y,z] [--dry-run]
 
 Options:
-    --force         Re-import all games (update existing)
-    --from-fixtures Import games from fixtures/grog_top_100.json (default)
-    --slugs=x,y,z   Import specific games by GROG slug (comma-separated)
-    --dry-run       Show what would be imported without saving
-    --limit=N       Limit import to N games (for testing)
+    --force          Re-import all games (update existing)
+    --from-fixtures  Import games from fixtures/grog_top_100.json (default)
+    --from-curated   Import games live from GROG using curated slugs list
+    --slugs=x,y,z    Import specific games by GROG slug (comma-separated)
+    --dry-run        Show what would be imported without saving
+    --limit=N        Limit import to N games (for testing)
 
 Examples:
-    # Import games from fixtures file (default, recommended)
+    # Import games from fixtures file (default, recommended for seeding)
     python -m app.cli.import_grog --from-fixtures
+
+    # Import games live from GROG using curated slugs list
+    python -m app.cli.import_grog --from-curated
 
     # Import specific games by slug (fetches live from GROG)
     python -m app.cli.import_grog --slugs=appel-de-cthulhu,vampire-la-mascarade
@@ -25,11 +29,11 @@ Examples:
     # Dry run to see what would be imported
     python -m app.cli.import_grog --from-fixtures --dry-run
 
-    # Force update existing games
-    python -m app.cli.import_grog --from-fixtures --force
+    # Force update existing games from live GROG data
+    python -m app.cli.import_grog --from-curated --force
 
 Note: Full site scraping is not supported as GROG uses JavaScript filtering.
-      Use --from-fixtures for bulk import or --slugs for specific games.
+      Use --from-fixtures for bulk import or --from-curated for live updates.
 """
 import argparse
 import asyncio
@@ -163,6 +167,32 @@ def load_fixtures() -> list[dict]:
 
     with open(fixtures_path, encoding="utf-8") as f:
         return json.load(f)
+
+
+def load_curated_slugs() -> list[str]:
+    """Load game slugs from curated slugs file."""
+    slugs_path = Path(__file__).parent.parent.parent / "fixtures" / "grog_curated_slugs.txt"
+    if not slugs_path.exists():
+        logger.error(f"Curated slugs file not found: {slugs_path}")
+        return []
+
+    slugs = []
+    with open(slugs_path, encoding="utf-8") as f:
+        for line in f:
+            line = line.strip()
+            # Skip empty lines and comments
+            if line and not line.startswith("#"):
+                slugs.append(line)
+
+    # Remove duplicates while preserving order
+    seen = set()
+    unique_slugs = []
+    for slug in slugs:
+        if slug not in seen:
+            seen.add(slug)
+            unique_slugs.append(slug)
+
+    return unique_slugs
 
 
 async def import_from_fixtures(
@@ -344,6 +374,11 @@ def main():
         help="Import from fixtures/grog_top_100.json (default if no --slugs)"
     )
     parser.add_argument(
+        "--from-curated",
+        action="store_true",
+        help="Import live from GROG using curated slugs list (fixtures/grog_curated_slugs.txt)"
+    )
+    parser.add_argument(
         "--slugs",
         type=str,
         help="Comma-separated list of GROG slugs to import (fetches live)"
@@ -365,6 +400,12 @@ def main():
     if args.slugs:
         mode = "slugs"
         slugs = [s.strip() for s in args.slugs.split(",")]
+    elif args.from_curated:
+        mode = "curated"
+        slugs = load_curated_slugs()
+        if not slugs:
+            print("ERROR: No curated slugs found!")
+            sys.exit(1)
     else:
         mode = "fixtures"
 
@@ -378,9 +419,17 @@ def main():
         print(f"Limit: {args.limit}")
     if mode == "slugs":
         print(f"Slugs: {slugs}")
+    if mode == "curated":
+        print(f"Curated slugs: {len(slugs)} games")
     print("=" * 60)
 
     if mode == "slugs":
+        stats = asyncio.run(import_from_slugs(
+            slugs=slugs,
+            force=args.force,
+            dry_run=args.dry_run,
+        ))
+    elif mode == "curated":
         stats = asyncio.run(import_from_slugs(
             slugs=slugs,
             force=args.force,

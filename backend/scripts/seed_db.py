@@ -377,8 +377,8 @@ async def seed(force: bool = False):
             with open(fixtures_path, encoding="utf-8") as f:
                 grog_data = json.load(f)
 
-            # Create RPG games from fixtures (first 20 for seeding)
-            for game_data in grog_data[:20]:
+            # Create RPG games from fixtures
+            for game_data in grog_data:
                 rpg_games.append(Game(
                     id=uuid4(),
                     category_id=cat_rpg.id,

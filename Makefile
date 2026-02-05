@@ -33,11 +33,13 @@ help:
 	@echo "    make db-shell        - Open psql shell"
 	@echo ""
 	@echo "  GROG Import (#55):"
-	@echo "    make import-grog       - Import games from fixtures to DB"
-	@echo "    make import-grog-force - Re-import and update existing games"
-	@echo "    make import-grog-dry   - Dry run (show what would be imported)"
-	@echo "    make grog-list         - List curated game slugs"
-	@echo "    make grog-add SLUG=x   - Add a game and regenerate fixtures"
+	@echo "    make import-grog            - Import games from fixtures to DB"
+	@echo "    make import-grog-force      - Re-import and update existing games"
+	@echo "    make import-grog-dry        - Dry run (show what would be imported)"
+	@echo "    make import-grog-live       - Import live from GROG (~2 min)"
+	@echo "    make import-grog-live-force - Live import + update existing"
+	@echo "    make grog-list              - List curated game slugs"
+	@echo "    make grog-add SLUG=x        - Add a game and regenerate fixtures"
 	@echo "    make generate-grog-fixtures - Regenerate fixtures from GROG"
 	@echo ""
 	@echo "  Tests:"
@@ -157,7 +159,7 @@ db-shell:
 # GROG Import commands (#55)
 # =============================================================================
 
-# Import games from fixtures to database
+# Import games from fixtures to database (fast, uses pre-generated JSON)
 import-grog:
 	docker compose exec sl-api python -m app.cli.import_grog --from-fixtures
 
@@ -166,6 +168,16 @@ import-grog-force:
 
 import-grog-dry:
 	docker compose exec sl-api python -m app.cli.import_grog --from-fixtures --dry-run
+
+# Import games live from GROG website (slow, ~2 minutes for 100 games)
+import-grog-live:
+	docker compose exec sl-api python -m app.cli.import_grog --from-curated
+
+import-grog-live-force:
+	docker compose exec sl-api python -m app.cli.import_grog --from-curated --force
+
+import-grog-live-dry:
+	docker compose exec sl-api python -m app.cli.import_grog --from-curated --dry-run
 
 # Fixtures generation (runs locally, fetches from GROG website)
 grog-list:
