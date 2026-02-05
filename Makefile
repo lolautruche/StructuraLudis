@@ -33,10 +33,12 @@ help:
 	@echo "    make db-shell        - Open psql shell"
 	@echo ""
 	@echo "  GROG Import (#55):"
-	@echo "    make import-grog     - Import all games from GROG"
+	@echo "    make import-grog       - Import games from fixtures to DB"
 	@echo "    make import-grog-force - Re-import and update existing games"
-	@echo "    make import-grog-dry - Dry run (show what would be imported)"
-	@echo "    make generate-grog-fixtures - Generate top 100 fixtures"
+	@echo "    make import-grog-dry   - Dry run (show what would be imported)"
+	@echo "    make grog-list         - List curated game slugs"
+	@echo "    make grog-add SLUG=x   - Add a game and regenerate fixtures"
+	@echo "    make generate-grog-fixtures - Regenerate fixtures from GROG"
 	@echo ""
 	@echo "  Tests:"
 	@echo "    make test            - Run all tests"
@@ -155,17 +157,27 @@ db-shell:
 # GROG Import commands (#55)
 # =============================================================================
 
+# Import games from fixtures to database
 import-grog:
-	docker compose exec sl-api python -m app.cli.import_grog
+	docker compose exec sl-api python -m app.cli.import_grog --from-fixtures
 
 import-grog-force:
-	docker compose exec sl-api python -m app.cli.import_grog --force
+	docker compose exec sl-api python -m app.cli.import_grog --from-fixtures --force
 
 import-grog-dry:
-	docker compose exec sl-api python -m app.cli.import_grog --dry-run
+	docker compose exec sl-api python -m app.cli.import_grog --from-fixtures --dry-run
+
+# Fixtures generation (runs locally, fetches from GROG website)
+grog-list:
+	cd backend && PYTHONPATH=. poetry run python scripts/generate_grog_fixtures.py --list
+
+grog-add:
+	@test -n "$(SLUG)" || (echo "Usage: make grog-add SLUG=game-slug" && exit 1)
+	cd backend && PYTHONPATH=. poetry run python scripts/generate_grog_fixtures.py --add $(SLUG)
 
 generate-grog-fixtures:
-	docker compose exec sl-api python scripts/generate_grog_fixtures.py
+	@echo "Fetching game details from GROG (takes ~2 minutes for 100 games)..."
+	cd backend && PYTHONPATH=. poetry run python scripts/generate_grog_fixtures.py
 
 # =============================================================================
 # Test commands

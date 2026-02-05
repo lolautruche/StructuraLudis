@@ -1,0 +1,79 @@
+# GROG Curated Game Slugs
+# One slug per line. Lines starting with # are comments.
+# To add a game: find its GROG slug (from URL) and add it here.
+#
+# Example: https://www.legrog.org/jeux/appel-de-cthulhu -> appel-de-cthulhu
+#
+# Then run: make generate-grog-fixtures
+
+# === Top Classics ===
+appel-de-cthulhu
+donjons-et-dragons
+vampire-la-mascarade
+star-wars
+warhammer
+shadowrun
+runequest
+pathfinder
+pendragon
+
+# === French Classics ===
+ars-magica
+paranoia
+stormbringer
+cyberpunk
+rolemaster
+gurps
+chroniques-oubliees
+nephilim
+malefices
+traveller
+pavillon-noir
+hurlements
+agone
+polaris
+wastburg
+ecryme
+oeil-noir
+capharnaum
+
+# === Horror ===
+kult
+delta-green
+chill
+sombre
+vaesen
+penombre
+
+# === Sci-Fi ===
+empire-galactique
+fading-suns
+coriolis
+starfinder
+
+# === Modern / Indie ===
+deadlands
+savage-worlds
+fate
+burning-wheel
+dungeon-world
+numenera
+mutant-year-zero
+symbaroum
+ironsworn
+monster-of-the-week
+kids-on-bikes
+fabula-ultima
+
+# === Fantasy ===
+terres-de-legende
+midnight
+earthdawn
+tiny-dungeon
+mork-borg
+nightprowler
+
+# === Others ===
+torg
+conspirations
+orkworld

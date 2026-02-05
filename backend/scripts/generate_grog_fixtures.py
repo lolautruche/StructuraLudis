@@ -1,28 +1,23 @@
 """
-Generate GROG Top 100 Fixtures
+Generate GROG Fixtures from Curated Slugs
 
 Issue #55 - External Game Database Sync.
 
-This script fetches the 100 most popular RPGs from GROG (based on review count)
-and saves them as a JSON file for seeding.
-
-It uses:
-1. GrogBrowserClient (Playwright) to list all games by letter (JS filtering)
-2. GrogClient (httpx) to fetch details for each game (with rate limiting)
-
-This script should be run manually when you want to refresh the fixtures.
-The generated file is committed to the repository for reproducible seeding.
-
-Requirements:
-    poetry add playwright
-    playwright install chromium
+This script reads a curated list of game slugs and fetches their details
+from GROG to generate the fixtures JSON file.
 
 Usage:
-    python scripts/generate_grog_fixtures.py [--limit=N] [--letters=ABC]
+    # Generate fixtures from curated slugs
+    python scripts/generate_grog_fixtures.py
 
-Options:
-    --limit=N       Limit to top N games (default: 100)
-    --letters=ABC   Only scan specific letters (default: all)
+    # Add a new game to the list and regenerate
+    python scripts/generate_grog_fixtures.py --add nephilim
+
+    # Regenerate only specific games (for testing)
+    python scripts/generate_grog_fixtures.py --only appel-de-cthulhu,vampire-la-mascarade
+
+    # Dry run (don't save)
+    python scripts/generate_grog_fixtures.py --dry-run
 
 Output:
     backend/fixtures/grog_top_100.json
@@ -37,7 +32,6 @@ from pathlib import Path
 # Add parent directory to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from app.services.grog_browser_client import GrogBrowserClient
 from app.services.grog_client import GrogClient, GrogGame
 
 logging.basicConfig(
@@ -46,80 +40,114 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+SLUGS_FILE = Path(__file__).parent.parent / "fixtures" / "grog_curated_slugs.txt"
+OUTPUT_FILE = Path(__file__).parent.parent / "fixtures" / "grog_top_100.json"
 
-def progress_callback(message: str, current: int, total: int) -> None:
+
+def load_slugs() -> list[str]:
+    """Load slugs from the curated slugs file."""
+    if not SLUGS_FILE.exists():
+        logger.error(f"Slugs file not found: {SLUGS_FILE}")
+        return []
+
+    slugs = []
+    with open(SLUGS_FILE, encoding="utf-8") as f:
+        for line in f:
+            line = line.strip()
+            # Skip empty lines and comments
+            if line and not line.startswith("#"):
+                slugs.append(line)
+
+    # Remove duplicates while preserving order
+    seen = set()
+    unique_slugs = []
+    for slug in slugs:
+        if slug not in seen:
+            seen.add(slug)
+            unique_slugs.append(slug)
+
+    return unique_slugs
+
+
+def add_slug_to_file(slug: str) -> bool:
+    """Add a new slug to the curated slugs file."""
+    existing = load_slugs()
+    if slug in existing:
+        print(f"Slug '{slug}' already exists in the list.")
+        return False
+
+    with open(SLUGS_FILE, "a", encoding="utf-8") as f:
+        f.write(f"\n{slug}\n")
+
+    print(f"Added '{slug}' to {SLUGS_FILE}")
+    return True
+
+
+def progress_callback(current: int, total: int, slug: str) -> None:
     """Print progress to console."""
-    if total > 0:
-        percent = (current / total) * 100
-        print(f"\r[{percent:5.1f}%] {message:<60}", end="", flush=True)
-    else:
-        print(f"\r{message:<60}", end="", flush=True)
+    percent = (current / total) * 100 if total > 0 else 0
+    print(f"\r[{percent:5.1f}%] ({current}/{total}) Fetching {slug:<40}", end="", flush=True)
 
 
-async def generate_fixtures(limit: int = 100, letters: str | None = None):
-    """Fetch top games from GROG and save to fixtures file."""
+async def generate_fixtures(
+    slugs: list[str] | None = None,
+    dry_run: bool = False,
+) -> list[dict]:
+    """
+    Fetch game details from GROG and generate fixtures.
+
+    Args:
+        slugs: List of slugs to fetch (default: load from file)
+        dry_run: If True, don't save the output file
+
+    Returns:
+        List of game data dictionaries
+    """
+    if slugs is None:
+        slugs = load_slugs()
+
+    if not slugs:
+        print("No slugs to process!")
+        return []
+
     print("=" * 60)
-    print("GROG Top 100 Fixtures Generator")
+    print("GROG Fixtures Generator")
     print("=" * 60)
-
-    letter_list = list(letters.lower()) if letters else None
-
-    # Phase 1: Get all game slugs using browser client
-    print("\nPhase 1: Listing all games (using Playwright browser)...")
-
-    all_slugs = []
-    async with GrogBrowserClient(headless=True) as browser_client:
-        all_slugs = await browser_client.list_all_game_slugs(
-            callback=progress_callback,
-            letters=letter_list,
-        )
-
-    print(f"\n\nFound {len(all_slugs)} unique games\n")
-
-    if not all_slugs:
-        print("No games found! Aborting.")
-        return
-
-    # Phase 2: Fetch details for each game
-    print("Phase 2: Fetching game details (rate limited, 1 req/sec)...")
-    print(f"This will take approximately {len(all_slugs)} seconds.\n")
+    print(f"Slugs to fetch: {len(slugs)}")
+    print(f"Estimated time: ~{len(slugs)} seconds ({len(slugs) // 60}min {len(slugs) % 60}s)")
+    print("=" * 60)
+    print()
 
     client = GrogClient()
-    all_games: list[GrogGame] = []
+    games: list[GrogGame] = []
     failed_slugs = []
 
-    for i, slug in enumerate(all_slugs):
-        progress_callback(f"Fetching {slug}...", i, len(all_slugs))
+    for i, slug in enumerate(slugs):
+        progress_callback(i + 1, len(slugs), slug)
 
         try:
             game = await client.get_game_details(slug)
             if game:
-                all_games.append(game)
+                games.append(game)
             else:
                 failed_slugs.append(slug)
+                logger.warning(f"Game not found: {slug}")
         except Exception as e:
-            logger.error(f"Failed to fetch {slug}: {e}")
             failed_slugs.append(slug)
+            logger.error(f"Failed to fetch {slug}: {e}")
 
-    print(f"\n\nFetched {len(all_games)} games ({len(failed_slugs)} failed)\n")
-
+    print()  # New line after progress
+    print()
+    print(f"Fetched: {len(games)} games")
     if failed_slugs:
-        print(f"Failed slugs: {failed_slugs[:10]}{'...' if len(failed_slugs) > 10 else ''}")
+        print(f"Failed: {len(failed_slugs)} - {failed_slugs}")
 
-    # Phase 3: Sort by popularity and take top N
-    print(f"Phase 3: Sorting by popularity and selecting top {limit}...")
-
-    sorted_games = sorted(
-        all_games,
-        key=lambda g: (-g.reviews_count, g.title.lower())
-    )
-    top_games = sorted_games[:limit]
-
-    print(f"Selected top {len(top_games)} games\n")
+    # Sort by reviews_count (descending) for consistent ordering
+    games.sort(key=lambda g: (-g.reviews_count, g.title.lower()))
 
     # Convert to serializable format
     fixtures_data = []
-    for game in top_games:
+    for game in games:
         fixtures_data.append({
             "slug": game.slug,
             "title": game.title,
@@ -131,44 +159,76 @@ async def generate_fixtures(limit: int = 100, letters: str | None = None):
             "reviews_count": game.reviews_count,
         })
 
-    # Save to fixtures file
-    fixtures_path = Path(__file__).parent.parent / "fixtures" / "grog_top_100.json"
-    fixtures_path.parent.mkdir(parents=True, exist_ok=True)
+    if dry_run:
+        print("\n--- DRY RUN - Not saving ---")
+        print(f"Would save {len(fixtures_data)} games to {OUTPUT_FILE}")
+    else:
+        OUTPUT_FILE.parent.mkdir(parents=True, exist_ok=True)
+        with open(OUTPUT_FILE, "w", encoding="utf-8") as f:
+            json.dump(fixtures_data, f, indent=2, ensure_ascii=False)
+        print(f"\nSaved {len(fixtures_data)} games to {OUTPUT_FILE}")
 
-    with open(fixtures_path, "w", encoding="utf-8") as f:
-        json.dump(fixtures_data, f, indent=2, ensure_ascii=False)
-
-    print(f"Saved {len(fixtures_data)} games to {fixtures_path}")
-
-    # Print top 10 for verification
-    print("\nTop 10 games by popularity:")
-    for i, game in enumerate(top_games[:10], 1):
+    # Print top 10
+    print("\nTop 10 by popularity:")
+    for i, game in enumerate(games[:10], 1):
         print(f"  {i:2}. {game.title} ({game.reviews_count} reviews)")
 
     print("\n" + "=" * 60)
-    print("Done! Fixtures saved to backend/fixtures/grog_top_100.json")
+    print("Done!")
     print("=" * 60)
+
+    return fixtures_data
 
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Generate GROG top 100 fixtures"
+        description="Generate GROG fixtures from curated slugs"
     )
     parser.add_argument(
-        "--limit",
-        type=int,
-        default=100,
-        help="Number of top games to include (default: 100)"
-    )
-    parser.add_argument(
-        "--letters",
+        "--add",
         type=str,
-        help="Only scan specific letters (e.g., 'ABC' for A, B, C)"
+        metavar="SLUG",
+        help="Add a new slug to the curated list and regenerate"
+    )
+    parser.add_argument(
+        "--only",
+        type=str,
+        metavar="SLUGS",
+        help="Only process specific slugs (comma-separated)"
+    )
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Don't save the output file"
+    )
+    parser.add_argument(
+        "--list",
+        action="store_true",
+        help="Just list current slugs without fetching"
     )
 
     args = parser.parse_args()
 
-    asyncio.run(generate_fixtures(limit=args.limit, letters=args.letters))
+    # List mode
+    if args.list:
+        slugs = load_slugs()
+        print(f"Curated slugs ({len(slugs)}):")
+        for slug in slugs:
+            print(f"  - {slug}")
+        return
+
+    # Add mode
+    if args.add:
+        add_slug_to_file(args.add)
+        # Continue to regenerate
+
+    # Determine which slugs to process
+    if args.only:
+        slugs = [s.strip() for s in args.only.split(",")]
+    else:
+        slugs = None  # Will load from file
+
+    asyncio.run(generate_fixtures(slugs=slugs, dry_run=args.dry_run))
 
 
 if __name__ == "__main__":
