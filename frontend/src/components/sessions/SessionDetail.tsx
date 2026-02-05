@@ -1,12 +1,13 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import { Card, Badge } from '@/components/ui';
+import { Link } from '@/i18n/routing';
+import { Card, Badge, Button } from '@/components/ui';
 import { AvailabilityBadge } from './AvailabilityBadge';
 import { SafetyToolsBadges } from './SafetyToolsBadges';
 import { BookingButton } from './BookingButton';
 import { formatDate, formatTime } from '@/lib/utils';
-import type { GameSession, Booking, Exhibition } from '@/lib/api/types';
+import type { GameSession, Booking, Exhibition, GlobalRole } from '@/lib/api/types';
 
 interface SessionDetailProps {
   session: GameSession;
@@ -20,6 +21,10 @@ interface SessionDetailProps {
   isLoading?: boolean;
   /** Exhibition data for registration check (Issue #77) */
   exhibition?: Exhibition | null;
+  /** Current user's ID to check if they are the GM */
+  currentUserId?: string | null;
+  /** Current user's global role for admin access */
+  currentUserRole?: GlobalRole | null;
 }
 
 export function SessionDetail({
@@ -33,9 +38,12 @@ export function SessionDetail({
   onCheckIn,
   isLoading = false,
   exhibition,
+  currentUserId,
+  currentUserRole,
 }: SessionDetailProps) {
   const t = useTranslations('Session');
   const tTable = useTranslations('GameTable');
+  const tCommon = useTranslations('Common');
 
   const startDate = formatDate(session.scheduled_start, locale);
   const startTime = formatTime(session.scheduled_start, locale);
@@ -43,6 +51,14 @@ export function SessionDetail({
 
   const availableSeats = session.max_players_count - session.confirmed_players_count;
   const isFull = availableSeats <= 0;
+
+  // Check if current user is the GM
+  const isGM = currentUserId && session.created_by_user_id === currentUserId;
+
+  // Check if user can manage this session
+  const isAdmin = currentUserRole === 'SUPER_ADMIN' || currentUserRole === 'ADMIN';
+  const canManageExhibition = exhibition?.can_manage ?? false;
+  const canManageSession = isGM || isAdmin || canManageExhibition;
 
   return (
     <div className="space-y-6">
@@ -52,7 +68,12 @@ export function SessionDetail({
           {/* Title and Status */}
           <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
             <div className="space-y-2">
-              <h1 className="text-2xl font-bold text-slate-900 dark:text-white">{session.title}</h1>
+              <div className="flex items-center gap-3">
+                <h1 className="text-2xl font-bold text-slate-900 dark:text-white">{session.title}</h1>
+                {isGM && (
+                  <Badge variant="info" size="sm">{t('youAreGM')}</Badge>
+                )}
+              </div>
               {session.game_title && (
                 <div className="flex items-center gap-2 text-lg text-slate-700 dark:text-slate-300">
                   <span>🎲</span>
@@ -60,12 +81,21 @@ export function SessionDetail({
                 </div>
               )}
             </div>
-            <AvailabilityBadge
-              status={session.status}
-              availableSeats={availableSeats}
-              totalSeats={session.max_players_count}
-              waitlistCount={session.waitlist_count}
-            />
+            <div className="flex items-center gap-3">
+              <AvailabilityBadge
+                status={session.status}
+                availableSeats={availableSeats}
+                totalSeats={session.max_players_count}
+                waitlistCount={session.waitlist_count}
+              />
+              {canManageSession && (
+                <Link href={`/exhibitions/${session.exhibition_id}/manage`}>
+                  <Button variant="secondary" size="sm">
+                    {tCommon('edit')}
+                  </Button>
+                </Link>
+              )}
+            </div>
           </div>
 
           {/* Description */}
@@ -85,6 +115,7 @@ export function SessionDetail({
               onCheckIn={onCheckIn}
               isLoading={isLoading}
               exhibition={exhibition}
+              currentUserId={currentUserId}
             />
           </div>
         </Card.Content>
