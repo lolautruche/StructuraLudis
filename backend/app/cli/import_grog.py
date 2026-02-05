@@ -412,9 +412,33 @@ async def import_full(
                 letters=letters,
             )
     except Exception as e:
-        print(f"\nERROR: Browser client failed: {e}")
-        print("Make sure Playwright browsers are installed: playwright install chromium")
-        return stats
+        error_msg = str(e)
+        if "Executable doesn't exist" in error_msg or "playwright install" in error_msg.lower():
+            print("Playwright browsers not found. Installing Chromium...")
+            import subprocess
+            result = subprocess.run(
+                ["playwright", "install", "chromium"],
+                capture_output=True,
+                text=True,
+            )
+            if result.returncode != 0:
+                print(f"Failed to install Chromium: {result.stderr}")
+                return stats
+            print("Chromium installed successfully. Retrying...\n")
+
+            # Retry after installation
+            try:
+                async with GrogBrowserClient(headless=True) as browser:
+                    slugs = await browser.list_all_game_slugs(
+                        callback=progress_callback,
+                        letters=letters,
+                    )
+            except Exception as retry_error:
+                print(f"\nERROR: Browser client failed after install: {retry_error}")
+                return stats
+        else:
+            print(f"\nERROR: Browser client failed: {e}")
+            return stats
 
     print(f"\nFound {len(slugs)} unique game slugs")
 
