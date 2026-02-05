@@ -540,7 +540,7 @@ async def list_bookings(
     session_id: UUID,
     db: AsyncSession = Depends(get_db),
 ):
-    """List all bookings for a session."""
+    """List all bookings for a session with user info."""
     # Check session exists
     result = await db.execute(
         select(GameSession).where(GameSession.id == session_id)
@@ -551,12 +551,32 @@ async def list_bookings(
             detail="Game session not found",
         )
 
-    bookings = await db.execute(
+    # Fetch bookings with user info
+    from sqlalchemy.orm import selectinload
+    bookings_result = await db.execute(
         select(Booking)
+        .options(selectinload(Booking.user))
         .where(Booking.game_session_id == session_id)
         .order_by(Booking.registered_at)
     )
-    return bookings.scalars().all()
+    bookings = bookings_result.scalars().all()
+
+    # Build response with user info
+    return [
+        BookingRead(
+            id=b.id,
+            game_session_id=b.game_session_id,
+            user_id=b.user_id,
+            role=b.role,
+            status=b.status,
+            registered_at=b.registered_at,
+            checked_in_at=b.checked_in_at,
+            updated_at=b.updated_at,
+            user_name=b.user.full_name if b.user else None,
+            user_email=b.user.email if b.user else None,
+        )
+        for b in bookings
+    ]
 
 
 @router.post("/{session_id}/bookings", response_model=BookingRead, status_code=status.HTTP_201_CREATED)

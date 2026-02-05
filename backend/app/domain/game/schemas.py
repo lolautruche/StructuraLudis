@@ -244,6 +244,9 @@ class BookingRead(BookingBase):
     registered_at: datetime
     checked_in_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
+    # User info (populated by endpoint)
+    user_name: Optional[str] = None
+    user_email: Optional[str] = None
 
     model_config = ConfigDict(from_attributes=True)
 
