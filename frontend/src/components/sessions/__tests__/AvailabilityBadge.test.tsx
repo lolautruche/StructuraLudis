@@ -62,7 +62,7 @@ describe('AvailabilityBadge', () => {
     expect(screen.getByTitle(/waitlistInfo/)).toBeInTheDocument();
   });
 
-  it('shows zero seats when full without waitlist', () => {
+  it('shows full when no seats and no waitlist', () => {
     render(
       <AvailabilityBadge
         status="VALIDATED"
@@ -71,6 +71,6 @@ describe('AvailabilityBadge', () => {
         waitlistCount={0}
       />
     );
-    expect(screen.getByText('seats')).toBeInTheDocument();
+    expect(screen.getByText('full')).toBeInTheDocument();
   });
 });
