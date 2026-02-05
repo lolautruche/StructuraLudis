@@ -295,7 +295,41 @@ async def update_exhibition(
     await db.flush()
     await db.refresh(exhibition)
 
-    return exhibition
+    # Build response with can_manage and user_exhibition_role
+    user_can_manage = await has_any_exhibition_role(current_user, exhibition, db)
+    user_exhibition_role = None
+
+    if user_can_manage:
+        # Check for super admin or admin
+        if current_user.global_role in [GlobalRole.SUPER_ADMIN, GlobalRole.ADMIN]:
+            user_exhibition_role = "ORGANIZER"
+        else:
+            role_result = await db.execute(
+                select(UserExhibitionRole).where(
+                    UserExhibitionRole.user_id == current_user.id,
+                    UserExhibitionRole.exhibition_id == exhibition_id,
+                )
+            )
+            role_assignment = role_result.scalar_one_or_none()
+            if role_assignment:
+                role = role_assignment.role
+                user_exhibition_role = role.value if hasattr(role, 'value') else str(role)
+
+    # Get registration count for organizers
+    count_result = await db.execute(
+        select(func.count(ExhibitionRegistration.id)).where(
+            ExhibitionRegistration.exhibition_id == exhibition_id,
+            ExhibitionRegistration.cancelled_at.is_(None),
+        )
+    )
+    registration_count = count_result.scalar() or 0
+
+    response = ExhibitionRead.model_validate(exhibition)
+    response.can_manage = user_can_manage
+    response.user_exhibition_role = user_exhibition_role
+    response.registration_count = registration_count
+
+    return response
 
 
 @router.delete("/{exhibition_id}", status_code=status.HTTP_204_NO_CONTENT)

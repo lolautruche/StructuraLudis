@@ -399,6 +399,8 @@ class EventRequestService:
             self.db.add(membership)
 
             # Create exhibition
+            # Use requester's locale for primary language, default to "en" if not set
+            primary_language = request.requester.locale if request.requester and request.requester.locale else "en"
             exhibition = Exhibition(
                 organization_id=organization.id,
                 created_by_id=request.requester_id,
@@ -412,7 +414,8 @@ class EventRequestService:
                 country_code=request.event_country_code,
                 region=request.event_region,
                 timezone=request.event_timezone,
-                status=ExhibitionStatus.DRAFT,
+                status=ExhibitionStatus.PUBLISHED,
+                primary_language=primary_language,
             )
             self.db.add(exhibition)
             await self.db.flush()
