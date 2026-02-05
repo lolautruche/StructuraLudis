@@ -156,6 +156,7 @@
     "onWaitlist": "On waitlist",
     "sessionActions": "Session actions",
     "startSession": "Start session",
+    "starting": "Starting...",
     "startSessionTitle": "Start session",
     "startSessionDescription": "Mark the session as started. Players will be notified.",
     "confirmStartTitle": "Start session?",

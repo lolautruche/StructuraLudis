@@ -156,6 +156,7 @@
     "onWaitlist": "En attente",
     "sessionActions": "Actions de session",
     "startSession": "Démarrer la session",
+    "starting": "Démarrage...",
     "startSessionTitle": "Démarrer la session",
     "startSessionDescription": "Marquer la session comme démarrée. Les joueurs seront notifiés.",
     "confirmStartTitle": "Démarrer la session ?",

@@ -29,6 +29,8 @@ export default function SessionDetailPage() {
   const [bookingError, setBookingError] = useState<string | null>(null);
   const [showCancelDialog, setShowCancelDialog] = useState(false);
   const [showBookingConfirmDialog, setShowBookingConfirmDialog] = useState(false);
+  const [showStartDialog, setShowStartDialog] = useState(false);
+  const [isStarting, setIsStarting] = useState(false);
 
   // Fetch session details and user booking in parallel
   const fetchSession = useCallback(async () => {
@@ -170,6 +172,26 @@ export default function SessionDetailPage() {
     setIsBooking(false);
   }, [userBooking]);
 
+  // Show start session confirmation dialog
+  const handleStartSession = useCallback(async () => {
+    setShowStartDialog(true);
+  }, []);
+
+  // Actually start the session after confirmation
+  const handleConfirmStart = useCallback(async () => {
+    if (!session) return;
+    setIsStarting(true);
+
+    const response = await sessionsApi.start(session.id);
+    if (response.data) {
+      setSession(response.data);
+      showSuccess(t('sessionStarted'));
+    }
+
+    setIsStarting(false);
+    setShowStartDialog(false);
+  }, [session, showSuccess, t]);
+
   // Loading state
   if (isLoading) {
     return (
@@ -249,7 +271,9 @@ export default function SessionDetailPage() {
         onJoinWaitlist={handleJoinWaitlist}
         onCancelBooking={handleCancelBooking}
         onCheckIn={handleCheckIn}
+        onStartSession={handleStartSession}
         isLoading={isBooking}
+        isStarting={isStarting}
         exhibition={exhibition}
         currentUserId={user?.id}
         currentUserRole={user?.global_role}
@@ -280,6 +304,19 @@ export default function SessionDetailPage() {
         cancelLabel={t('cancelBookingAction')}
         variant="default"
         isLoading={isBooking}
+      />
+
+      {/* Start session confirmation dialog */}
+      <ConfirmDialog
+        isOpen={showStartDialog}
+        onClose={() => setShowStartDialog(false)}
+        onConfirm={handleConfirmStart}
+        title={t('confirmStartTitle')}
+        message={t('confirmStartMessage')}
+        confirmLabel={t('startSession')}
+        cancelLabel={t('cancelBookingAction')}
+        variant="default"
+        isLoading={isStarting}
       />
     </div>
   );

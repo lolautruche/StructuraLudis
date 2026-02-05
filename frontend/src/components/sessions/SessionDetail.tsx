@@ -18,7 +18,9 @@ interface SessionDetailProps {
   onJoinWaitlist?: () => Promise<void>;
   onCancelBooking?: () => Promise<void>;
   onCheckIn?: () => Promise<void>;
+  onStartSession?: () => Promise<void>;
   isLoading?: boolean;
+  isStarting?: boolean;
   /** Exhibition data for registration check (Issue #77) */
   exhibition?: Exhibition | null;
   /** Current user's ID to check if they are the GM */
@@ -38,7 +40,9 @@ export function SessionDetail({
   onJoinWaitlist,
   onCancelBooking,
   onCheckIn,
+  onStartSession,
   isLoading = false,
+  isStarting = false,
   exhibition,
   currentUserId,
   currentUserRole,
@@ -91,6 +95,17 @@ export function SessionDetail({
                 totalSeats={session.max_players_count}
                 waitlistCount={session.waitlist_count}
               />
+              {/* Start Session button - only for GM when session is VALIDATED */}
+              {isGM && session.status === 'VALIDATED' && onStartSession && (
+                <Button
+                  variant="primary"
+                  size="sm"
+                  onClick={onStartSession}
+                  disabled={isStarting}
+                >
+                  {isStarting ? t('starting') : t('startSession')}
+                </Button>
+              )}
               {canManageSession && (
                 <Link href={`/sessions/${session.id}/edit`}>
                   <Button variant="secondary" size="sm">

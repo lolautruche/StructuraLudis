@@ -23,11 +23,9 @@ export default function SessionEditPage() {
   const [exhibition, setExhibition] = useState<Exhibition | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
-  const [isStarting, setIsStarting] = useState(false);
   const [isCancelling, setIsCancelling] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showCancelDialog, setShowCancelDialog] = useState(false);
-  const [showStartDialog, setShowStartDialog] = useState(false);
   const [cancelReason, setCancelReason] = useState('');
 
   // Form state
@@ -114,20 +112,6 @@ export default function SessionEditPage() {
     setIsSaving(false);
   };
 
-  const handleStartSession = async () => {
-    if (!session) return;
-    setIsStarting(true);
-    const response = await sessionsApi.start(session.id);
-    if (response.data) {
-      showSuccess(t('sessionStarted'));
-      router.push(`/sessions/${session.id}`);
-    } else {
-      showError(response.error?.message || t('startError'));
-    }
-    setIsStarting(false);
-    setShowStartDialog(false);
-  };
-
   const handleCancelSession = async () => {
     if (!session || !cancelReason.trim()) return;
     setIsCancelling(true);
@@ -141,9 +125,6 @@ export default function SessionEditPage() {
     setIsCancelling(false);
     setShowCancelDialog(false);
   };
-
-  // Check if session can be started (VALIDATED status)
-  const canStartSession = session?.status === 'VALIDATED';
 
   // Check if session can be cancelled (not already finished, cancelled, or in progress)
   const canCancelSession = session && !['FINISHED', 'CANCELLED', 'IN_PROGRESS'].includes(session.status);
@@ -328,69 +309,33 @@ export default function SessionEditPage() {
       </Card>
 
       {/* Session Actions Card */}
-      {(canStartSession || canCancelSession) && (
+      {canCancelSession && (
         <Card>
           <Card.Header>
             <Card.Title>{t('sessionActions')}</Card.Title>
           </Card.Header>
-          <Card.Content className="space-y-4">
-            {/* Start Session Button */}
-            {canStartSession && (
-              <div className="flex items-center justify-between p-4 bg-emerald-50 dark:bg-emerald-900/20 rounded-lg border border-emerald-200 dark:border-emerald-800">
-                <div>
-                  <h4 className="font-medium text-emerald-800 dark:text-emerald-200">
-                    {t('startSessionTitle')}
-                  </h4>
-                  <p className="text-sm text-emerald-600 dark:text-emerald-400">
-                    {t('startSessionDescription')}
-                  </p>
-                </div>
-                <Button
-                  variant="success"
-                  onClick={() => setShowStartDialog(true)}
-                  isLoading={isStarting}
-                >
-                  {t('startSession')}
-                </Button>
-              </div>
-            )}
-
+          <Card.Content>
             {/* Cancel Session Button */}
-            {canCancelSession && (
-              <div className="flex items-center justify-between p-4 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800">
-                <div>
-                  <h4 className="font-medium text-red-800 dark:text-red-200">
-                    {t('cancelSessionTitle')}
-                  </h4>
-                  <p className="text-sm text-red-600 dark:text-red-400">
-                    {t('cancelSessionWarning')}
-                  </p>
-                </div>
-                <Button
-                  variant="danger"
-                  onClick={() => setShowCancelDialog(true)}
-                  isLoading={isCancelling}
-                >
-                  {t('cancelSession')}
-                </Button>
+            <div className="flex items-center justify-between p-4 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800">
+              <div>
+                <h4 className="font-medium text-red-800 dark:text-red-200">
+                  {t('cancelSessionTitle')}
+                </h4>
+                <p className="text-sm text-red-600 dark:text-red-400">
+                  {t('cancelSessionWarning')}
+                </p>
               </div>
-            )}
+              <Button
+                variant="danger"
+                onClick={() => setShowCancelDialog(true)}
+                isLoading={isCancelling}
+              >
+                {t('cancelSession')}
+              </Button>
+            </div>
           </Card.Content>
         </Card>
       )}
-
-      {/* Start Session Dialog */}
-      <ConfirmDialog
-        isOpen={showStartDialog}
-        onClose={() => setShowStartDialog(false)}
-        onConfirm={handleStartSession}
-        title={t('confirmStartTitle')}
-        message={t('confirmStartMessage')}
-        confirmLabel={t('startSession')}
-        cancelLabel={tCommon('cancel')}
-        variant="default"
-        isLoading={isStarting}
-      />
 
       {/* Cancel Session Dialog */}
       <ConfirmDialog
