@@ -331,7 +331,7 @@ export default function AdminDashboardPage() {
                             : 'bg-slate-100 text-slate-800 dark:bg-slate-700 dark:text-slate-300'
                       }`}
                     >
-                      {tAdmin(`exhibitionStatuses.${exhibition.status}`)}
+                      {t(`exhibitionStatuses.${exhibition.status}`)}
                     </span>
                     <Link href={`/exhibitions/${exhibition.id}/manage`}>
                       <Button variant="secondary" size="sm">
