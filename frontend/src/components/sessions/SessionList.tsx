@@ -14,6 +14,7 @@ interface SessionListProps {
   sessionsByExhibition: SessionsByExhibition[];
   isLoading?: boolean;
   locale?: string;
+  currentUserId?: string | null;
 }
 
 function formatExhibitionDates(exhibition: Exhibition, locale: string): string {
@@ -33,6 +34,7 @@ export function SessionList({
   sessionsByExhibition,
   isLoading = false,
   locale = 'fr',
+  currentUserId,
 }: SessionListProps) {
   const t = useTranslations('Discovery');
 
@@ -98,7 +100,7 @@ export function SessionList({
           {/* Session grid */}
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {sessions.map((session) => (
-              <SessionCard key={session.id} session={session} locale={locale} />
+              <SessionCard key={session.id} session={session} locale={locale} currentUserId={currentUserId} />
             ))}
           </div>
         </section>

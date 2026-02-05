@@ -11,10 +11,15 @@ import type { GameSession } from '@/lib/api/types';
 interface SessionCardProps {
   session: GameSession;
   locale?: string;
+  currentUserId?: string | null;
 }
 
-export function SessionCard({ session, locale = 'fr' }: SessionCardProps) {
+export function SessionCard({ session, locale = 'fr', currentUserId }: SessionCardProps) {
   const t = useTranslations('GameTable');
+  const tSession = useTranslations('Session');
+
+  // Check if current user is the GM
+  const isGM = currentUserId && session.created_by_user_id === currentUserId;
 
   const sessionDate = formatDate(session.scheduled_start, locale);
   const startTime = formatTime(session.scheduled_start, locale);
@@ -26,9 +31,16 @@ export function SessionCard({ session, locale = 'fr' }: SessionCardProps) {
         <Card.Content className="space-y-3">
           {/* Header: Title + Status */}
           <div className="flex items-start justify-between gap-2">
-            <h3 className="font-semibold text-slate-900 dark:text-white line-clamp-2">
-              {session.title}
-            </h3>
+            <div className="flex-1 min-w-0">
+              <h3 className="font-semibold text-slate-900 dark:text-white line-clamp-2">
+                {session.title}
+              </h3>
+              {isGM && (
+                <Badge size="sm" variant="info" className="mt-1">
+                  🎲 {tSession('youAreGM')}
+                </Badge>
+              )}
+            </div>
             <AvailabilityBadge
               status={session.status}
               availableSeats={session.max_players_count - session.confirmed_players_count}
