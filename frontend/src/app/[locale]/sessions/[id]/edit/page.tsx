@@ -82,8 +82,8 @@ export default function SessionEditPage() {
     exhibition?.can_manage
   );
 
-  // Can only edit DRAFT or CHANGES_REQUESTED sessions
-  const isEditable = session && ['DRAFT', 'CHANGES_REQUESTED'].includes(session.status);
+  // Sessions can be edited unless they are finished, cancelled, or in progress
+  const isEditable = session && !['FINISHED', 'CANCELLED', 'IN_PROGRESS'].includes(session.status);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -157,7 +157,7 @@ export default function SessionEditPage() {
           {t('sessionNotEditable')}
         </h2>
         <p className="text-slate-600 dark:text-slate-400 mb-6">
-          {t('sessionNotEditableDescription', { status: session.status })}
+          {t('sessionNotEditableDescription')}
         </p>
         <Link href={`/sessions/${session.id}`}>
           <Button variant="primary">{t('backToSession')}</Button>

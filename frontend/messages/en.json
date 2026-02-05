@@ -147,7 +147,7 @@
     "noEditPermissionDescription": "You don't have permission to edit this session.",
     "backToSession": "Back to session",
     "sessionNotEditable": "Session not editable",
-    "sessionNotEditableDescription": "Sessions with status {status} cannot be edited.",
+    "sessionNotEditableDescription": "This session can no longer be edited because it is finished, cancelled, or in progress.",
     "registeredPlayers": "Registered players",
     "anonymousPlayer": "Anonymous player",
     "checkedIn": "Checked in",

@@ -147,7 +147,7 @@
     "noEditPermissionDescription": "Vous n'avez pas la permission de modifier cette session.",
     "backToSession": "Retour à la session",
     "sessionNotEditable": "Session non modifiable",
-    "sessionNotEditableDescription": "Les sessions avec le statut {status} ne peuvent pas être modifiées.",
+    "sessionNotEditableDescription": "Cette session ne peut plus être modifiée car elle est terminée, annulée ou en cours.",
     "registeredPlayers": "Joueurs inscrits",
     "anonymousPlayer": "Joueur anonyme",
     "checkedIn": "Présent",
