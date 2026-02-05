@@ -51,9 +51,11 @@ export function BookingButton({
   const isGM = currentUserId && session.created_by_user_id === currentUserId;
 
   // Check if registration is required but user is not registered (Issue #77)
+  // Organizers/admins don't need to register to book
   const requiresRegistration = exhibition?.requires_registration ?? false;
   const isUserRegistered = exhibition?.is_user_registered ?? false;
-  const needsRegistration = requiresRegistration && !isUserRegistered;
+  const canManageExhibition = exhibition?.can_manage || exhibition?.user_exhibition_role;
+  const needsRegistration = requiresRegistration && !isUserRegistered && !canManageExhibition;
 
   // Check if check-in is available (30 minutes before start until session starts)
   const now = new Date();
