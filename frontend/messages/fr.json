@@ -21,7 +21,9 @@
     "exhibitionRoles": {
       "ORGANIZER": "Organisateur",
       "PARTNER": "Partenaire"
-    }
+    },
+    "theme": "Thème",
+    "language": "Langue"
   },
   "Auth": {
     "loginTitle": "Connexion",
