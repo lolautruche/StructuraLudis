@@ -7,7 +7,7 @@ import { AvailabilityBadge } from './AvailabilityBadge';
 import { SafetyToolsBadges } from './SafetyToolsBadges';
 import { BookingButton } from './BookingButton';
 import { formatDate, formatTime } from '@/lib/utils';
-import type { GameSession, Booking, Exhibition, GlobalRole } from '@/lib/api/types';
+import type { GameSession, Booking, Exhibition, GlobalRole, BookingStatus } from '@/lib/api/types';
 
 interface SessionDetailProps {
   session: GameSession;
@@ -25,6 +25,8 @@ interface SessionDetailProps {
   currentUserId?: string | null;
   /** Current user's global role for admin access */
   currentUserRole?: GlobalRole | null;
+  /** List of bookings for this session (for GMs/organizers) */
+  bookings?: Booking[];
 }
 
 export function SessionDetail({
@@ -40,6 +42,7 @@ export function SessionDetail({
   exhibition,
   currentUserId,
   currentUserRole,
+  bookings = [],
 }: SessionDetailProps) {
   const t = useTranslations('Session');
   const tTable = useTranslations('GameTable');
@@ -214,6 +217,83 @@ export function SessionDetail({
           </Card.Content>
         </Card>
       </div>
+
+      {/* Participant List (for GMs/organizers) */}
+      {canManageSession && bookings.length > 0 && (
+        <Card>
+          <Card.Header>
+            <Card.Title>{t('registeredPlayers')}</Card.Title>
+          </Card.Header>
+          <Card.Content>
+            <div className="space-y-2">
+              {/* Confirmed players */}
+              {bookings.filter(b => b.status === 'CONFIRMED' || b.status === 'CHECKED_IN').length > 0 && (
+                <div className="space-y-2">
+                  {bookings
+                    .filter(b => b.status === 'CONFIRMED' || b.status === 'CHECKED_IN')
+                    .map((booking) => (
+                      <div
+                        key={booking.id}
+                        className="flex items-center justify-between p-2 rounded-lg bg-slate-50 dark:bg-slate-800/50"
+                      >
+                        <div className="flex items-center gap-3">
+                          <span className="text-lg">
+                            {booking.status === 'CHECKED_IN' ? '✅' : '👤'}
+                          </span>
+                          <div>
+                            <p className="font-medium text-slate-900 dark:text-white">
+                              {booking.user_name || t('anonymousPlayer')}
+                            </p>
+                            {booking.user_email && (
+                              <p className="text-sm text-slate-500 dark:text-slate-400">
+                                {booking.user_email}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                        <Badge
+                          variant={booking.status === 'CHECKED_IN' ? 'success' : 'default'}
+                          size="sm"
+                        >
+                          {booking.status === 'CHECKED_IN' ? t('checkedIn') : t('confirmed')}
+                        </Badge>
+                      </div>
+                    ))}
+                </div>
+              )}
+
+              {/* Waitlist */}
+              {bookings.filter(b => b.status === 'WAITING_LIST').length > 0 && (
+                <div className="mt-4 pt-4 border-t border-slate-200 dark:border-slate-700">
+                  <p className="text-sm font-medium text-slate-600 dark:text-slate-400 mb-2">
+                    {t('waitlist')}
+                  </p>
+                  {bookings
+                    .filter(b => b.status === 'WAITING_LIST')
+                    .map((booking, index) => (
+                      <div
+                        key={booking.id}
+                        className="flex items-center justify-between p-2 rounded-lg bg-amber-50 dark:bg-amber-900/20"
+                      >
+                        <div className="flex items-center gap-3">
+                          <span className="text-lg text-amber-600 dark:text-amber-400 font-bold">
+                            #{index + 1}
+                          </span>
+                          <p className="font-medium text-slate-900 dark:text-white">
+                            {booking.user_name || t('anonymousPlayer')}
+                          </p>
+                        </div>
+                        <Badge variant="warning" size="sm">
+                          {t('onWaitlist')}
+                        </Badge>
+                      </div>
+                    ))}
+                </div>
+              )}
+            </div>
+          </Card.Content>
+        </Card>
+      )}
 
       {/* Additional Info */}
       <Card>

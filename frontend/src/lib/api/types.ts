@@ -172,6 +172,8 @@ export interface Booking {
   status: BookingStatus;
   checked_in_at: string | null;
   registered_at: string;
+  user_name?: string | null;
+  user_email?: string | null;
 }
 
 /**

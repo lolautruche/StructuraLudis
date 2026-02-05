@@ -22,6 +22,7 @@ export default function SessionDetailPage() {
   const [session, setSession] = useState<GameSession | null>(null);
   const [userBooking, setUserBooking] = useState<Booking | null>(null);
   const [exhibition, setExhibition] = useState<Exhibition | null>(null);
+  const [bookings, setBookings] = useState<Booking[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isBooking, setIsBooking] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -41,11 +42,24 @@ export default function SessionDetailPage() {
     ]);
 
     if (sessionResponse.data) {
-      setSession(sessionResponse.data);
+      const s = sessionResponse.data;
+      setSession(s);
       // Fetch exhibition for registration check (Issue #77)
-      const exhibitionResponse = await exhibitionsApi.getById(sessionResponse.data.exhibition_id);
+      const exhibitionResponse = await exhibitionsApi.getById(s.exhibition_id);
       if (exhibitionResponse.data) {
         setExhibition(exhibitionResponse.data);
+      }
+
+      // Fetch bookings if user is GM or can manage
+      const isGM = user?.id && s.created_by_user_id === user.id;
+      const isAdmin = user?.global_role === 'ADMIN' || user?.global_role === 'SUPER_ADMIN';
+      const canManage = exhibitionResponse.data?.can_manage || false;
+
+      if (isGM || isAdmin || canManage) {
+        const bookingsResponse = await sessionsApi.getBookings(sessionId);
+        if (bookingsResponse.data) {
+          setBookings(bookingsResponse.data);
+        }
       }
     } else {
       setError(sessionResponse.error?.message || 'Session not found');
@@ -56,7 +70,7 @@ export default function SessionDetailPage() {
     }
 
     setIsLoading(false);
-  }, [sessionId, isAuthenticated]);
+  }, [sessionId, isAuthenticated, user]);
 
   useEffect(() => {
     fetchSession();
@@ -239,6 +253,7 @@ export default function SessionDetailPage() {
         exhibition={exhibition}
         currentUserId={user?.id}
         currentUserRole={user?.global_role}
+        bookings={bookings}
       />
 
       {/* Cancel confirmation dialog */}

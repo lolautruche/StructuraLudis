@@ -147,7 +147,13 @@
     "noEditPermissionDescription": "Vous n'avez pas la permission de modifier cette session.",
     "backToSession": "Retour à la session",
     "sessionNotEditable": "Session non modifiable",
-    "sessionNotEditableDescription": "Les sessions avec le statut {status} ne peuvent pas être modifiées."
+    "sessionNotEditableDescription": "Les sessions avec le statut {status} ne peuvent pas être modifiées.",
+    "registeredPlayers": "Joueurs inscrits",
+    "anonymousPlayer": "Joueur anonyme",
+    "checkedIn": "Présent",
+    "confirmed": "Confirmé",
+    "waitlist": "Liste d'attente",
+    "onWaitlist": "En attente"
   },
   "GameTable": {
     "complexity": "Complexité",

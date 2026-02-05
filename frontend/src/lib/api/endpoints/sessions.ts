@@ -132,4 +132,11 @@ export const sessionsApi = {
   moderate: async (sessionId: string, moderation: SessionModerateRequest): Promise<ApiResponse<GameSession>> => {
     return api.post<GameSession>(`/api/v1/sessions/${sessionId}/moderate`, moderation);
   },
+
+  /**
+   * Get all bookings for a session (for GMs/organizers).
+   */
+  getBookings: async (sessionId: string): Promise<ApiResponse<Booking[]>> => {
+    return api.get<Booking[]>(`/api/v1/sessions/${sessionId}/bookings`);
+  },
 };
