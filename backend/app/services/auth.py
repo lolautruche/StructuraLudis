@@ -84,12 +84,16 @@ class AuthService:
 
         return Token(access_token=access_token)
 
-    async def register(self, data: RegisterRequest) -> Optional[User]:
+    async def register(self, data: RegisterRequest, locale: str = "en") -> Optional[User]:
         """
         Register a new user.
 
         Returns the created user, or None if email already exists.
         Raises PrivacyPolicyNotAcceptedError if privacy policy not accepted.
+
+        Args:
+            data: Registration data
+            locale: User's preferred locale (from Accept-Language header)
         """
         # GDPR: Privacy policy must be accepted
         if not data.accept_privacy_policy:
@@ -110,6 +114,7 @@ class AuthService:
             global_role=GlobalRole.USER,
             is_active=True,
             privacy_accepted_at=datetime.now(timezone.utc),
+            locale=locale,
         )
 
         self.db.add(user)
