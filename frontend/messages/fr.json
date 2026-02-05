@@ -134,7 +134,20 @@
     "errorAlreadyBooked": "Vous avez déjà réservé cette session.",
     "errorBookingFailed": "La réservation a échoué. Veuillez réessayer.",
     "cancelSuccess": "Réservation annulée",
-    "youAreGM": "Vous êtes le MJ de cette session"
+    "youAreGM": "Vous êtes le MJ de cette session",
+    "editSession": "Modifier la session",
+    "sessionTitle": "Titre de la session",
+    "description": "Description",
+    "language": "Langue",
+    "minAge": "Âge minimum",
+    "maxPlayers": "Nombre maximum de joueurs",
+    "sessionUpdated": "Session mise à jour",
+    "updateError": "Erreur lors de la mise à jour",
+    "noEditPermission": "Accès refusé",
+    "noEditPermissionDescription": "Vous n'avez pas la permission de modifier cette session.",
+    "backToSession": "Retour à la session",
+    "sessionNotEditable": "Session non modifiable",
+    "sessionNotEditableDescription": "Les sessions avec le statut {status} ne peuvent pas être modifiées."
   },
   "GameTable": {
     "complexity": "Complexité",

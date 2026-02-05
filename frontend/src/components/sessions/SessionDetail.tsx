@@ -89,7 +89,7 @@ export function SessionDetail({
                 waitlistCount={session.waitlist_count}
               />
               {canManageSession && (
-                <Link href={`/exhibitions/${session.exhibition_id}/manage`}>
+                <Link href={`/sessions/${session.id}/edit`}>
                   <Button variant="secondary" size="sm">
                     {tCommon('edit')}
                   </Button>

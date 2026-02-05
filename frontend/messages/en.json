@@ -134,7 +134,20 @@
     "errorAlreadyBooked": "You have already booked this session.",
     "errorBookingFailed": "Booking failed. Please try again.",
     "cancelSuccess": "Booking cancelled",
-    "youAreGM": "You are the Game Master"
+    "youAreGM": "You are the Game Master",
+    "editSession": "Edit session",
+    "sessionTitle": "Session title",
+    "description": "Description",
+    "language": "Language",
+    "minAge": "Minimum age",
+    "maxPlayers": "Maximum players",
+    "sessionUpdated": "Session updated",
+    "updateError": "Update failed",
+    "noEditPermission": "Access denied",
+    "noEditPermissionDescription": "You don't have permission to edit this session.",
+    "backToSession": "Back to session",
+    "sessionNotEditable": "Session not editable",
+    "sessionNotEditableDescription": "Sessions with status {status} cannot be edited."
   },
   "GameTable": {
     "complexity": "Complexity",
