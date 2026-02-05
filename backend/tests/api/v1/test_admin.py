@@ -38,7 +38,7 @@ class TestListUsers:
         response = await auth_client.get("/api/v1/admin/users")
 
         assert response.status_code == 403
-        assert "Super Admin" in response.json()["detail"]
+        assert "Admin" in response.json()["detail"]
 
     async def test_list_users_unauthorized(self, client: AsyncClient):
         """Unauthenticated request returns 401."""

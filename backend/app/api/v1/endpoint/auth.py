@@ -99,8 +99,11 @@ async def register(
     """
     service = AuthService(db)
 
+    # Get locale from Accept-Language header to save as user preference
+    locale = _parse_locale_from_header(accept_language)
+
     try:
-        user = await service.register(data)
+        user = await service.register(data, locale=locale)
     except PrivacyPolicyNotAcceptedError:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -118,9 +121,6 @@ async def register(
 
     # Use configured frontend URL for verification links
     frontend_base_url = settings.FRONTEND_URL
-
-    # Get locale from Accept-Language header (user hasn't set preference yet at registration)
-    locale = _parse_locale_from_header(accept_language)
 
     await verification_service.generate_and_send_verification(
         user=user,

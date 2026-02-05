@@ -3,8 +3,9 @@
 import { useState, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
 import { Link } from '@/i18n/routing';
-import { adminApi, PlatformStats, Exhibition } from '@/lib/api';
-import { Card } from '@/components/ui';
+import { adminApi, eventRequestsApi, PlatformStats, Exhibition } from '@/lib/api';
+import { Card, Button, Badge } from '@/components/ui';
+import type { EventRequestStatus, EventRequestListResponse } from '@/lib/api/types';
 
 interface StatCardProps {
   label: string;
@@ -43,11 +44,37 @@ function StatCard({ label, value, href }: StatCardProps) {
   return content;
 }
 
+function RequestStatusBadge({ status, t }: { status: EventRequestStatus; t: (key: string) => string }) {
+  const variants: Record<EventRequestStatus, 'warning' | 'success' | 'danger' | 'default'> = {
+    PENDING: 'warning',
+    CHANGES_REQUESTED: 'warning',
+    APPROVED: 'success',
+    REJECTED: 'danger',
+  };
+
+  const labels: Record<EventRequestStatus, string> = {
+    PENDING: t('pending'),
+    CHANGES_REQUESTED: t('changesRequested'),
+    APPROVED: t('approved'),
+    REJECTED: t('rejected'),
+  };
+
+  return (
+    <Badge variant={variants[status]}>
+      {status === 'CHANGES_REQUESTED' && '⚠️ '}
+      {labels[status]}
+    </Badge>
+  );
+}
+
 export default function AdminDashboardPage() {
   const t = useTranslations('SuperAdmin');
+  const tAdmin = useTranslations('Admin');
+  const tEventRequest = useTranslations('EventRequest');
 
   const [stats, setStats] = useState<PlatformStats | null>(null);
   const [recentExhibitions, setRecentExhibitions] = useState<Exhibition[]>([]);
+  const [eventRequestsData, setEventRequestsData] = useState<EventRequestListResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -57,9 +84,10 @@ export default function AdminDashboardPage() {
       setError(null);
 
       try {
-        const [statsResponse, exhibitionsResponse] = await Promise.all([
+        const [statsResponse, exhibitionsResponse, requestsResponse] = await Promise.all([
           adminApi.getStats(),
           adminApi.listExhibitions({ limit: 5 }),
+          eventRequestsApi.list({ status: 'PENDING' }),
         ]);
 
         if (statsResponse.error) {
@@ -70,6 +98,10 @@ export default function AdminDashboardPage() {
 
         if (exhibitionsResponse.data) {
           setRecentExhibitions(exhibitionsResponse.data);
+        }
+
+        if (requestsResponse.data) {
+          setEventRequestsData(requestsResponse.data);
         }
       } catch {
         setError('Failed to load dashboard data');
@@ -114,7 +146,7 @@ export default function AdminDashboardPage() {
   return (
     <div className="space-y-6">
       {/* Stats overview */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
         <StatCard
           label={t('stats.totalUsers')}
           value={stats?.users.total || 0}
@@ -134,6 +166,11 @@ export default function AdminDashboardPage() {
           label={t('stats.draftExhibitions')}
           value={stats?.exhibitions.by_status?.DRAFT || 0}
           href="/admin/exhibitions?status=DRAFT"
+        />
+        <StatCard
+          label={t('stats.pendingRequests')}
+          value={eventRequestsData?.pending_count || 0}
+          href="/admin/event-requests?status=PENDING"
         />
       </div>
 
@@ -190,6 +227,58 @@ export default function AdminDashboardPage() {
         </Card.Content>
       </Card>
 
+      {/* Pending event requests */}
+      {eventRequestsData && eventRequestsData.items.length > 0 && (
+        <Card>
+          <Card.Header>
+            <div className="flex items-center justify-between">
+              <Card.Title>{t('pendingEventRequests')}</Card.Title>
+              <Link
+                href="/admin/event-requests"
+                className="text-sm font-medium hover:underline"
+                style={{ color: 'var(--color-primary)' }}
+              >
+                {t('viewAll')}
+              </Link>
+            </div>
+          </Card.Header>
+          <Card.Content>
+            <div className="space-y-3">
+              {eventRequestsData.items.slice(0, 5).map((request) => (
+                <div
+                  key={request.id}
+                  className="flex items-center justify-between p-3 rounded-lg"
+                  style={{ backgroundColor: 'var(--color-bg-secondary)' }}
+                >
+                  <div className="flex-1 min-w-0">
+                    <p
+                      className="font-medium truncate"
+                      style={{ color: 'var(--color-text-primary)' }}
+                    >
+                      {request.event_title}
+                    </p>
+                    <p
+                      className="text-sm truncate"
+                      style={{ color: 'var(--color-text-secondary)' }}
+                    >
+                      {request.organization_name} • {request.requester_name || request.requester_email}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-3 ml-4">
+                    <RequestStatusBadge status={request.status as EventRequestStatus} t={tEventRequest} />
+                    <Link href={`/admin/event-requests/${request.id}`}>
+                      <Button variant="secondary" size="sm">
+                        {tAdmin('view')}
+                      </Button>
+                    </Link>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </Card.Content>
+        </Card>
+      )}
+
       {/* Recent exhibitions */}
       <Card>
         <Card.Header>
@@ -217,9 +306,9 @@ export default function AdminDashboardPage() {
                   className="flex items-center justify-between p-3 rounded-lg"
                   style={{ backgroundColor: 'var(--color-bg-secondary)' }}
                 >
-                  <div>
+                  <div className="flex-1 min-w-0">
                     <p
-                      className="font-medium"
+                      className="font-medium truncate"
                       style={{ color: 'var(--color-text-primary)' }}
                     >
                       {exhibition.title}
@@ -232,17 +321,24 @@ export default function AdminDashboardPage() {
                       {new Date(exhibition.end_date).toLocaleDateString()}
                     </p>
                   </div>
-                  <span
-                    className={`px-2 py-1 text-xs font-medium rounded ${
-                      exhibition.status === 'PUBLISHED'
-                        ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-                        : exhibition.status === 'DRAFT'
-                          ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
-                          : 'bg-slate-100 text-slate-800 dark:bg-slate-700 dark:text-slate-300'
-                    }`}
-                  >
-                    {exhibition.status}
-                  </span>
+                  <div className="flex items-center gap-3 ml-4">
+                    <span
+                      className={`px-2 py-1 text-xs font-medium rounded ${
+                        exhibition.status === 'PUBLISHED'
+                          ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+                          : exhibition.status === 'DRAFT'
+                            ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
+                            : 'bg-slate-100 text-slate-800 dark:bg-slate-700 dark:text-slate-300'
+                      }`}
+                    >
+                      {t(`exhibitionStatuses.${exhibition.status}`)}
+                    </span>
+                    <Link href={`/exhibitions/${exhibition.id}/manage`}>
+                      <Button variant="secondary" size="sm">
+                        {tAdmin('view')}
+                      </Button>
+                    </Link>
+                  </div>
                 </div>
               ))}
             </div>

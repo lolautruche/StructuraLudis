@@ -48,7 +48,8 @@ export default function VerifyEmailPage() {
           doRefreshUser();
         } else {
           setState('error');
-          setErrorMessage(response.error?.detail || t('verificationFailedMessage'));
+          // Always use translated message (backend returns English)
+          setErrorMessage(t('verificationFailedMessage'));
         }
       } catch {
         setState('error');

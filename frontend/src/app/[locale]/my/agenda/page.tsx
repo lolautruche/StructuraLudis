@@ -19,15 +19,16 @@ export default function AgendaPage() {
   const [error, setError] = useState<string | null>(null);
   const [exhibitionId, setExhibitionId] = useState<string | null>(null);
 
-  // Fetch exhibitions to get the first one (for now)
+  // Fetch exhibitions where user is registered
   useEffect(() => {
     async function fetchExhibition() {
-      // Get first available exhibition
       const response = await exhibitionsApi.list();
-      if (response.data?.[0]) {
-        setExhibitionId(response.data[0].id);
+      // Only consider exhibitions where user is registered
+      const registeredExhibitions = response.data?.filter(e => e.is_user_registered) || [];
+      if (registeredExhibitions[0]) {
+        setExhibitionId(registeredExhibitions[0].id);
       } else {
-        // No exhibition found, stop loading
+        // No registered exhibition found, stop loading
         setIsLoading(false);
       }
     }

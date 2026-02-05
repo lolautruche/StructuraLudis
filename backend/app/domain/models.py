@@ -19,6 +19,7 @@ from app.domain.exhibition.entity import (
 )
 from app.domain.game.entity import GameCategory, Game, GameSession, Booking
 from app.domain.media.entity import Media, AuditLog
+from app.domain.event_request.entity import EventRequest
 
 __all__ = [
     "Base",
@@ -38,4 +39,5 @@ __all__ = [
     "Booking",
     "Media",
     "AuditLog",
+    "EventRequest",
 ]

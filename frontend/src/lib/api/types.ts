@@ -679,3 +679,84 @@ export interface SeriesCreateResponse {
   sessions: GameSession[];
   warnings: string[];
 }
+
+/**
+ * Event request types (Issue #92).
+ * Self-service event creation workflow.
+ */
+export type EventRequestStatus = 'PENDING' | 'CHANGES_REQUESTED' | 'APPROVED' | 'REJECTED';
+
+export interface EventRequest {
+  id: string;
+  requester_id: string;
+  status: EventRequestStatus;
+  event_title: string;
+  event_slug: string;
+  event_description: string | null;
+  event_start_date: string;
+  event_end_date: string;
+  event_location_name: string | null;
+  event_city: string | null;
+  event_country_code: string | null;
+  event_region: string | null;
+  event_timezone: string;
+  organization_name: string;
+  organization_slug: string;
+  organization_contact_email: string | null;
+  requester_message: string | null;
+  requester_email: string | null;
+  requester_name: string | null;
+  admin_comment: string | null;
+  reviewed_by_id: string | null;
+  reviewed_at: string | null;
+  created_exhibition_id: string | null;
+  created_organization_id: string | null;
+  created_at: string;
+  updated_at: string | null;
+}
+
+export interface EventRequestCreate {
+  event_title: string;
+  event_description?: string;
+  event_start_date: string;
+  event_end_date: string;
+  event_location_name?: string;
+  event_city?: string;
+  event_country_code?: string;
+  event_region?: string;
+  event_timezone?: string;
+  organization_name: string;
+  organization_contact_email?: string;
+  requester_message?: string;
+}
+
+export interface EventRequestUpdate {
+  event_title?: string;
+  event_description?: string;
+  event_start_date?: string;
+  event_end_date?: string;
+  event_location_name?: string;
+  event_city?: string;
+  event_country_code?: string;
+  event_region?: string;
+  event_timezone?: string;
+  organization_name?: string;
+  organization_contact_email?: string;
+  requester_message?: string;
+}
+
+export interface EventRequestAdminUpdate extends EventRequestUpdate {
+  event_slug?: string;
+  organization_slug?: string;
+}
+
+export interface EventRequestReview {
+  action: 'approve' | 'reject' | 'request_changes';
+  admin_comment?: string;
+}
+
+export interface EventRequestListResponse {
+  items: EventRequest[];
+  total: number;
+  pending_count: number;
+}

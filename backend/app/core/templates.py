@@ -171,6 +171,44 @@ EMAIL_STRINGS = {
         "exhibition_unregistered_bookings_cancelled": "Your {booking_count} active booking(s) have also been cancelled.",
         "exhibition_unregistered_action": "Browse Events",
         "exhibition_unregistered_closing": "We hope to see you at another event!",
+
+        # Event request notifications (Issue #92)
+        "event_request_approved_subject": "Your event has been approved: {event_title}",
+        "event_request_approved_greeting": "Congratulations!",
+        "event_request_approved_intro": "Your event request has been approved. Your organization and event have been created on the platform.",
+        "event_request_approved_action": "Manage Your Event",
+        "event_request_approved_closing": "You can now start configuring your event: add zones, time slots, and more.",
+
+        "event_request_rejected_subject": "Event request not approved: {event_title}",
+        "event_request_rejected_greeting": "Event Request Update",
+        "event_request_rejected_intro": "Unfortunately, your event request has not been approved.",
+        "event_request_rejected_action": "Contact Support",
+        "event_request_rejected_closing": "If you have questions, please contact the platform administrators.",
+
+        "event_request_changes_subject": "Changes requested for your event: {event_title}",
+        "event_request_changes_greeting": "Action Required",
+        "event_request_changes_intro": "The administrators have requested some changes to your event request before it can be approved.",
+        "event_request_changes_action": "Edit Your Request",
+        "event_request_changes_closing": "Please review the feedback and resubmit your request.",
+
+        "event_request_submitted_subject": "New event request submitted",
+        "event_request_submitted_greeting": "New Event Request",
+        "event_request_submitted_intro": "A new event request has been submitted and is awaiting review.",
+        "event_request_submitted_action": "Review Request",
+        "event_request_submitted_closing": "Please review the request and take appropriate action.",
+        "event_request_resubmitted_subject": "Event request resubmitted after changes",
+        "event_request_resubmitted_greeting": "Event Request Updated",
+        "event_request_resubmitted_intro": "An event request has been resubmitted after making requested changes.",
+        "requester_label": "Requester",
+        "event_title_label": "Event",
+        "organization_label": "Organization",
+
+        # Event request confirmation (to requester)
+        "event_request_confirmation_subject": "Your event request has been submitted: {event_title}",
+        "event_request_confirmation_greeting": "Request Submitted",
+        "event_request_confirmation_intro": "Thank you for submitting your event request. Our team will review it and get back to you.",
+        "event_request_confirmation_action": "View My Requests",
+        "event_request_confirmation_closing": "You will receive an email once your request has been reviewed.",
     },
     "fr": {
         # Common
@@ -319,6 +357,44 @@ EMAIL_STRINGS = {
         "exhibition_unregistered_bookings_cancelled": "Vos {booking_count} réservation(s) active(s) ont également été annulées.",
         "exhibition_unregistered_action": "Parcourir les événements",
         "exhibition_unregistered_closing": "Nous espérons vous revoir à un autre événement !",
+
+        # Event request notifications (Issue #92)
+        "event_request_approved_subject": "Votre événement a été approuvé : {event_title}",
+        "event_request_approved_greeting": "Félicitations !",
+        "event_request_approved_intro": "Votre demande d'événement a été approuvée. Votre organisation et votre événement ont été créés sur la plateforme.",
+        "event_request_approved_action": "Gérer votre événement",
+        "event_request_approved_closing": "Vous pouvez maintenant configurer votre événement : ajouter des zones, des créneaux horaires, et plus encore.",
+
+        "event_request_rejected_subject": "Demande d'événement non approuvée : {event_title}",
+        "event_request_rejected_greeting": "Mise à jour de votre demande",
+        "event_request_rejected_intro": "Malheureusement, votre demande d'événement n'a pas été approuvée.",
+        "event_request_rejected_action": "Contacter le support",
+        "event_request_rejected_closing": "Si vous avez des questions, veuillez contacter les administrateurs de la plateforme.",
+
+        "event_request_changes_subject": "Modifications demandées pour votre événement : {event_title}",
+        "event_request_changes_greeting": "Action requise",
+        "event_request_changes_intro": "Les administrateurs ont demandé des modifications à votre demande d'événement avant qu'elle puisse être approuvée.",
+        "event_request_changes_action": "Modifier votre demande",
+        "event_request_changes_closing": "Veuillez consulter les commentaires et resoumettre votre demande.",
+
+        "event_request_submitted_subject": "Nouvelle demande d'événement soumise",
+        "event_request_submitted_greeting": "Nouvelle demande d'événement",
+        "event_request_submitted_intro": "Une nouvelle demande d'événement a été soumise et attend examen.",
+        "event_request_submitted_action": "Examiner la demande",
+        "event_request_submitted_closing": "Veuillez examiner la demande et prendre les mesures appropriées.",
+        "event_request_resubmitted_subject": "Demande d'événement resoumise après modifications",
+        "event_request_resubmitted_greeting": "Demande d'événement mise à jour",
+        "event_request_resubmitted_intro": "Une demande d'événement a été resoumise après les modifications demandées.",
+        "requester_label": "Demandeur",
+        "event_title_label": "Événement",
+        "organization_label": "Organisation",
+
+        # Event request confirmation (to requester)
+        "event_request_confirmation_subject": "Votre demande d'événement a été soumise : {event_title}",
+        "event_request_confirmation_greeting": "Demande soumise",
+        "event_request_confirmation_intro": "Merci d'avoir soumis votre demande d'événement. Notre équipe va l'examiner et vous recontactera.",
+        "event_request_confirmation_action": "Voir mes demandes",
+        "event_request_confirmation_closing": "Vous recevrez un email une fois votre demande examinée.",
     },
 }
 
@@ -857,4 +933,126 @@ def render_exhibition_unregistered(
         intro_text=get_string("exhibition_unregistered_intro", locale),
         action_button_text=get_string("exhibition_unregistered_action", locale),
         closing_text=get_string("exhibition_unregistered_closing", locale),
+    )
+
+
+# =============================================================================
+# Event Request Notifications (Issue #92)
+# =============================================================================
+
+def render_event_request_approved(
+    locale: str,
+    event_title: str,
+    action_url: Optional[str] = None,
+) -> tuple[str, str]:
+    """Render event request approved notification email."""
+    return render_email_template(
+        "event_request_notification",
+        locale=locale,
+        subject=get_string("event_request_approved_subject", locale, event_title=event_title),
+        event_title=event_title,
+        action_url=action_url,
+        greeting=get_string("event_request_approved_greeting", locale),
+        intro_text=get_string("event_request_approved_intro", locale),
+        action_button_text=get_string("event_request_approved_action", locale),
+        closing_text=get_string("event_request_approved_closing", locale),
+    )
+
+
+def render_event_request_rejected(
+    locale: str,
+    event_title: str,
+    admin_comment: str,
+    action_url: Optional[str] = None,
+) -> tuple[str, str]:
+    """Render event request rejected notification email."""
+    return render_email_template(
+        "event_request_notification",
+        locale=locale,
+        subject=get_string("event_request_rejected_subject", locale, event_title=event_title),
+        event_title=event_title,
+        admin_comment=admin_comment,
+        action_url=action_url,
+        greeting=get_string("event_request_rejected_greeting", locale),
+        intro_text=get_string("event_request_rejected_intro", locale),
+        action_button_text=get_string("event_request_rejected_action", locale),
+        closing_text=get_string("event_request_rejected_closing", locale),
+        reason_label=get_string("reason_label", locale),
+    )
+
+
+def render_event_request_changes(
+    locale: str,
+    event_title: str,
+    admin_comment: str,
+    action_url: Optional[str] = None,
+) -> tuple[str, str]:
+    """Render event request changes requested notification email."""
+    return render_email_template(
+        "event_request_notification",
+        locale=locale,
+        subject=get_string("event_request_changes_subject", locale, event_title=event_title),
+        event_title=event_title,
+        admin_comment=admin_comment,
+        action_url=action_url,
+        greeting=get_string("event_request_changes_greeting", locale),
+        intro_text=get_string("event_request_changes_intro", locale),
+        action_button_text=get_string("event_request_changes_action", locale),
+        closing_text=get_string("event_request_changes_closing", locale),
+        reason_label=get_string("comment_label", locale),
+    )
+
+
+def render_event_request_submitted(
+    locale: str,
+    event_title: str,
+    organization_name: str,
+    requester_name: str,
+    requester_email: str,
+    action_url: Optional[str] = None,
+    is_resubmission: bool = False,
+) -> tuple[str, str]:
+    """Render event request submitted notification email (for admins)."""
+    # Use different strings for resubmission vs new submission
+    prefix = "event_request_resubmitted" if is_resubmission else "event_request_submitted"
+
+    return render_email_template(
+        "event_request_submitted",
+        locale=locale,
+        subject=get_string(f"{prefix}_subject", locale),
+        event_title=event_title,
+        organization_name=organization_name,
+        requester_name=requester_name,
+        requester_email=requester_email,
+        action_url=action_url,
+        greeting=get_string(f"{prefix}_greeting", locale),
+        intro_text=get_string(f"{prefix}_intro", locale),
+        action_button_text=get_string("event_request_submitted_action", locale),
+        closing_text=get_string("event_request_submitted_closing", locale),
+        requester_label=get_string("requester_label", locale),
+        event_title_label=get_string("event_title_label", locale),
+        organization_label=get_string("organization_label", locale),
+    )
+
+
+def render_event_request_confirmation(
+    locale: str,
+    event_title: str,
+    organization_name: str,
+    action_url: Optional[str] = None,
+) -> tuple[str, str]:
+    """Render event request confirmation email (for requester)."""
+    return render_email_template(
+        "event_request_notification",
+        locale=locale,
+        subject=get_string("event_request_confirmation_subject", locale, event_title=event_title),
+        event_title=event_title,
+        organization_name=organization_name,
+        action_url=action_url,
+        greeting=get_string("event_request_confirmation_greeting", locale),
+        intro_text=get_string("event_request_confirmation_intro", locale),
+        action_button_text=get_string("event_request_confirmation_action", locale),
+        closing_text=get_string("event_request_confirmation_closing", locale),
+        event_title_label=get_string("event_title_label", locale),
+        organization_label=get_string("organization_label", locale),
     )
