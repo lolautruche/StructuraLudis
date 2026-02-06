@@ -771,12 +771,25 @@ async def cancel_booking(
 
     # Perform the cancellation
     service = GameSessionService(db)
-    booking = await service.cancel_booking(booking_id, current_user)
+    booking, promoted_booking = await service.cancel_booking(booking_id, current_user)
 
     # Send notifications - different email for confirmed vs waitlisted
     # Notifications are non-blocking - if they fail, the cancellation still succeeds
     try:
         notification_service = NotificationService(db)
+
+        # Build location string for notifications
+        location_parts = []
+        if session.physical_table_id:
+            from app.domain.exhibition.entity import Zone, PhysicalTable
+            table_result = await db.execute(
+                select(PhysicalTable.label, Zone.name)
+                .join(Zone, PhysicalTable.zone_id == Zone.id)
+                .where(PhysicalTable.id == session.physical_table_id)
+            )
+            table_row = table_result.one_or_none()
+            if table_row:
+                location_parts = [table_row[1], table_row[0]]
 
         # Build context
         context = SessionNotificationContext(
@@ -789,6 +802,7 @@ async def cancel_booking(
             gm_name=gm.full_name,
             player_name=player.full_name or player.email,
             max_players=session.max_players_count,
+            location=" - ".join(filter(None, location_parts)) or None,
         )
 
         # Notify player
@@ -820,6 +834,23 @@ async def cancel_booking(
                 locale=gm.locale or "en",
             )
             await notification_service.notify_gm_player_cancelled(gm_recipient, context)
+
+            # Notify promoted user from waitlist
+            if promoted_booking:
+                promoted_user_result = await db.execute(
+                    select(User).where(User.id == promoted_booking.user_id)
+                )
+                promoted_user = promoted_user_result.scalar_one()
+                promoted_recipient = NotificationRecipient(
+                    user_id=promoted_user.id,
+                    email=promoted_user.email,
+                    full_name=promoted_user.full_name,
+                    locale=promoted_user.locale or "en",
+                )
+                await notification_service.notify_waitlist_promoted(
+                    promoted_recipient, context,
+                    action_url=f"/sessions/{session.id}",
+                )
         else:
             # Send waitlist cancelled email to player (no GM notification for waitlist)
             await notification_service.notify_waitlist_cancelled_to_player(player_recipient, context)
@@ -860,7 +891,75 @@ async def mark_no_show(
     Can be done by: session creator (GM) or organizer.
     """
     service = GameSessionService(db)
-    return await service.mark_no_show(booking_id, current_user)
+    booking, promoted_booking = await service.mark_no_show(booking_id, current_user)
+
+    # Send notification to promoted user
+    if promoted_booking:
+        try:
+            # Load session, exhibition, GM and promoted user info
+            session_result = await db.execute(
+                select(GameSession).where(GameSession.id == booking.game_session_id)
+            )
+            session = session_result.scalar_one()
+
+            exhibition_result = await db.execute(
+                select(Exhibition).where(Exhibition.id == session.exhibition_id)
+            )
+            exhibition = exhibition_result.scalar_one()
+
+            gm_result = await db.execute(
+                select(User).where(User.id == session.created_by_user_id)
+            )
+            gm = gm_result.scalar_one()
+
+            promoted_user_result = await db.execute(
+                select(User).where(User.id == promoted_booking.user_id)
+            )
+            promoted_user = promoted_user_result.scalar_one()
+
+            # Build location
+            location = None
+            if session.physical_table_id:
+                from app.domain.exhibition.entity import Zone, PhysicalTable
+                table_result = await db.execute(
+                    select(PhysicalTable.label, Zone.name)
+                    .join(Zone, PhysicalTable.zone_id == Zone.id)
+                    .where(PhysicalTable.id == session.physical_table_id)
+                )
+                table_row = table_result.one_or_none()
+                if table_row:
+                    location = " - ".join(filter(None, [table_row[1], table_row[0]]))
+
+            context = SessionNotificationContext(
+                session_id=session.id,
+                session_title=session.title,
+                exhibition_id=exhibition.id,
+                exhibition_title=exhibition.title,
+                scheduled_start=session.scheduled_start,
+                scheduled_end=session.scheduled_end,
+                gm_name=gm.full_name,
+                player_name=promoted_user.full_name or promoted_user.email,
+                max_players=session.max_players_count,
+                location=location,
+            )
+
+            promoted_recipient = NotificationRecipient(
+                user_id=promoted_user.id,
+                email=promoted_user.email,
+                full_name=promoted_user.full_name,
+                locale=promoted_user.locale or "en",
+            )
+
+            notification_service = NotificationService(db)
+            await notification_service.notify_waitlist_promoted(
+                promoted_recipient, context,
+                action_url=f"/sessions/{session.id}",
+            )
+        except Exception as e:
+            import logging
+            logging.getLogger(__name__).error(f"Failed to send waitlist promotion notification: {e}")
+
+    return booking
 
 
 @router.get("/{session_id}/my-booking", response_model=Optional[BookingRead])
