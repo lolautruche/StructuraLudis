@@ -851,6 +851,24 @@ async def cancel_booking(
                     promoted_recipient, context,
                     action_url=f"/sessions/{session.id}",
                 )
+                # Notify GM about waitlist promotion
+                promoted_context = SessionNotificationContext(
+                    session_id=session.id,
+                    session_title=session.title,
+                    exhibition_id=exhibition.id,
+                    exhibition_title=exhibition.title,
+                    scheduled_start=session.scheduled_start,
+                    scheduled_end=session.scheduled_end,
+                    gm_name=gm.full_name,
+                    player_name=promoted_user.full_name or promoted_user.email,
+                    players_registered=context.players_registered,
+                    max_players=session.max_players_count,
+                    location=context.location,
+                )
+                await notification_service.notify_gm_waitlist_promoted(
+                    gm_recipient, promoted_context,
+                    action_url=f"/sessions/{session.id}",
+                )
         else:
             # Send waitlist cancelled email to player (no GM notification for waitlist)
             await notification_service.notify_waitlist_cancelled_to_player(player_recipient, context)
@@ -953,6 +971,28 @@ async def mark_no_show(
             notification_service = NotificationService(db)
             await notification_service.notify_waitlist_promoted(
                 promoted_recipient, context,
+                action_url=f"/sessions/{session.id}",
+            )
+
+            # Notify GM about waitlist promotion
+            from sqlalchemy import func
+            from app.domain.shared.entity import BookingStatus as BS
+            confirmed_result = await db.execute(
+                select(func.count(Booking.id)).where(
+                    Booking.game_session_id == session.id,
+                    Booking.status.in_([BS.CONFIRMED, BS.CHECKED_IN]),
+                )
+            )
+            context.players_registered = confirmed_result.scalar() or 0
+
+            gm_recipient = NotificationRecipient(
+                user_id=gm.id,
+                email=gm.email,
+                full_name=gm.full_name,
+                locale=gm.locale or "en",
+            )
+            await notification_service.notify_gm_waitlist_promoted(
+                gm_recipient, context,
                 action_url=f"/sessions/{session.id}",
             )
         except Exception as e:
