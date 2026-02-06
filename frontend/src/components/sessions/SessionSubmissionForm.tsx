@@ -227,6 +227,11 @@ export function SessionSubmissionForm({
     setSubmitError(null);
 
     try {
+      // Convert tool IDs to slugs for storage (display components expect slugs)
+      const safetyToolSlugs = data.safety_tools
+        .map((id) => safetyTools.find((t) => t.id === id)?.slug)
+        .filter((slug): slug is string => !!slug);
+
       // Create session
       const createResponse = await sessionsApi.create({
         exhibition_id: exhibitionId,
@@ -237,7 +242,7 @@ export function SessionSubmissionForm({
         language: data.language,
         min_age: data.min_age || undefined,
         max_players_count: data.max_players_count,
-        safety_tools: data.safety_tools.length > 0 ? data.safety_tools : undefined,
+        safety_tools: safetyToolSlugs.length > 0 ? safetyToolSlugs : undefined,
         is_accessible_disability: data.is_accessible_disability,
         scheduled_start: data.scheduled_start,
         scheduled_end: data.scheduled_end,

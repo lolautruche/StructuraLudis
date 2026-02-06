@@ -115,6 +115,11 @@ export default function SessionEditPage() {
     if (!session || !canEdit) return;
 
     setIsSaving(true);
+    // Convert tool IDs back to slugs for storage (display components expect slugs)
+    const safetyToolSlugs = selectedSafetyToolIds
+      .map((id) => availableSafetyTools.find((t) => t.id === id)?.slug)
+      .filter((slug): slug is string => !!slug);
+
     const updateData: SessionUpdateRequest = {
       title,
       description: description || undefined,
@@ -122,7 +127,7 @@ export default function SessionEditPage() {
       min_age: minAge,
       max_players_count: maxPlayers,
       is_accessible_disability: isAccessible,
-      safety_tools: selectedSafetyToolIds.length > 0 ? selectedSafetyToolIds : [],
+      safety_tools: safetyToolSlugs,
     };
 
     const response = await sessionsApi.update(session.id, updateData);
