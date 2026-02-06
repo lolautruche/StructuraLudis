@@ -5,10 +5,11 @@ import { useParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useRouter, Link } from '@/i18n/routing';
 import { Button, Card, Input, Textarea, ConfirmDialog } from '@/components/ui';
+import { SafetyToolsSelector } from '@/components/sessions/SafetyToolsSelector';
 import { sessionsApi, exhibitionsApi } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/contexts/ToastContext';
-import type { GameSession, SessionUpdateRequest, Exhibition } from '@/lib/api/types';
+import type { GameSession, SessionUpdateRequest, Exhibition, SafetyTool } from '@/lib/api/types';
 
 export default function SessionEditPage() {
   const params = useParams();
@@ -35,6 +36,8 @@ export default function SessionEditPage() {
   const [minAge, setMinAge] = useState(0);
   const [maxPlayers, setMaxPlayers] = useState(5);
   const [isAccessible, setIsAccessible] = useState(false);
+  const [availableSafetyTools, setAvailableSafetyTools] = useState<SafetyTool[]>([]);
+  const [selectedSafetyToolIds, setSelectedSafetyToolIds] = useState<string[]>([]);
 
   // Fetch session details
   const fetchSession = useCallback(async () => {
@@ -52,10 +55,29 @@ export default function SessionEditPage() {
       setMaxPlayers(s.max_players_count);
       setIsAccessible(s.is_accessible_disability);
 
-      // Fetch exhibition
-      const exhibitionResponse = await exhibitionsApi.getById(s.exhibition_id);
+      // Fetch exhibition and safety tools
+      const [exhibitionResponse, toolsResponse] = await Promise.all([
+        exhibitionsApi.getById(s.exhibition_id),
+        exhibitionsApi.getSafetyTools(s.exhibition_id),
+      ]);
       if (exhibitionResponse.data) {
         setExhibition(exhibitionResponse.data);
+      }
+      if (toolsResponse.data) {
+        const tools = toolsResponse.data;
+        setAvailableSafetyTools(tools);
+        // Map session's stored safety_tools (could be IDs or slugs) to tool IDs
+        if (s.safety_tools && s.safety_tools.length > 0) {
+          const mappedIds = s.safety_tools.map((value) => {
+            // Try matching by ID first, then by slug
+            const byId = tools.find((t) => t.id === value);
+            if (byId) return byId.id;
+            const bySlug = tools.find((t) => t.slug === value);
+            if (bySlug) return bySlug.id;
+            return value; // fallback: keep original value
+          });
+          setSelectedSafetyToolIds(mappedIds);
+        }
       }
     } else {
       setError(response.error?.message || t('sessionNotFound'));
@@ -93,6 +115,11 @@ export default function SessionEditPage() {
     if (!session || !canEdit) return;
 
     setIsSaving(true);
+    // Convert tool IDs back to slugs for storage (display components expect slugs)
+    const safetyToolSlugs = selectedSafetyToolIds
+      .map((id) => availableSafetyTools.find((t) => t.id === id)?.slug)
+      .filter((slug): slug is string => !!slug);
+
     const updateData: SessionUpdateRequest = {
       title,
       description: description || undefined,
@@ -100,6 +127,7 @@ export default function SessionEditPage() {
       min_age: minAge,
       max_players_count: maxPlayers,
       is_accessible_disability: isAccessible,
+      safety_tools: safetyToolSlugs,
     };
 
     const response = await sessionsApi.update(session.id, updateData);
@@ -287,6 +315,15 @@ export default function SessionEditPage() {
                 {t('accessibleSession')}
               </label>
             </div>
+
+            {/* Safety Tools */}
+            {availableSafetyTools.length > 0 && (
+              <SafetyToolsSelector
+                safetyTools={availableSafetyTools}
+                selectedToolIds={selectedSafetyToolIds}
+                onToolsChange={setSelectedSafetyToolIds}
+              />
+            )}
 
             {/* Actions */}
             <div className="flex gap-4 pt-4 border-t border-slate-200 dark:border-slate-700">
