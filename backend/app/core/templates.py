@@ -90,6 +90,13 @@ EMAIL_STRINGS = {
         "player_label": "Player",
         "players_registered_label": "Players registered",
 
+        # Waitlist promotion (GM notification)
+        "gm_waitlist_promoted_subject": "Waitlist promotion: {session_title}",
+        "gm_waitlist_promoted_greeting": "Waitlist Promotion",
+        "gm_waitlist_promoted_intro": "A player from the waitlist has been automatically added to your session.",
+        "gm_waitlist_promoted_action": "View Session",
+        "gm_waitlist_promoted_closing": "The player has been notified by email.",
+
         # Booking cancelled (player notification)
         "booking_cancelled_subject": "Booking cancelled: {session_title}",
         "booking_cancelled_greeting": "Booking Cancelled",
@@ -292,6 +299,13 @@ EMAIL_STRINGS = {
         "new_player_registration_closing": "Bonne partie !",
         "player_label": "Joueur",
         "players_registered_label": "Joueurs inscrits",
+
+        # Waitlist promotion (GM notification)
+        "gm_waitlist_promoted_subject": "Promotion liste d'attente : {session_title}",
+        "gm_waitlist_promoted_greeting": "Promotion liste d'attente",
+        "gm_waitlist_promoted_intro": "Un joueur de la liste d'attente a été automatiquement ajouté à votre session.",
+        "gm_waitlist_promoted_action": "Voir la session",
+        "gm_waitlist_promoted_closing": "Le joueur a été notifié par email.",
 
         # Booking cancelled (player notification)
         "booking_cancelled_subject": "Réservation annulée : {session_title}",
@@ -682,6 +696,41 @@ def render_new_player_registration(
         intro_text=get_string("new_player_registration_intro", locale),
         action_button_text=get_string("new_player_registration_action", locale),
         closing_text=get_string("new_player_registration_closing", locale),
+        player_label=get_string("player_label", locale),
+        players_registered_label=get_string("players_registered_label", locale),
+    )
+
+
+def render_gm_waitlist_promoted(
+    locale: str,
+    session_title: str,
+    exhibition_title: str,
+    scheduled_start: datetime,
+    player_name: str,
+    players_registered: int,
+    max_players: int,
+    action_url: Optional[str] = None,
+) -> tuple[str, str]:
+    """Render waitlist promotion email for GM."""
+    date_str, time_str = format_datetime(scheduled_start, locale)
+
+    subject = get_string("gm_waitlist_promoted_subject", locale, session_title=session_title)
+
+    return render_email_template(
+        "new_player_registration",
+        locale=locale,
+        session_title=session_title,
+        exhibition_title=exhibition_title,
+        scheduled_date=date_str,
+        scheduled_time=time_str,
+        player_name=player_name,
+        players_registered=players_registered,
+        max_players=max_players,
+        action_url=action_url,
+        greeting=get_string("gm_waitlist_promoted_greeting", locale),
+        intro_text=get_string("gm_waitlist_promoted_intro", locale),
+        action_button_text=get_string("gm_waitlist_promoted_action", locale),
+        closing_text=get_string("gm_waitlist_promoted_closing", locale),
         player_label=get_string("player_label", locale),
         players_registered_label=get_string("players_registered_label", locale),
     )

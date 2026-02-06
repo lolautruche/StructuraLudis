@@ -1005,11 +1005,12 @@ class GameSessionService:
         await self.db.flush()
 
         # Promote from waitlist if spot opened
+        promoted_booking = None
         if was_confirmed:
-            await self._promote_from_waitlist(booking.game_session_id)
+            promoted_booking = await self._promote_from_waitlist(booking.game_session_id)
 
         await self.db.refresh(booking)
-        return booking
+        return booking, promoted_booking
 
     async def check_in_booking(
         self,
@@ -1100,10 +1101,10 @@ class GameSessionService:
         await self.db.flush()
 
         # Promote from waitlist since spot is now free
-        await self._promote_from_waitlist(booking.game_session_id)
+        promoted_booking = await self._promote_from_waitlist(booking.game_session_id)
 
         await self.db.refresh(booking)
-        return booking
+        return booking, promoted_booking
 
     # =========================================================================
     # Helper Methods
@@ -1157,8 +1158,11 @@ class GameSessionService:
             return True
         return False
 
-    async def _promote_from_waitlist(self, session_id: UUID) -> None:
-        """Promote the first person from waitlist to confirmed."""
+    async def _promote_from_waitlist(self, session_id: UUID) -> Optional[Booking]:
+        """Promote the first person from waitlist to confirmed.
+
+        Returns the promoted booking if someone was promoted, None otherwise.
+        """
         result = await self.db.execute(
             select(Booking)
             .where(
@@ -1172,6 +1176,8 @@ class GameSessionService:
         if next_in_line:
             next_in_line.status = BookingStatus.CONFIRMED
             await self.db.flush()
+            return next_in_line
+        return None
 
     async def _check_booking_overlap(
         self,

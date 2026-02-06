@@ -22,6 +22,7 @@ from app.core.templates import (
     render_new_waitlist_player,
     render_session_reminder,
     render_new_player_registration,
+    render_gm_waitlist_promoted,
     render_booking_cancelled,
     render_player_cancelled,
     render_waitlist_cancelled,
@@ -558,6 +559,44 @@ class NotificationService:
             channel=NotificationChannel.EMAIL,
             subject=subject,
             body=f"{context.player_name} has cancelled their registration for {context.session_title}.",
+            context={
+                "session_id": str(context.session_id),
+                "exhibition_id": str(context.exhibition_id),
+            },
+        )
+
+        # Send email
+        return await self._send_email(gm_recipient, subject, html_body, notification)
+
+    async def notify_gm_waitlist_promoted(
+        self,
+        gm_recipient: NotificationRecipient,
+        context: SessionNotificationContext,
+        action_url: Optional[str] = None,
+    ) -> bool:
+        """
+        Notify a GM that a waitlisted player has been promoted to confirmed.
+
+        Channels: Email, In-App
+        """
+        subject, html_body = render_gm_waitlist_promoted(
+            locale=gm_recipient.locale,
+            session_title=context.session_title,
+            exhibition_title=context.exhibition_title,
+            scheduled_start=context.scheduled_start,
+            player_name=context.player_name or "Unknown",
+            players_registered=context.players_registered or 0,
+            max_players=context.max_players or 0,
+            action_url=action_url,
+        )
+
+        # Create in-app notification
+        notification = await self._create_notification_record(
+            user_id=gm_recipient.user_id,
+            notification_type=NotificationType.WAITLIST_PROMOTED,
+            channel=NotificationChannel.EMAIL,
+            subject=subject,
+            body=f"{context.player_name} has been promoted from waitlist for {context.session_title}.",
             context={
                 "session_id": str(context.session_id),
                 "exhibition_id": str(context.exhibition_id),
