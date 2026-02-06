@@ -80,9 +80,13 @@ class MySessionSummary(BaseModel):
     scheduled_end: datetime
     zone_name: Optional[str] = None
     table_label: Optional[str] = None
+    language: str = "fr"
     max_players_count: int
     confirmed_players: int
     waitlist_count: int
+    game_title: Optional[str] = None
+    game_cover_image_url: Optional[str] = None
+    game_external_provider: Optional[str] = None
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -101,9 +105,13 @@ class MyBookingSummary(BaseModel):
     zone_name: Optional[str] = None
     table_label: Optional[str] = None
     gm_name: Optional[str] = None
+    language: str = "fr"
     max_players_count: int = 0
     confirmed_players: int = 0
     waitlist_count: int = 0
+    game_title: Optional[str] = None
+    game_cover_image_url: Optional[str] = None
+    game_external_provider: Optional[str] = None
 
     model_config = ConfigDict(from_attributes=True)
 

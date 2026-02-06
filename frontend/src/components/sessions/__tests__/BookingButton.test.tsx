@@ -64,6 +64,10 @@ const createMockSession = (overrides: Partial<GameSession> = {}): GameSession =>
   confirmed_players_count: 3,
   waitlist_count: 0,
   has_available_seats: true,
+  game_cover_image_url: null,
+  game_external_url: null,
+  game_external_provider: null,
+  game_themes: null,
   ...overrides,
 });
 

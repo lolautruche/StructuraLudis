@@ -28,7 +28,7 @@ from app.domain.user.schemas import (
     SessionConflict,
     MyExhibitions,
 )
-from app.domain.game.entity import GameSession, Booking
+from app.domain.game.entity import Game, GameSession, Booking
 from app.domain.exhibition.entity import Exhibition, Zone, PhysicalTable, ExhibitionRegistration
 from app.domain.exhibition.schemas import ExhibitionRead
 from app.domain.user.entity import UserExhibitionRole
@@ -486,9 +486,13 @@ async def get_my_agenda(
             GameSession,
             Zone.name.label("zone_name"),
             PhysicalTable.label.label("table_label"),
+            Game.title.label("game_title"),
+            Game.cover_image_url.label("game_cover_image_url"),
+            Game.external_provider.label("game_external_provider"),
         )
         .outerjoin(PhysicalTable, GameSession.physical_table_id == PhysicalTable.id)
         .outerjoin(Zone, PhysicalTable.zone_id == Zone.id)
+        .outerjoin(Game, GameSession.game_id == Game.id)
         .where(
             GameSession.created_by_user_id == current_user.id,
             GameSession.exhibition_id == exhibition_id,
@@ -528,9 +532,13 @@ async def get_my_agenda(
             scheduled_end=session.scheduled_end,
             zone_name=row[1],
             table_label=row[2],
+            language=session.language,
             max_players_count=session.max_players_count,
             confirmed_players=confirmed,
             waitlist_count=waitlist,
+            game_title=row[3],
+            game_cover_image_url=row[4],
+            game_external_provider=row[5],
         ))
 
         session_times.append({
@@ -552,11 +560,16 @@ async def get_my_agenda(
             User.full_name.label("gm_name"),
             GameSession.max_players_count,
             GameSession.id.label("session_id"),
+            Game.title.label("game_title"),
+            GameSession.language.label("session_language"),
+            Game.cover_image_url.label("game_cover_image_url"),
+            Game.external_provider.label("game_external_provider"),
         )
         .join(GameSession, Booking.game_session_id == GameSession.id)
         .join(User, GameSession.created_by_user_id == User.id)
         .outerjoin(PhysicalTable, GameSession.physical_table_id == PhysicalTable.id)
         .outerjoin(Zone, PhysicalTable.zone_id == Zone.id)
+        .outerjoin(Game, GameSession.game_id == Game.id)
         .where(
             Booking.user_id == current_user.id,
             GameSession.exhibition_id == exhibition_id,
@@ -602,9 +615,13 @@ async def get_my_agenda(
             zone_name=row[4],
             table_label=row[5],
             gm_name=row[6],
+            language=row[10] or "fr",
             max_players_count=row[7],
             confirmed_players=confirmed,
             waitlist_count=waitlist,
+            game_title=row[9],
+            game_cover_image_url=row[11],
+            game_external_provider=row[12],
         ))
 
         session_times.append({

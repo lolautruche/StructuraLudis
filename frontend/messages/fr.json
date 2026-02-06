@@ -172,7 +172,8 @@
     "cancelReason": "Raison de l'annulation",
     "cancelReasonPlaceholder": "Expliquez pourquoi vous annulez cette session...",
     "sessionCancelled": "Session annulée",
-    "cancelError": "Erreur lors de l'annulation de la session"
+    "cancelError": "Erreur lors de l'annulation de la session",
+    "viewGameReference": "Voir la fiche du jeu"
   },
   "GameTable": {
     "complexity": "Complexité",
@@ -686,7 +687,8 @@
     "saving": "Enregistrement...",
     "submitting": "Soumission...",
     "submitError": "Session créée mais la soumission a échoué. Veuillez réessayer depuis votre tableau de bord.",
-    "genericError": "Une erreur est survenue. Veuillez réessayer."
+    "genericError": "Une erreur est survenue. Veuillez réessayer.",
+    "viewOnProvider": "Voir sur {provider}"
   },
   "SuperAdmin": {
     "title": "Portail Admin",

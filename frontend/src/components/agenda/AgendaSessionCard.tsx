@@ -3,6 +3,7 @@
 import { useTranslations } from 'next-intl';
 import { Link } from '@/i18n/routing';
 import { Card, Badge, Button } from '@/components/ui';
+import { ProviderBadge } from '@/components/games/ProviderBadge';
 import { formatTime } from '@/lib/utils';
 import type { MySessionSummary } from '@/lib/api/types';
 
@@ -46,6 +47,32 @@ export function AgendaSessionCard({ session, locale = 'fr' }: AgendaSessionCardP
 
         {/* Title */}
         <h3 className="font-semibold text-slate-900 dark:text-white">{session.title}</h3>
+
+        {/* Game info */}
+        {session.game_title && (
+          <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
+            {session.game_cover_image_url && (
+              <img
+                src={session.game_cover_image_url}
+                alt=""
+                className="w-8 h-11 object-cover rounded flex-shrink-0"
+                onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+              />
+            )}
+            <span>🎲</span>
+            <span className="line-clamp-1">{session.game_title}</span>
+            {session.game_external_provider && (
+              <ProviderBadge provider={session.game_external_provider} />
+            )}
+          </div>
+        )}
+
+        {/* Language */}
+        <div className="flex items-center gap-2">
+          <Badge size="sm" variant="default">
+            {session.language.toUpperCase()}
+          </Badge>
+        </div>
 
         {/* Time & Location */}
         <div className="flex flex-col gap-1 text-sm text-slate-600 dark:text-slate-400">

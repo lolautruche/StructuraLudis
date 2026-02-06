@@ -93,6 +93,11 @@ const mockGames = [
     publisher: 'Chaosium',
     min_players: 3,
     max_players: 6,
+    external_provider: 'grog',
+    external_url: 'https://www.grog.org/jeu/1234',
+    cover_image_url: 'https://example.com/coc.jpg',
+    themes: ['Horror', 'Investigation'],
+    last_synced_at: null,
   },
 ];
 

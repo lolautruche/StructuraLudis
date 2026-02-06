@@ -6,6 +6,7 @@ import { Card, Badge, Button } from '@/components/ui';
 import { AvailabilityBadge } from './AvailabilityBadge';
 import { SafetyToolsBadges } from './SafetyToolsBadges';
 import { BookingButton } from './BookingButton';
+import { ProviderBadge } from '@/components/games/ProviderBadge';
 import { formatDate, formatTime } from '@/lib/utils';
 import type { GameSession, Booking, Exhibition, GlobalRole } from '@/lib/api/types';
 
@@ -82,9 +83,49 @@ export function SessionDetail({
                 )}
               </div>
               {session.game_title && (
-                <div className="flex items-center gap-2 text-lg text-slate-700 dark:text-slate-300">
-                  <span>🎲</span>
-                  <span>{session.game_title}</span>
+                <div className="flex items-center gap-3 text-lg text-slate-700 dark:text-slate-300">
+                  {session.game_cover_image_url && (
+                    <img
+                      src={session.game_cover_image_url}
+                      alt={session.game_title}
+                      className="w-12 h-16 object-cover rounded flex-shrink-0"
+                      onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                    />
+                  )}
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span>🎲</span>
+                      <span>{session.game_title}</span>
+                      {session.game_external_provider && (
+                        <ProviderBadge provider={session.game_external_provider} />
+                      )}
+                    </div>
+                    {session.game_themes && session.game_themes.length > 0 && (
+                      <div className="flex flex-wrap gap-1 mt-1">
+                        {session.game_themes.map((theme) => (
+                          <span
+                            key={theme}
+                            className="inline-block px-1.5 py-0.5 text-xs rounded bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300"
+                          >
+                            {theme}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                    {session.game_external_url && (
+                      <a
+                        href={session.game_external_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 mt-1 text-sm text-ludis-primary hover:underline"
+                      >
+                        {t('viewGameReference')}
+                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                        </svg>
+                      </a>
+                    )}
+                  </div>
                 </div>
               )}
             </div>

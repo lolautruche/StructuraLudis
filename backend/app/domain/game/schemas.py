@@ -352,6 +352,19 @@ class SessionSearchResult(GameSessionRead):
     gm_name: Optional[str] = Field(
         None, description="Game Master name for display"
     )
+    # Game metadata from external providers (#56)
+    game_cover_image_url: Optional[str] = Field(
+        None, description="Game cover image URL (from GROG/BGG)"
+    )
+    game_external_url: Optional[str] = Field(
+        None, description="Game external reference URL (GROG/BGG page)"
+    )
+    game_external_provider: Optional[str] = Field(
+        None, description="External data provider name (e.g. 'grog', 'bgg')"
+    )
+    game_themes: Optional[List[str]] = Field(
+        None, description="Game themes/genres from external provider"
+    )
 
 
 # =============================================================================

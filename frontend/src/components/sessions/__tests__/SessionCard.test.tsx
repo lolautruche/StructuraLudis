@@ -56,6 +56,10 @@ const mockSession: GameSession = {
   confirmed_players_count: 3,
   waitlist_count: 0,
   has_available_seats: true,
+  game_cover_image_url: null,
+  game_external_url: null,
+  game_external_provider: null,
+  game_themes: null,
 };
 
 describe('SessionCard', () => {
@@ -112,5 +116,24 @@ describe('SessionCard', () => {
     render(<SessionCard session={mockSession} />);
     const link = screen.getByRole('link');
     expect(link).toHaveAttribute('href', '/sessions/123');
+  });
+
+  it('renders cover thumbnail when available', () => {
+    const { container } = render(
+      <SessionCard
+        session={{ ...mockSession, game_cover_image_url: 'https://example.com/cover.jpg' }}
+      />
+    );
+    const img = container.querySelector('img[src="https://example.com/cover.jpg"]');
+    expect(img).toBeInTheDocument();
+  });
+
+  it('renders provider badge when available', () => {
+    render(
+      <SessionCard
+        session={{ ...mockSession, game_external_provider: 'grog' }}
+      />
+    );
+    expect(screen.getByText('GROG')).toBeInTheDocument();
   });
 });
