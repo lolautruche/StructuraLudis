@@ -172,7 +172,8 @@
     "cancelReason": "Cancellation reason",
     "cancelReasonPlaceholder": "Explain why you are cancelling this session...",
     "sessionCancelled": "Session cancelled",
-    "cancelError": "Failed to cancel session"
+    "cancelError": "Failed to cancel session",
+    "viewGameReference": "View game reference"
   },
   "GameTable": {
     "complexity": "Complexity",
@@ -686,7 +687,8 @@
     "saving": "Saving...",
     "submitting": "Submitting...",
     "submitError": "Session created but submission failed. Please try again from your dashboard.",
-    "genericError": "An error occurred. Please try again."
+    "genericError": "An error occurred. Please try again.",
+    "viewOnProvider": "View on {provider}"
   },
   "SuperAdmin": {
     "title": "Admin Portal",

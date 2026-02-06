@@ -31,6 +31,7 @@ jest.mock('next-intl', () => ({
         accessibleSession: 'Accessible session',
         loginToBook: 'Log in to book',
         book: 'Book',
+        viewGameReference: 'View game reference',
       },
       GameTable: {
         gm: 'GM',
@@ -87,6 +88,10 @@ const createMockSession = (overrides: Partial<GameSession> = {}): GameSession =>
   confirmed_players_count: 3,
   waitlist_count: 0,
   has_available_seats: true,
+  game_cover_image_url: null,
+  game_external_url: null,
+  game_external_provider: null,
+  game_themes: null,
   ...overrides,
 });
 
@@ -236,5 +241,59 @@ describe('SessionDetail', () => {
     render(<SessionDetail session={session} isAuthenticated={true} />);
 
     expect(screen.getByText('Book')).toBeInTheDocument();
+  });
+
+  it('renders game cover image when available', () => {
+    const session = createMockSession({
+      game_cover_image_url: 'https://example.com/cover.jpg',
+    });
+
+    render(<SessionDetail session={session} />);
+
+    const img = screen.getByAltText("L'Appel de Cthulhu");
+    expect(img).toBeInTheDocument();
+    expect(img).toHaveAttribute('src', 'https://example.com/cover.jpg');
+  });
+
+  it('does not render game cover image when not available', () => {
+    const session = createMockSession({ game_cover_image_url: null });
+
+    render(<SessionDetail session={session} />);
+
+    expect(screen.queryByAltText("L'Appel de Cthulhu")).not.toBeInTheDocument();
+  });
+
+  it('renders provider badge when available', () => {
+    const session = createMockSession({
+      game_external_provider: 'grog',
+    });
+
+    render(<SessionDetail session={session} />);
+
+    expect(screen.getByText('GROG')).toBeInTheDocument();
+  });
+
+  it('renders game themes when available', () => {
+    const session = createMockSession({
+      game_themes: ['Horror', 'Investigation'],
+    });
+
+    render(<SessionDetail session={session} />);
+
+    expect(screen.getByText('Horror')).toBeInTheDocument();
+    expect(screen.getByText('Investigation')).toBeInTheDocument();
+  });
+
+  it('renders external link when available', () => {
+    const session = createMockSession({
+      game_external_url: 'https://www.grog.org/jeu/1234',
+    });
+
+    render(<SessionDetail session={session} />);
+
+    const link = screen.getByText('View game reference');
+    expect(link).toBeInTheDocument();
+    expect(link.closest('a')).toHaveAttribute('href', 'https://www.grog.org/jeu/1234');
+    expect(link.closest('a')).toHaveAttribute('target', '_blank');
   });
 });

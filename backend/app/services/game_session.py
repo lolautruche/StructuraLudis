@@ -74,6 +74,10 @@ class GameSessionService:
                 GameCategory.slug.label("category_slug"),
                 Zone.name.label("zone_name"),
                 UserGroup.name.label("provided_by_group_name"),
+                Game.cover_image_url.label("game_cover_image_url"),
+                Game.external_url.label("game_external_url"),
+                Game.external_provider.label("game_external_provider"),
+                Game.themes.label("game_themes"),
             )
             .join(Game, GameSession.game_id == Game.id)
             .join(GameCategory, Game.category_id == GameCategory.id)
@@ -134,6 +138,10 @@ class GameSessionService:
             category_slug = row[2]
             zone_name = row[3]
             provided_by_group_name = row[4]
+            game_cover_image_url = row[5]
+            game_external_url = row[6]
+            game_external_provider = row[7]
+            game_themes = row[8]
 
             # Count confirmed bookings
             booking_count = await self.db.execute(
@@ -214,6 +222,10 @@ class GameSessionService:
                 "table_label": table_label,
                 "game_title": game_title,
                 "gm_name": gm_name,
+                "game_cover_image_url": game_cover_image_url,
+                "game_external_url": game_external_url,
+                "game_external_provider": game_external_provider,
+                "game_themes": game_themes,
             })
 
         return sessions_with_availability

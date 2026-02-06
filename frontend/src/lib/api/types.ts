@@ -162,6 +162,11 @@ export interface GameSession {
   confirmed_players_count: number;
   waitlist_count: number;
   has_available_seats: boolean;
+  // Game metadata from external providers (#56)
+  game_cover_image_url: string | null;
+  game_external_url: string | null;
+  game_external_provider: string | null;
+  game_themes: string[] | null;
 }
 
 export interface Booking {
@@ -373,6 +378,12 @@ export interface Game {
   min_players: number;
   max_players: number;
   external_provider_id: string | null;
+  // GROG/BGG fields (#55, #56)
+  external_provider: string | null;
+  external_url: string | null;
+  cover_image_url: string | null;
+  themes: string[] | null;
+  last_synced_at: string | null;
   created_at: string;
   updated_at: string | null;
 }

@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useTranslations } from 'next-intl';
 import { Input, Button, Select, Card } from '@/components/ui';
 import { gamesApi } from '@/lib/api';
+import { ProviderBadge } from '@/components/games/ProviderBadge';
 import type { Game, GameCategory, GameComplexity } from '@/lib/api/types';
 
 interface GameSelectorProps {
@@ -158,22 +159,65 @@ export function GameSelector({ selectedGame, onGameSelect, error }: GameSelector
           {t('game')}
         </label>
         <Card className="p-3">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="font-medium text-slate-900 dark:text-white">{selectedGame.title}</p>
+          <div className="flex gap-3">
+            {/* Cover image */}
+            {selectedGame.cover_image_url && (
+              <img
+                src={selectedGame.cover_image_url}
+                alt={selectedGame.title}
+                className="w-20 h-28 object-cover rounded flex-shrink-0"
+                onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+              />
+            )}
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <p className="font-medium text-slate-900 dark:text-white">{selectedGame.title}</p>
+                  {selectedGame.external_provider && (
+                    <ProviderBadge provider={selectedGame.external_provider} />
+                  )}
+                </div>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => onGameSelect(null as unknown as Game)}
+                >
+                  {t('change')}
+                </Button>
+              </div>
               <p className="text-sm text-slate-600 dark:text-slate-400">
                 {selectedGame.publisher && `${selectedGame.publisher} - `}
                 {selectedGame.min_players}-{selectedGame.max_players} {t('players')}
               </p>
+              {/* Themes */}
+              {selectedGame.themes && selectedGame.themes.length > 0 && (
+                <div className="flex flex-wrap gap-1 mt-1">
+                  {selectedGame.themes.map((theme) => (
+                    <span
+                      key={theme}
+                      className="inline-block px-1.5 py-0.5 text-xs rounded bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300"
+                    >
+                      {theme}
+                    </span>
+                  ))}
+                </div>
+              )}
+              {/* External link */}
+              {selectedGame.external_url && selectedGame.external_provider && (
+                <a
+                  href={selectedGame.external_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 mt-1.5 text-xs text-ludis-primary hover:underline"
+                >
+                  {t('viewOnProvider', { provider: selectedGame.external_provider.toUpperCase() })}
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                  </svg>
+                </a>
+              )}
             </div>
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={() => onGameSelect(null as unknown as Game)}
-            >
-              {t('change')}
-            </Button>
           </div>
         </Card>
         {error && <p className="text-sm text-red-500">{error}</p>}
@@ -296,7 +340,7 @@ export function GameSelector({ selectedGame, onGameSelect, error }: GameSelector
 
         {/* Search results dropdown */}
         {showResults && searchQuery.length >= 2 && (
-          <div className="absolute z-10 w-full mt-1 bg-white dark:bg-ludis-card border border-slate-300 dark:border-slate-600 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+          <div className="absolute z-10 w-full mt-1 bg-white dark:bg-ludis-card border border-slate-300 dark:border-slate-600 rounded-lg shadow-lg max-h-80 overflow-y-auto">
             {isSearching ? (
               <div className="p-4 text-center text-slate-600 dark:text-slate-400">
                 {t('searching')}
@@ -307,14 +351,29 @@ export function GameSelector({ selectedGame, onGameSelect, error }: GameSelector
                   <li key={game.id}>
                     <button
                       type="button"
-                      className="w-full px-4 py-3 text-left hover:bg-slate-100 dark:hover:bg-slate-700 focus:bg-slate-100 dark:focus:bg-slate-700 focus:outline-none min-h-[44px]"
+                      className="w-full px-4 py-3 text-left hover:bg-slate-100 dark:hover:bg-slate-700 focus:bg-slate-100 dark:focus:bg-slate-700 focus:outline-none min-h-[44px] flex items-center gap-3"
                       onClick={() => handleSelectGame(game)}
                     >
-                      <p className="font-medium text-slate-900 dark:text-white">{game.title}</p>
-                      <p className="text-sm text-slate-600 dark:text-slate-400">
-                        {game.publisher && `${game.publisher} - `}
-                        {game.min_players}-{game.max_players} {t('players')}
-                      </p>
+                      {game.cover_image_url && (
+                        <img
+                          src={game.cover_image_url}
+                          alt=""
+                          className="w-10 h-14 object-cover rounded flex-shrink-0"
+                          onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                        />
+                      )}
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2">
+                          <p className="font-medium text-slate-900 dark:text-white">{game.title}</p>
+                          {game.external_provider && (
+                            <ProviderBadge provider={game.external_provider} />
+                          )}
+                        </div>
+                        <p className="text-sm text-slate-600 dark:text-slate-400">
+                          {game.publisher && `${game.publisher} - `}
+                          {game.min_players}-{game.max_players} {t('players')}
+                        </p>
+                      </div>
                     </button>
                   </li>
                 ))}

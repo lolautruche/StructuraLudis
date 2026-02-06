@@ -157,6 +157,10 @@ async def get_session(
             Zone.name.label("zone_name"),
             PhysicalTable.label.label("table_label"),
             User.full_name.label("gm_name"),
+            Game.cover_image_url.label("game_cover_image_url"),
+            Game.external_url.label("game_external_url"),
+            Game.external_provider.label("game_external_provider"),
+            Game.themes.label("game_themes"),
         )
         .outerjoin(UserGroup, GameSession.provided_by_group_id == UserGroup.id)
         .outerjoin(Game, GameSession.game_id == Game.id)
@@ -181,6 +185,10 @@ async def get_session(
     zone_name = row[4]
     table_label = row[5]
     gm_name = row[6]
+    game_cover_image_url = row[7]
+    game_external_url = row[8]
+    game_external_provider = row[9]
+    game_themes = row[10]
 
     # Count confirmed bookings
     confirmed_result = await db.execute(
@@ -237,6 +245,10 @@ async def get_session(
         table_label=table_label,
         game_title=game_title,
         gm_name=gm_name,
+        game_cover_image_url=game_cover_image_url,
+        game_external_url=game_external_url,
+        game_external_provider=game_external_provider,
+        game_themes=game_themes,
     )
 
 
