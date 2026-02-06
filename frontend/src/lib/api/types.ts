@@ -317,9 +317,13 @@ export interface MySessionSummary {
   scheduled_end: string;
   zone_name: string | null;
   table_label: string | null;
+  language: string;
   max_players_count: number;
   confirmed_players: number;
   waitlist_count: number;
+  game_title: string | null;
+  game_cover_image_url: string | null;
+  game_external_provider: string | null;
 }
 
 export interface MyBookingSummary {
@@ -335,9 +339,13 @@ export interface MyBookingSummary {
   zone_name: string | null;
   table_label: string | null;
   gm_name: string | null;
+  language: string;
   max_players_count: number;
   confirmed_players: number;
   waitlist_count: number;
+  game_title: string | null;
+  game_cover_image_url: string | null;
+  game_external_provider: string | null;
 }
 
 export interface SessionConflict {
