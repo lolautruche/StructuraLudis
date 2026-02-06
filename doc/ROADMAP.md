@@ -1,7 +1,7 @@
 # Roadmap & Priorities
 
 This document tracks prioritization decisions and project progress.
-**Last updated**: 2026-02-05
+**Last updated**: 2026-02-06
 
 ---
 
@@ -13,7 +13,6 @@ This document tracks prioritization decisions and project progress.
 
 | Issue | Title | Job Stories | Notes |
 |-------|-------|-------------|-------|
-| [#55](https://github.com/lolautruche/StructuraLudis/issues/55) | External Game Database Sync | JS.05 | **MVP scope**: Import games from GROG with links. No background worker sync for MVP. |
 | [#56](https://github.com/lolautruche/StructuraLudis/issues/56) | Game Autocomplete & Metadata | JS.B3, JS.B9 | On-demand enrichment when creating sessions |
 
 #### Waitlist
@@ -64,6 +63,7 @@ This document tracks prioritization decisions and project progress.
 
 | Issue | Title | Job Stories | Date |
 |-------|-------|-------------|------|
+| [#55](https://github.com/lolautruche/StructuraLudis/issues/55) | External Game Database Sync | JS.05 | 2026-02-06 |
 | [#92](https://github.com/lolautruche/StructuraLudis/issues/92) | Self-service event creation | JS.06, JS.07 | 2026-02-05 |
 | [#93](https://github.com/lolautruche/StructuraLudis/issues/93) | Zone-level table prefix | JS.A0 | 2026-02-04 |
 | [#95](https://github.com/lolautruche/StructuraLudis/issues/95) | Event list filters | JS.C10 | 2026-02-04 |
