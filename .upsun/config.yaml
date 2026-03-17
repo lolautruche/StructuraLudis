@@ -13,20 +13,21 @@ applications:
         set -ex
         poetry config virtualenvs.create false
         export PIP_USER=0
+        export PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1
         poetry install --only=main
       deploy: |
         set -ex
         poetry run alembic upgrade head
-        poetry run python backend/scripts/seed_db.py
+        poetry run python scripts/seed_db.py
     web:
       commands:
         start: poetry run uvicorn app.main:app --host 0.0.0.0 --port $PORT
     mounts:
-      backend/storage:
+      storage:
         source: storage
     relationships:
-      database: {}
-      rabbitmq: {}
+      database: 
+      rabbitmq: 
 
   frontend:
     source:
