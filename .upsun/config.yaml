@@ -11,9 +11,8 @@ applications:
     hooks:
       build: |
         set -ex
-        poetry config virtualenvs.create false
-        export PIP_USER=0
         export PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1
+        poetry config virtualenvs.in-project true
         poetry install --only=main
       deploy: |
         set -ex
