@@ -56,7 +56,7 @@ applications:
             echo >&2 "Waiting for deployment to complete"
             while [ "$(< .next/build-tree-id)" != "$PLATFORM_TREE_ID" ]; do sleep 1; done
           fi
-        start: npm run start -p "$PORT"
+        start: npx next start -p "$PORT"
       locations:
         /:
           root: public
