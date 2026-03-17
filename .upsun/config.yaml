@@ -17,7 +17,7 @@ applications:
       deploy: |
         set -ex
         poetry run alembic upgrade head
-        poetry run python scripts/seed_db.py
+        poetry run python -m scripts.seed_db
     web:
       commands:
         start: poetry run uvicorn app.main:app --host 0.0.0.0 --port $PORT
