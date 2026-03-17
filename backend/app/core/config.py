@@ -3,7 +3,27 @@ Application configuration.
 
 Uses pydantic-settings for type-safe environment variable parsing.
 """
+import os
+
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
+def _build_database_url_from_upsun() -> str | None:
+    """Build DATABASE_URL from Upsun relationship environment variables."""
+    host = os.environ.get("DATABASE_HOST")
+    if not host:
+        return None
+    port = os.environ.get("DATABASE_PORT", "5432")
+    username = os.environ.get("DATABASE_USERNAME", "")
+    password = os.environ.get("DATABASE_PASSWORD", "")
+    path = os.environ.get("DATABASE_PATH", "main")
+    return f"postgresql+asyncpg://{username}:{password}@{host}:{port}/{path}"
+
+
+_DEFAULT_DATABASE_URL = (
+    _build_database_url_from_upsun()
+    or "postgresql+asyncpg://sl_admin:sl_password@localhost:5432/structura_ludis"
+)
 
 
 class Settings(BaseSettings):
@@ -24,7 +44,7 @@ class Settings(BaseSettings):
     DEBUG: bool = False
 
     # Database
-    DATABASE_URL: str = "postgresql+asyncpg://sl_admin:sl_password@localhost:5432/structura_ludis"
+    DATABASE_URL: str = _DEFAULT_DATABASE_URL
 
     @property
     def async_database_url(self) -> str:
