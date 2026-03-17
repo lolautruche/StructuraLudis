@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useEffect, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useState } from 'react';
 
 type Theme = 'light' | 'dark' | 'system';
 
@@ -26,12 +26,12 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   };
 
   // Resolve theme based on preference
-  const resolveTheme = (preference: Theme): 'light' | 'dark' => {
+  const resolveTheme = useCallback((preference: Theme): 'light' | 'dark' => {
     if (preference === 'system') {
       return getSystemTheme();
     }
     return preference;
-  };
+  }, []);
 
   // Apply theme to document
   const applyTheme = (resolved: 'light' | 'dark') => {
@@ -55,7 +55,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     setThemeState(initial);
     applyTheme(resolveTheme(initial));
     setMounted(true);
-  }, []);
+  }, [resolveTheme]);
 
   // Listen for system preference changes
   useEffect(() => {

@@ -2,6 +2,7 @@
 
 import { useTranslations } from 'next-intl';
 import { Link } from '@/i18n/routing';
+import Image from 'next/image';
 import { Card, Badge, Button } from '@/components/ui';
 import { AvailabilityBadge } from './AvailabilityBadge';
 import { SafetyToolsBadges } from './SafetyToolsBadges';
@@ -85,10 +86,13 @@ export function SessionDetail({
               {session.game_title && (
                 <div className="flex items-center gap-3 text-lg text-slate-700 dark:text-slate-300">
                   {session.game_cover_image_url && (
-                    <img
+                    <Image
                       src={session.game_cover_image_url}
                       alt={session.game_title}
+                      width={48}
+                      height={64}
                       className="w-12 h-16 object-cover rounded flex-shrink-0"
+                      unoptimized
                       onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
                     />
                   )}
