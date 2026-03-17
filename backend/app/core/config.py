@@ -26,6 +26,14 @@ class Settings(BaseSettings):
     # Database
     DATABASE_URL: str = "postgresql+asyncpg://sl_admin:sl_password@localhost:5432/structura_ludis"
 
+    @property
+    def async_database_url(self) -> str:
+        """Ensure DATABASE_URL uses the asyncpg driver."""
+        url = self.DATABASE_URL
+        if url.startswith("postgresql://"):
+            url = url.replace("postgresql://", "postgresql+asyncpg://", 1)
+        return url
+
     # Security / JWT
     SECRET_KEY: str = "change-me-in-production"
     JWT_ALGORITHM: str = "HS256"
