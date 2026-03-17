@@ -52,10 +52,13 @@ applications:
         start: "npx next start -p $PORT"
       locations:
         /:
-          root: public
           passthru: true
-          expires: 1h
           scripts: false
+        /_next/static:
+          root: .next-built/static
+          expires: 365d
+          scripts: false
+          allow: true
       upstream:
         socket_family: tcp
     variables:
@@ -67,6 +70,10 @@ applications:
       "/.npm":
         source: "storage"
         source_path: "npm"
+    relationships:
+      api:
+        service: "backend"
+        endpoint: "http"
 services:
   database:
     type: postgresql:16

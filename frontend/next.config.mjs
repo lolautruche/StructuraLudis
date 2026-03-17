@@ -13,7 +13,8 @@ const nextConfig = {
   // API proxy to backend
   // Uses server-side API_URL (not NEXT_PUBLIC_*) so the browser doesn't try to resolve Docker hostnames
   async rewrites() {
-    const apiUrl = process.env.API_URL || 'http://localhost:8000';
+    const apiUrl = ('API_HOST' in process.env) ? process.env.API_SCHEME + "://" + process.env.API_HOST || 'http://localhost:8000';
+    
     return {
       beforeFiles: [
         // Match paths with trailing slash (e.g., /api/v1/games/)
