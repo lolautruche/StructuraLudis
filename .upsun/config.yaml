@@ -37,39 +37,30 @@ applications:
     hooks:
       build: |
         set -ex
-        npm install
+        npm i
         npm run build
-        npm prune --omit=dev
-        mv .next .next-built
       deploy: |
         set -ex
-        touch .next/build-tree-id
-        if [ "$(< .next/build-tree-id)" != "$PLATFORM_TREE_ID" ]; then
-          cp -Rs $PWD/.next-built/* .next
-          echo -n "$PLATFORM_TREE_ID" > .next/build-tree-id
-        fi
     web:
       commands:
-        pre_start: |
-          touch .next/build-tree-id
-          if [ "$(< .next/build-tree-id)" != "$PLATFORM_TREE_ID" ]; then
-            echo >&2 "Waiting for deployment to complete"
-            while [ "$(< .next/build-tree-id)" != "$PLATFORM_TREE_ID" ]; do sleep 1; done
-          fi
-        start: npx next start -p "$PORT"
+        start: "npx next start -p $PORT"
       locations:
         /:
           root: public
           passthru: true
           expires: 1h
           scripts: false
+      upstream:
+        socket_family: tcp
     variables:
       env:
         NEXT_TELEMETRY_DISABLED: '1'
     mounts:
-      .next:
+      "/.next":
         source: storage
-
+      "/.npm":
+        source: "storage"
+        source_path: "npm"
 services:
   database:
     type: postgresql:16
