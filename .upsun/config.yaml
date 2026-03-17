@@ -37,8 +37,9 @@ applications:
     hooks:
       build: |
         set -ex
-        npm install --omit=dev
+        npm install
         npm run build
+        npm prune --omit=dev
         mv .next .next-built
       deploy: |
         set -ex
