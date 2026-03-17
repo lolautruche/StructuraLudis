@@ -1,0 +1,81 @@
+# Upsun configuration, generated using AI at: 2026-03-17T12:39:43Z
+# AI can make mistakes. Please modify this file to suit your needs.
+applications:
+  backend:
+    source:
+      root: backend
+    type: python:3.12
+    dependencies:
+      python3:
+        poetry: '*'
+    hooks:
+      build: |
+        set -ex
+        poetry config virtualenvs.create false
+        export PIP_USER=0
+        poetry install --only=main
+      deploy: |
+        set -ex
+        poetry run alembic upgrade head
+        poetry run python backend/scripts/seed_db.py
+    web:
+      commands:
+        start: poetry run uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    mounts:
+      backend/storage:
+        source: storage
+    relationships:
+      database: {}
+      rabbitmq: {}
+
+  frontend:
+    source:
+      root: frontend
+    type: nodejs:24
+    build:
+      flavor: none
+    hooks:
+      build: |
+        set -ex
+        npm install --omit=dev
+        npm run build
+        mv .next .next-built
+      deploy: |
+        set -ex
+        touch .next/build-tree-id
+        if [ "$(< .next/build-tree-id)" != "$PLATFORM_TREE_ID" ]; then
+          cp -Rs $PWD/.next-built/* .next
+          echo -n "$PLATFORM_TREE_ID" > .next/build-tree-id
+        fi
+    web:
+      commands:
+        pre_start: |
+          touch .next/build-tree-id
+          if [ "$(< .next/build-tree-id)" != "$PLATFORM_TREE_ID" ]; then
+            echo >&2 "Waiting for deployment to complete"
+            while [ "$(< .next/build-tree-id)" != "$PLATFORM_TREE_ID" ]; do sleep 1; done
+          fi
+        start: npm run start -p "$PORT"
+      locations:
+        /:
+          root: public
+          passthru: true
+          expires: 1h
+          scripts: false
+    variables:
+      env:
+        NEXT_TELEMETRY_DISABLED: '1'
+    mounts:
+      .next:
+        source: storage
+
+services:
+  database:
+    type: postgresql:16
+  rabbitmq:
+    type: rabbitmq:4.1
+
+routes:
+  https://{default}/:
+    type: upstream
+    upstream: frontend:http
