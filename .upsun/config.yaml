@@ -38,15 +38,15 @@ applications:
       build: |
         set -ex
         npm i
-        npm run build
-        mv .next .next-built
+        #mv .next .next-built
       deploy: |
         set -ex
-        if [ ! -f .next/build-tree-id ] || [ "$(< .next/build-tree-id)" != "$PLATFORM_TREE_ID" ]; then
-          rm -rf .next/*
-          cp -a .next-built/. .next/
-          echo -n "$PLATFORM_TREE_ID" > .next/build-tree-id
-        fi
+        npm run build
+        # if [ ! -f .next/build-tree-id ] || [ "$(< .next/build-tree-id)" != "$PLATFORM_TREE_ID" ]; then
+        #   rm -rf .next/*
+        #   cp -a .next-built/. .next/
+        #   echo -n "$PLATFORM_TREE_ID" > .next/build-tree-id
+        # fi
     web:
       commands:
         start: "npx next start -p $PORT"
