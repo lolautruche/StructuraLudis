@@ -38,15 +38,15 @@ applications:
       build: |
         set -ex
         npm i
-        mv .next .next-built
+        # mv .next .next-built
+        npm run build
       deploy: |
         set -ex
-        npm run build
-        if [ ! -f .next/build-tree-id ] || [ "$(< .next/build-tree-id)" != "$PLATFORM_TREE_ID" ]; then
-          rm -rf .next/*
-          cp -a .next-built/. .next/
-          echo -n "$PLATFORM_TREE_ID" > .next/build-tree-id
-        fi
+        # if [ ! -f .next/build-tree-id ] || [ "$(< .next/build-tree-id)" != "$PLATFORM_TREE_ID" ]; then
+        #   rm -rf .next/*
+        #   cp -a .next-built/. .next/
+        #   echo -n "$PLATFORM_TREE_ID" > .next/build-tree-id
+        # fi
     web:
       commands:
         start: "npx next start -p $PORT"
@@ -65,8 +65,6 @@ applications:
       env:
         NEXT_TELEMETRY_DISABLED: '1'
     mounts:
-      "/.next":
-        source: storage
       "/.npm":
         source: "storage"
         source_path: "npm"
