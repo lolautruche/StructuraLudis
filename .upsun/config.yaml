@@ -37,11 +37,11 @@ applications:
     hooks:
       build: |
         set -ex
-        npm ci
-        npm run build
+        npm i
         #mv .next .next-built
       deploy: |
         set -ex
+        npm run build
         # if [ ! -f .next/build-tree-id ] || [ "$(< .next/build-tree-id)" != "$PLATFORM_TREE_ID" ]; then
         #   rm -rf .next/*
         #   cp -a .next-built/. .next/
@@ -70,10 +70,10 @@ applications:
       "/.npm":
         source: "storage"
         source_path: "npm"
-    relationships:
-      api:
-        service: "backend"
-        endpoint: "http"
+    # relationships:
+    #   api:
+    #     service: "backend"
+    #     endpoint: "http"
 services:
   database:
     type: postgresql:16
@@ -84,3 +84,7 @@ routes:
   https://{default}/:
     type: upstream
     upstream: frontend:http
+  https://api.{default}/:
+    type: upstream
+    upstream: backend:http
+  
