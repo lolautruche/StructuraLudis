@@ -38,15 +38,7 @@ applications:
       build: |
         set -ex
         npm i
-        # mv .next .next-built
         npm run build
-      deploy: |
-        set -ex
-        # if [ ! -f .next/build-tree-id ] || [ "$(< .next/build-tree-id)" != "$PLATFORM_TREE_ID" ]; then
-        #   rm -rf .next/*
-        #   cp -a .next-built/. .next/
-        #   echo -n "$PLATFORM_TREE_ID" > .next/build-tree-id
-        # fi
     web:
       commands:
         start: "npx next start -p $PORT"
@@ -68,10 +60,6 @@ applications:
       "/.npm":
         source: "storage"
         source_path: "npm"
-    # relationships:
-    #   api:
-    #     service: "backend"
-    #     endpoint: "http"
 services:
   database:
     type: postgresql:16
