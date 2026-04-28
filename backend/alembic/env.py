@@ -21,7 +21,7 @@ from app.domain.models import Base  # This imports all entities
 config = context.config
 
 # Override the sqlalchemy.url from alembic.ini with the one from the app's settings.
-config.set_main_option("sqlalchemy.url", str(settings.DATABASE_URL))
+config.set_main_option("sqlalchemy.url", str(settings.async_database_url))
 
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.

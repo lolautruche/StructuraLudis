@@ -87,11 +87,13 @@ jobs:
         uses: actions/cache@v4
         with:
           path: backend/.venv
-          key: venv-${{ runner.os }}-${{ hashFiles('backend/poetry.lock') }}
+          key: venv-${{ runner.os }}-${{ hashFiles('backend/poetry.lock', 'backend/pyproject.toml') }}
 
       - name: Install dependencies
-        if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
         run: poetry install --no-interaction --no-root --with dev
+
+      - name: Ensure test tooling
+        run: poetry run pip install pytest pytest-asyncio
 
       - name: Run tests
         env:
@@ -105,4 +107,4 @@ jobs:
           SMTP_TLS: "false"
           SMTP_SSL: "false"
           MAILPIT_API_URL: http://localhost:8025/api/v1
-        run: poetry run pytest --tb=short -v
+        run: poetry run python -m pytest --tb=short -v

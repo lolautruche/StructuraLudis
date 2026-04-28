@@ -2,6 +2,7 @@
 
 import { useTranslations } from 'next-intl';
 import { Link } from '@/i18n/routing';
+import Image from 'next/image';
 import { Card, Badge, Button } from '@/components/ui';
 import { CheckInButton } from './CheckInButton';
 import { ProviderBadge } from '@/components/games/ProviderBadge';
@@ -58,10 +59,13 @@ export function AgendaBookingCard({
         {booking.game_title && (
           <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
             {booking.game_cover_image_url && (
-              <img
+              <Image
                 src={booking.game_cover_image_url}
                 alt=""
+                width={32}
+                height={44}
                 className="w-8 h-11 object-cover rounded flex-shrink-0"
+                unoptimized
                 onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
               />
             )}

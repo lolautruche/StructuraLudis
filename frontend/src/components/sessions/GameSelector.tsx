@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useTranslations } from 'next-intl';
+import Image from 'next/image';
 import { Input, Button, Select, Card } from '@/components/ui';
 import { gamesApi } from '@/lib/api';
 import { ProviderBadge } from '@/components/games/ProviderBadge';
@@ -162,10 +163,13 @@ export function GameSelector({ selectedGame, onGameSelect, error }: GameSelector
           <div className="flex gap-3">
             {/* Cover image */}
             {selectedGame.cover_image_url && (
-              <img
+              <Image
                 src={selectedGame.cover_image_url}
                 alt={selectedGame.title}
+                width={80}
+                height={112}
                 className="w-20 h-28 object-cover rounded flex-shrink-0"
+                unoptimized
                 onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
               />
             )}
@@ -355,10 +359,13 @@ export function GameSelector({ selectedGame, onGameSelect, error }: GameSelector
                       onClick={() => handleSelectGame(game)}
                     >
                       {game.cover_image_url && (
-                        <img
+                        <Image
                           src={game.cover_image_url}
                           alt=""
+                          width={40}
+                          height={56}
                           className="w-10 h-14 object-cover rounded flex-shrink-0"
+                          unoptimized
                           onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
                         />
                       )}

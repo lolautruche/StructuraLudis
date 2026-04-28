@@ -1,0 +1,76 @@
+# Upsun configuration, generated using AI at: 2026-03-17T12:39:43Z
+# AI can make mistakes. Please modify this file to suit your needs.
+applications:
+  backend:
+    source:
+      root: backend
+    type: python:3.12
+    dependencies:
+      python3:
+        poetry: '*'
+    hooks:
+      build: |
+        set -ex
+        export PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1
+        poetry config virtualenvs.in-project true
+        poetry install --only=main
+      deploy: |
+        set -ex
+        poetry run alembic upgrade head
+        poetry run python -m scripts.seed_db
+    web:
+      commands:
+        start: poetry run uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    mounts:
+      storage:
+        source: storage
+    relationships:
+      database: 
+      rabbitmq: 
+
+  frontend:
+    source:
+      root: frontend
+    type: nodejs:24
+    build:
+      flavor: none
+    hooks:
+      build: |
+        set -ex
+        npm i
+        npm run build
+    web:
+      commands:
+        start: "npx next start -p $PORT"
+      locations:
+        /:
+          passthru: true
+          scripts: false
+        /_next/static:
+          root: .next-built/static
+          expires: 365d
+          scripts: false
+          allow: true
+      upstream:
+        socket_family: tcp
+    variables:
+      env:
+        NEXT_TELEMETRY_DISABLED: '1'
+    mounts:
+      "/.npm":
+        source: "storage"
+        source_path: "npm"
+services:
+  database:
+    type: postgresql:16
+  rabbitmq:
+    type: rabbitmq:4.1
+
+routes:
+  https://{default}/:
+    type: upstream
+    upstream: frontend:http
+  https://api.{default}/:
+    type: upstream
+    upstream: backend:http
+  

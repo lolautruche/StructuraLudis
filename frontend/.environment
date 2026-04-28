@@ -1,0 +1,15 @@
+# Upsun runtime environment variables
+# This file is sourced before the app starts on Upsun.
+
+# Build API_URL from the routes to point to the backend.
+# Parses PLATFORM_ROUTES (base64-encoded JSON) to find the backend upstream URL.
+if [ -n "$PLATFORM_ROUTES" ]; then
+  export API_URL=$(echo "$PLATFORM_ROUTES" | base64 --decode | node -e "
+    let d=''; process.stdin.on('data',c=>d+=c); process.stdin.on('end',()=>{
+      const routes=JSON.parse(d);
+      for(const [url,conf] of Object.entries(routes)){
+        if(conf.upstream==='backend:http'){process.stdout.write(url.replace(/\/$/,''));break}
+      }
+    })
+  ")
+fi
